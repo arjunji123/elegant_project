@@ -95,3 +95,70 @@ To learn more about React Native, take a look at the following resources:
 - [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
 - [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
 - [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+
+ecommerce-app/
+├── assets/                 # Images, fonts, icons, etc.
+│   ├── images/
+│   ├── fonts/
+│   └── icons/
+│
+├── components/             # Reusable UI components
+│   ├── ProductCard.tsx
+│   ├── Button.tsx
+│   └── Header.tsx
+│
+├── constants/              # Constant values, colors, fonts, etc.
+│   ├── colors.ts
+│   ├── images.ts
+│   └── strings.ts
+│
+├── navigation/             # Navigation stack and route configs
+│   ├── AppNavigator.tsx
+│   ├── AuthNavigator.tsx
+│   └── index.tsx
+│
+├── screens/                # Screen-specific components
+│   ├── Onboarding/
+│   │   └── OnboardingScreen.tsx
+│   ├── Auth/
+│   │   ├── LoginScreen.tsx
+│   │   └── RegisterScreen.tsx
+│   ├── Home/
+│   │   └── HomeScreen.tsx
+│   ├── Product/
+│   │   ├── ProductListScreen.tsx
+│   │   └── ProductDetailScreen.tsx
+│   ├── Cart/
+│   │   └── CartScreen.tsx
+│   └── Profile/
+│       └── ProfileScreen.tsx
+│
+├── services/               # API calls and network logic
+│   ├── api.ts
+│   └── productService.ts
+│
+├── context/                # Context API / global state
+│   ├── AuthContext.tsx
+│   └── CartContext.tsx
+│
+├── store/                  # Redux store (if using Redux)
+│   ├── index.ts
+│   ├── slices/
+│   │   ├── productSlice.ts
+│   │   └── cartSlice.ts
+│   └── actions/
+│
+├── hooks/                  # Custom React hooks
+│   ├── useAuth.ts
+│   └── useCart.ts
+│
+├── utils/                  # Utility functions/helpers
+│   ├── formatPrice.ts
+│   └── validators.ts
+│
+├── types/                  # TypeScript interfaces/types
+│   └── product.ts
+│
+├── App.tsx                 # Entry point of the app
+├── app.json                # App config
+└── tsconfig.json           # TypeScript config
