@@ -5,6 +5,37 @@ const sendResponse = (res, status, success, message, data = null) => {
     return res.status(status).json({ success, message, data });
 };
 
+
+exports.getAddressesByUserId = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Fetch addresses
+        const [addresses] = await db.query(
+            "SELECT id, title, address, is_default, created_at, updated_at FROM addresses WHERE user_id = ? ORDER BY is_default DESC, created_at DESC",
+            [userId]
+        );
+
+        if (addresses.length === 0) {
+            return sendResponse(res, 404, false, "No addresses found for this user");
+        }
+
+        // Format is_default as boolean
+        const formattedAddresses = addresses.map(addr => ({
+            id: addr.id,
+            title: addr.title,
+            address: addr.address,
+            is_default: addr.is_default === 1, // true/false
+            created_at: addr.created_at,
+            updated_at: addr.updated_at
+        }));
+
+        return sendResponse(res, 200, true, "Addresses fetched successfully", formattedAddresses);
+    } catch (error) {
+        console.error("Get Addresses by UserId Error:", error);
+        return sendResponse(res, 500, false, "Server error");
+    }
+};
 // Add Address
 exports.addAddress = async (req, res) => {
     try {
