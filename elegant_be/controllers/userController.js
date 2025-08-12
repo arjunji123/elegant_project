@@ -1,10 +1,14 @@
 const db = require("../config/db");
+const upload = require("../middlewares/upload");
 
 exports.getUserById = async (req, res) => {
   const userId = req.params.id;
 
   try {
-    const [rows] = await db.query('SELECT id, name, email,phone, is_verified, created_at FROM users WHERE id = ?', [userId]);
+const [rows] = await db.query(
+  'SELECT id, name, email, phone, profile_pic, is_verified, created_at FROM users WHERE id = ?',
+  [userId]
+);
 
     if (rows.length === 0) {
       return res.status(404).json({
@@ -12,7 +16,9 @@ exports.getUserById = async (req, res) => {
         message: "User not found",
       });
     }
-
+  if (rows[0].profile_pic) {
+      rows[0].profile_pic = `${req.protocol}://${req.get("host")}/${rows[0].profile_pic}`;
+    }
     return res.status(200).json({
       success: true,
       message: "User fetched successfully",
@@ -29,15 +35,19 @@ exports.getUserById = async (req, res) => {
 
 exports.updateUserById = async (req, res) => {
   const userId = req.params.id;
-  const { name, email, phone, password } = req.body;
-
+const { name, email, phone, profile_pic } = req.body;
+  let profilePicPath = null;
+ if (req.file) {
+    profilePicPath = `uploads/profile_pics/${req.file.filename}`;
+  }
   try {
- const [result] = await pool.query(
-      `UPDATE users 
-       SET name = ?, email = ?, phone = ?, password = ?, updated_at = NOW() 
-       WHERE id = ?`,
-      [name, email, phone, password, userId]
-    );
+const [result] = await db.query(
+  `UPDATE users 
+   SET name = ?, email = ?, phone = ?, profile_pic = ?, updated_at = NOW() 
+   WHERE id = ?`,
+  [name, email, phone, profilePicPath, userId]
+);
+
 
     if (result.affectedRows === 0) {
       return res.status(404).json({
@@ -55,7 +65,7 @@ exports.updateUserById = async (req, res) => {
           name,
           email,
           phone,
-          password
+          profile_pic: profilePicPath 
         },
       },
     });
