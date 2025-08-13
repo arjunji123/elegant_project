@@ -16,6 +16,7 @@ import HomePage from './src/screens/Home/HomePage';
 import ProfileScreen from './src/screens/Profile/ProfileScreen';
 import AddresListScreen from './src/screens/address/AddresListScreen';
 import AddressForm from './src/screens/address/AddressForm';
+import AppNavigator from './src/navigation/AppNavigator';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -24,61 +25,8 @@ export default function App() {
 
   return (
     <AuthProvider>
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <NavigationContainer>
-
-        <Stack.Navigator initialRouteName="Onboarding">
-          <Stack.Screen
-            name="Onboarding"
-            component={OnboardingScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="LoginSignupScreen"
-            component={LoginSignupScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="LoginScreen"
-            component={LoginScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="SignUpScreen"
-            component={SignUpScreen}
-            options={{ headerShown: false }}
-          />
-           <Stack.Screen
-            name="ForgotScreen"
-            component={ForgotPage}
-            options={{ headerShown: false }}
-          />
-           <Stack.Screen
-            name="OtpScreen"
-            component={OtpPage}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="HomePageScreen"
-            component={HomePage}
-            options={{ headerShown: false }}
-          />
-           <Stack.Screen
-            name="ProfileScreen"
-            component={ProfileScreen}
-            options={{ headerShown: false }}
-          />
-           <Stack.Screen
-            name="AddresListScreen"
-            component={AddresListScreen}
-           
-          />
-          <Stack.Screen name="AddressForm" component={AddressForm} />
-
-        </Stack.Navigator>
-      </NavigationContainer>
-    </SafeAreaProvider>
+      <AppNavigator/>
+    
     </AuthProvider>
   );
 }
