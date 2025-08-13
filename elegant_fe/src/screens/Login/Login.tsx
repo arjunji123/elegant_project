@@ -7,8 +7,9 @@ import {
   Pressable,
   TouchableOpacity,
   Image,
+  Alert
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../Context/AuthContext';
 import Arrowleft from '../../assets/icons/Arrowleft.png';
 import Button from '../../components/Button';
 import SocialLoginOptions from '../../components/SocialLoginOptions';
@@ -18,7 +19,11 @@ import { LoginScreenProps } from '../../types/types';
 
 const LoginScreen : React.FC<LoginScreenProps> = ({ navigation }) => {
   const [rememberMe, setRememberMe] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
 
+  const { login } = useAuth();
   const handleGoBack = () => {
     if (navigation.canGoBack()) {
       navigation.goBack();
@@ -29,8 +34,30 @@ const LoginScreen : React.FC<LoginScreenProps> = ({ navigation }) => {
     }
   };
 
-  const handleLogin=() =>{
-    navigation.replace('LoginScreen');
+  const handleLogin=async () =>{
+     if ( !email || !password ) {
+          Alert.alert('Error', 'Please fill all required fields');
+          return;
+        }
+        try {
+          // Send login request
+          const response = await fetch("http://192.168.1.12:5000/api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          });
+          const data = await response.json();
+          if (response.ok) {
+            
+            login(data.user, data.token);
+
+            navigation.replace('HomePageScreen');
+          } else {
+            Alert.alert("Login Failed", data.message || "Invalid credentials");
+          }
+        } catch (error) {
+          Alert.alert("Error", "Something went wrong");
+        }
   }
 
   return (
@@ -51,6 +78,9 @@ const LoginScreen : React.FC<LoginScreenProps> = ({ navigation }) => {
           placeholder="Enter your mobile number"
           keyboardType="phone-pad"
           style={styles.input}
+          value={phone}
+          onChangeText={setPhone}
+
         />
       </View>
 
@@ -68,6 +98,9 @@ const LoginScreen : React.FC<LoginScreenProps> = ({ navigation }) => {
           placeholder="Enter your email"
           keyboardType="email-address"
           style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+
           autoCapitalize="none"
         />
       </View>
@@ -79,6 +112,9 @@ const LoginScreen : React.FC<LoginScreenProps> = ({ navigation }) => {
           placeholder="Enter your password"
           secureTextEntry={true}
           style={styles.input}
+          value={password}
+          onChangeText={setPassword}
+
         />
       </View>
     <View style={styles.containerfor}>
@@ -118,7 +154,7 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    marginTop: 20,
+   
     backgroundColor: '#fff',
   },
   containerfor: {

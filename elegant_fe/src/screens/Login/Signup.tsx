@@ -6,16 +6,27 @@ import {
   StyleSheet,
   Pressable,
   Image,
+  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Arrowleft from '../../assets/icons/Arrowleft.png';
 import Button from '../../components/Button';
 import SocialLoginOptions from '../../components/SocialLoginOptions';
 import { SignUpScreenProps } from '../../types/types';
+import { useAuth } from '../../Context/AuthContext';
 
 const SignUpScreen : React.FC<SignUpScreenProps> = ({ navigation }) => {
-
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const { setSignupemail } = useAuth();
 
   const handleGoBack = () => {
     navigation.goBack();
@@ -24,83 +35,157 @@ const SignUpScreen : React.FC<SignUpScreenProps> = ({ navigation }) => {
   const handleLogin=() =>{
     navigation.replace('LoginScreen');
   }
+  const handleSignup = async () => {
+    if (!name || !phone || !email || !password || !confirmPassword) {
+      Alert.alert('Error', 'Please fill all required fields');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://192.168.1.12:5000/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          phone,
+          password,
+          inviteCode: inviteCode || undefined,
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setSignupemail(email);
+        Alert.alert('Success', 'Signup successful', [
+          { text: 'OK', onPress: () => navigation.replace('OtpScreen') },
+        ]);
+      } else {
+        Alert.alert('Error', data.message || 'Signup failed');
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    }
+  };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+    style={{ flex: 1 }}
+    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+  >
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={handleGoBack} style={styles.backButton}>
           <Image source={Arrowleft} style={styles.backIcon} />
         </Pressable>
-
-        <Text style={styles.title}>Sign Up</Text>
+        <Text style={styles.headerTitle}>Sign Up</Text>
       </View>
 
-      {/* Mobile Number Input */}
+      {/* Name Input */}
+      <View style={styles.inputFieldContainer}>
+        <Text style={styles.label}>Name</Text>
+        <TextInput
+          placeholder="Enter your name"
+          value={name}
+          onChangeText={setName}
+          style={styles.input}
+        />
+      </View>
+
+      {/* Mobile Number */}
       <View style={styles.inputFieldContainer}>
         <Text style={styles.label}>Mobile Number</Text>
         <TextInput
           placeholder="Enter your mobile number"
+          value={phone}
+          onChangeText={setPhone}
           keyboardType="phone-pad"
           style={styles.input}
         />
       </View>
 
-
-      {/* Email Input */}
+      {/* Email */}
       <View style={styles.inputFieldContainer}>
         <Text style={styles.label}>Email</Text>
         <TextInput
           placeholder="Enter your email"
+          value={email}
+          onChangeText={setEmail}
           keyboardType="email-address"
-          style={styles.input}
           autoCapitalize="none"
+          style={styles.input}
         />
       </View>
 
-      {/* Password Input */}
+      {/* Password */}
       <View style={styles.inputFieldContainer}>
         <Text style={styles.label}>Password</Text>
         <TextInput
           placeholder="Enter your password"
-          secureTextEntry={true}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
           style={styles.input}
         />
       </View>
-       <View style={styles.inputFieldContainer}>
+
+      {/* Confirm Password */}
+      <View style={styles.inputFieldContainer}>
         <Text style={styles.label}>Confirm password</Text>
         <TextInput
-          placeholder="Text your password"
-          secureTextEntry={true}
+          placeholder="Enter your password again"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
           style={styles.input}
         />
       </View>
-       <View style={styles.inputFieldContainer}>
+
+      {/* Invite Code */}
+      <View style={styles.inputFieldContainer}>
         <Text style={styles.label}>Invite Code (optional)</Text>
         <TextInput
-          placeholder="Text your invite code"
-          secureTextEntry={true}
+          placeholder="Enter your invite code"
+          value={inviteCode}
+          onChangeText={setInviteCode}
           style={styles.input}
         />
       </View>
- <View style={styles.containerButton}>
-      <Button text="Log In"
-      bgColor="#704f38"
-      textColor="#ffffff"
-      onPress={handleLogin} border={undefined} />
-     </View>
-      <SocialLoginOptions />
-      <View  style={styles.containerAllready}>
-         <Text style={styles.text}>
-        Already have an account?{' '}
-        <Text onPress={handleLogin} style={styles.loginLink}>
-          Login
-        </Text>
-      </Text>
+
+      <View style={styles.containerButton}>
+        <Button
+          text="Sign Up"
+          bgColor="#704f38"
+          textColor="#ffffff"
+          onPress={handleSignup}
+        />
       </View>
-    </View>
-  );
+
+      <SocialLoginOptions />
+
+      <View style={styles.containerAllready}>
+        <Text style={styles.text}>
+          Already have an account?{' '}
+          <Text onPress={handleLogin} style={styles.loginLink}>
+            Login
+          </Text>
+        </Text>
+      </View>
+    </ScrollView>
+  </KeyboardAvoidingView>
+);
 };
+
+
 
 export default SignUpScreen;
 
@@ -108,9 +193,9 @@ const BOX_SIZE = 15;
 
 export const styles = StyleSheet.create({
   container: {
-    flex: 1,
+  
     padding: 24,
-    marginTop: 20,
+   
     backgroundColor: '#fff',
   },
   containerfor: {
@@ -146,6 +231,15 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+headerTitle: {
+  flex: 1,
+    textAlign: 'center',
+    fontSize: 24,
+    color: '#000000',
+    fontWeight: 'normal', // 'regular' is invalid
+    fontFamily: 'Poppins',
+    marginRight: 40,
+},
   backButton: {
     padding: 8,
   },

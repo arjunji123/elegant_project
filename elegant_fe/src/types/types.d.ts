@@ -15,6 +15,11 @@ export type RootStackParamList = {
   LoginScreen: undefined;
   SignUpScreen: undefined;
   ForgotScreen: undefined;
+  OtpScreen: undefined;
+  HomePageScreen: undefined;
+  ProfileScreen: undefined;
+  AccountScreen:undefined;
+
 };
 export type ScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;
 
@@ -24,4 +29,8 @@ export type LoginSignupScreenProps = ScreenProps<'LoginSignupScreen'>;
 export type LoginScreenProps = ScreenProps<'LoginScreen'>;
 export type SignUpScreenProps = ScreenProps<'SignUpScreen'>;
 export type ForgotScreenProps = ScreenProps<'ForgotScreen'>;
+export type OtpScreenProps = ScreenProps<'OtpScreen'>;
+export type HomePageProps = ScreenProps<'HomePageScreen'>;
+export type ProfileScreenProps = ScreenProps<'ProfileScreen'>;
+export type AccountScreenProps = ScreenProps<'AccountScreen'>;
 
