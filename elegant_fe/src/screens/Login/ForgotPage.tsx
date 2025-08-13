@@ -46,11 +46,7 @@ const ForgotPage: React.FC<ForgotScreenProps> = ({ navigation }) => {
   const handleSubmit = () => {
     navigation.replace('OtpScreen');
   };
-  return (
-  <View>
-    <Text>HomePage Loaded</Text>
-  </View>
-);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>

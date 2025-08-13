@@ -22,7 +22,7 @@ const AddresListScreen = () => {
 
         const addresstAuth = async () => {
             try {
-                const res = await fetch(`http://192.168.1.12:5000/api/addresses`, {
+                const res = await fetch(`http://localhost:5000/api/addresses`, {
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json",

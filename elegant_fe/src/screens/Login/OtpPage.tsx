@@ -57,7 +57,7 @@ const OTPScreen: React.FC<OtpScreenProps> = ({ navigation }) => {
 
   const handleSubmit= async () => {
     try {
-      const res = await fetch("http://192.168.1.12:5000/api/verify-otp", {
+      const res = await fetch("http://localhost:5000/api/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({email: signupemail,  otp: updatedOtp }),
@@ -82,7 +82,7 @@ const OTPScreen: React.FC<OtpScreenProps> = ({ navigation }) => {
   const handleResendOtp = async () => {
     try {
       setResending(true);
-      const res = await fetch("http://192.168.1.12:5000/api/resend-otp", {
+      const res = await fetch("http://localhost:5000/api/resend-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: signupemail }),

@@ -59,7 +59,7 @@ const userId = user?.id || "123"; // fallback id for testing
 
     const testAuth = async () => {
       try {
-        const res = await fetch(`http://192.168.1.12:5000/api/user/${userId}`, {
+        const res = await fetch(`http://localhost:5000/api/user/${userId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -94,7 +94,7 @@ const userId = user?.id || "123"; // fallback id for testing
   const handleUpdate = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`http://192.168.1.12:5000/api/user/${userId}`, {
+      const res = await fetch(`http://localhost:5000/api/user/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
