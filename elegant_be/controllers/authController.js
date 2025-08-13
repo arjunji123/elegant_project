@@ -327,7 +327,7 @@ exports.verifyForgotOtp = async (req, res) => {
 
 
 exports.resetPassword = async (req, res) => {
-  const { email, otp, newPassword } = req.body;
+  const { email, newPassword } = req.body;
 
   try {
     // 1. Check if the user exists
@@ -338,40 +338,15 @@ exports.resetPassword = async (req, res) => {
 
     const userId = users[0].id;
 
-    // 2. Get the most recent OTP for the user
-    const [otps] = await db.query(
-      'SELECT otp, expires_at FROM user_otps WHERE user_id = ? ORDER BY created_at DESC LIMIT 1',
-      [userId]
-    );
-
-    if (otps.length === 0) {
-      return res.status(400).json({ message: 'OTP not found or already used' });
-    }
-
-    const { otp: dbOtp, expires_at } = otps[0];
-
-    // 3. Validate OTP
-    if (dbOtp !== otp) {
-      return res.status(400).json({ message: 'Incorrect OTP' });
-    }
-
-    // 4. Check if OTP is expired
-    if (new Date() > new Date(expires_at)) {
-      return res.status(400).json({ message: 'OTP has expired' });
-    }
-
-    // 5. Hash new password and update user
+    // 2. Hash new password and update user
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await db.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId]);
 
-    // Invalidate used OTP (to prevent reuse)
-    await db.query('DELETE FROM user_otps WHERE user_id = ?', [userId]);
-
-res.status(200).json({
-  success: true,
-  message: 'Password has been reset successfully.',
-  email: email,
-});
+    res.status(200).json({
+      success: true,
+      message: 'Password has been reset successfully.',
+      email: email,
+    });
 
   } catch (error) {
     console.error('Error in resetPassword:', error);

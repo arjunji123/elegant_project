@@ -6,7 +6,7 @@ import Arrowleft from '../../assets/icons/Arrowleft.png';
 import { AccountScreenProps } from "../../types/types";
 
 const AccountScreen: React.FC<AccountScreenProps> = ({ navigation }) => {
-  const { user } = useAuth();
+  const { user,logout } = useAuth();
 
   const menuItems = [
     { icon: 'person-outline', label: 'My Profile', screen: 'ProfileScreen' },
@@ -25,6 +25,18 @@ const AccountScreen: React.FC<AccountScreenProps> = ({ navigation }) => {
 
   const editHandle = () => {
     navigation.navigate('ProfileScreen');
+  };
+  const logoutHandle = async () => {
+    try {
+      await logout(); // call the logout function from AuthContext
+      // Navigate to login or welcome screen after logout
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "LoginScreen" }], // replace with your login screen name
+      });
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
   };
   return (
     <ScrollView style={styles.container}>
@@ -61,7 +73,7 @@ const AccountScreen: React.FC<AccountScreenProps> = ({ navigation }) => {
       ))}
 
       {/* Logout */}
-      <TouchableOpacity style={styles.logout} onPress={() => console.log("Logout pressed")}>
+      <TouchableOpacity style={styles.logout} onPress={logoutHandle}>
         <Icon name="log-out-outline" size={22} color="red" style={styles.menuIcon} />
         <Text style={styles.logoutText}>Log out</Text>
       </TouchableOpacity>
