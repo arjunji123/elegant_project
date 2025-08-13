@@ -47,7 +47,7 @@ const SignUpScreen : React.FC<SignUpScreenProps> = ({ navigation }) => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/register', {
+      const response = await fetch('http://192.168.29.231:5000/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -39,8 +39,8 @@ const AddressForm = () => {
     try {
       const response = await fetch(
         mode === 'edit'
-          ? `http://localhost:5000/api/address/${addressData.id}`
-          : `http://localhost:5000/api/address`,
+          ? `http://192.168.29.231:5000/api/address/${addressData.id}`
+          : `http://192.168.29.231:5000/api/address`,
         {
           method: mode === 'edit' ? 'PUT' : 'POST',
           headers: {
