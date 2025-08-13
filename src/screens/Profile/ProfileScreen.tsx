@@ -16,6 +16,7 @@ import Arrowleft from "../../assets/icons/Arrowleft.png";
 import { ProfileScreenProps } from "../../types/types";
 import { useAuth } from "../../Context/AuthContext";
 import { launchImageLibrary } from "react-native-image-picker";
+import {readFile} from 'react-native-fs';
 
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const [mobile, setMobile] = useState("");
@@ -24,6 +25,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const [loading, setLoading] = useState(false);
   const { user,token } = useAuth();
   const [profilePic, setProfilePic] = useState(null);
+
   const pickImage = () => {
     launchImageLibrary(
       {
@@ -33,18 +35,18 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
         quality: 0.8,
       },
       (response) => {
-        if (response.didCancel) {
-          console.log("User cancelled image picker");
-        } else if (response.errorMessage) {
-          console.log("ImagePicker Error: ", response.errorMessage);
-        } else if (response.assets && response.assets.length > 0) {
-          const pickedUri = response.assets[0].uri;
-          setProfilePic(pickedUri);
+        if (response.didCancel) return;
+        if (response.errorMessage) return console.log("ImagePicker Error:", response.errorMessage);
+  
+        if (response.assets && response.assets.length > 0) {
+          setProfilePic(response.assets[0].uri); // store local file URI
+          console.log("Selected image URI:", response.assets[0].uri);
         }
       }
     );
   };
-
+  
+  
   // Assuming you're passing user id from navigation params
 const userId = user?.id || "123"; // fallback id for testing
   const handleGoBack = () => {
@@ -70,12 +72,14 @@ const userId = user?.id || "123"; // fallback id for testing
         const text = await res.text();
   
         const data = JSON.parse(text);
+        console.log(data.data,"data.data")
+
         if (data.success && data.data) {
-        
           // ✅ Use API result directly to set form fields
           setEmail(data.data.email || "");
           setMobile(data.data.phone || "");
           setName(data.data.name || "");
+          setProfilePic(data.data.profil_pic)
         }
       } catch (error) {
         console.error("Error fetching user:", error);
@@ -100,12 +104,13 @@ const userId = user?.id || "123"; // fallback id for testing
           "Content-Type": "application/json",
          Authorization: `Bearer ${tokens.token}`,
           },
-        body: JSON.stringify({ name, email, phone:mobile }),
+        body: JSON.stringify({ name, email, phone:mobile ,profile_pic: profilePic}),
       });
 
       if (!res.ok) throw new Error("Failed to update user data");
       const updatedData = await res.json();
-      console.log(updatedData,"updatedDataupdatedData")
+      console.log(profilePic,updatedData,"updatedDataupdatedData")
+      console.log(profilePic,"profilePic")
       Alert.alert("Profile updated successfully!");
       setLoading(false)
     } catch (err) {

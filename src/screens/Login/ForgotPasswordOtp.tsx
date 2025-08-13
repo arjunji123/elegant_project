@@ -13,11 +13,11 @@ import Arrowleft from '../../assets/icons/Arrowleft.png';
 import Button from '../../components/Button';
 import { useAuth } from '../../Context/AuthContext';
 
-const OTPScreen: React.FC<OtpScreenProps> = ({ navigation }) => {
+const ForgotPasswordOtp: React.FC<OtpScreenProps> = ({ navigation }) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(57);
   const inputs = useRef<(TextInput | null)[]>([]);
-  const { signupemail, login, forgotPasswordMail  } = useAuth();
+  const { login, forgotPasswordMail  } = useAuth();
   const [resending, setResending] = useState(false);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ const OTPScreen: React.FC<OtpScreenProps> = ({ navigation }) => {
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      navigation.navigate('SignUpScreen');
+      navigation.navigate('ForgotScreen');
     }
   };
 
@@ -40,7 +40,6 @@ const OTPScreen: React.FC<OtpScreenProps> = ({ navigation }) => {
       const newOtp = [...otp];
       newOtp[index] = text;
       setOtp(newOtp);
-      console.log(newOtp,otp,"sonal123");
       if (text && index < 5) {
         inputs.current[index + 1]?.focus();
       }
@@ -50,7 +49,7 @@ const OTPScreen: React.FC<OtpScreenProps> = ({ navigation }) => {
     }
   };
   const updatedOtp = otp.join('');
-  console.log(typeof(updatedOtp),updatedOtp,"updatedOtp",signupemail)
+  console.log(typeof(updatedOtp),updatedOtp,"updatedOtp",forgotPasswordMail)
 
 
 
@@ -59,17 +58,15 @@ const OTPScreen: React.FC<OtpScreenProps> = ({ navigation }) => {
       const res = await fetch("http://192.168.1.12:5000/api/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({email: signupemail,  otp: updatedOtp }),
+        body: JSON.stringify({email: forgotPasswordMail,  otp: updatedOtp }),
       });
+      
       const data = await res.json();
+      console.log(data,"datadatadata")
+      if(data.message = "OTP verified"){
+        navigation.navigate('ConfirmPasswordScreen');
+      }
 
-        if (res.ok && data.user) {
-          login(data.user, data.token);
-          navigation.replace("HomePageScreen"); 
-        }
-        else {
-          Alert.alert("Invalid OTP", "Please try again.");
-        }
       
 
     } catch (error) {
@@ -148,7 +145,7 @@ const OTPScreen: React.FC<OtpScreenProps> = ({ navigation }) => {
   );
 };
 
-export default OTPScreen;
+export default ForgotPasswordOtp;
 
 export const styles = StyleSheet.create({
   container: {

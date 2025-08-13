@@ -12,7 +12,7 @@ import {
 import { ForgotScreenProps } from '../../types/types';
 import Arrowleft from '../../assets/icons/Arrowleft.png';
 import Button from '../../components/Button';
-
+import { useAuth } from '../../Context/AuthContext';
 // Email validation (basic + gmail domain optional)
 const isValidEmail = (email: string): boolean => {
   if (!email) return false;
@@ -23,6 +23,7 @@ const isValidEmail = (email: string): boolean => {
 const ForgotPage: React.FC<ForgotScreenProps> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState("");
+const {setForgotPasswordMail} = useAuth();
 
   const handleGoBack = () => {
     if (navigation.canGoBack()) {
@@ -43,14 +44,42 @@ const ForgotPage: React.FC<ForgotScreenProps> = ({ navigation }) => {
       setError("");
     }
   };
-  const handleSubmit = () => {
-    navigation.replace('OtpScreen');
+  const handleSubmit = async () => {
+    // Validate email first
+    if (!email.trim()) {
+      setError("Email is required");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+  
+    try {
+      const response = await fetch("http://192.168.1.12:5000/api/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: email.trim() }), // <-- send email in JSON
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok && data.success) {
+        setForgotPasswordMail(email)
+        navigation.replace("ForgotPasswordOtp"); 
+      } else {
+        // Show error returned by API
+        Alert.alert("Error", data.message || "Failed to send reset code");
+      }
+    } catch (err) {
+      console.error("Forgot password API error:", err);
+      Alert.alert("Error", "Something went wrong. Please try again.");
+    }
   };
-  return (
-  <View>
-    <Text>HomePage Loaded</Text>
-  </View>
-);
+  
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>

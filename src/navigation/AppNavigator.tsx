@@ -17,6 +17,8 @@ import ProfileScreen from '../screens/Profile/ProfileScreen';
 import AddresListScreen from '../screens/address/AddresListScreen';
 import AddressForm from '../screens/address/AddressForm';
 import { useAuth } from '../Context/AuthContext';
+import ConfirmPasword from '../screens/Login/ConfirmPasword';
+import ForgotPasswordOtp from '../screens/Login/ForgotPasswordOtp';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -53,6 +55,9 @@ export default function AppNavigator() {
             <Stack.Screen name="SignUpScreen" component={SignUpScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ForgotScreen" component={ForgotPage} options={{ headerShown: false }} />
             <Stack.Screen name="OtpScreen" component={OtpPage} options={{ headerShown: false }} />
+            <Stack.Screen name="ForgotPasswordOtp" component={ForgotPasswordOtp} options={{ headerShown: false }} />
+
+            <Stack.Screen name="ConfirmPasswordScreen" component={ConfirmPasword} options={{ headerShown: false }} />
           </Stack.Navigator>
         )}
       </NavigationContainer>
