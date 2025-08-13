@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     backgroundColor: 'rgba(0,0,0,0.4)', // optional: dim background image
-    padding: 30,
+
     alignItems: 'center',
   },
   title: {
