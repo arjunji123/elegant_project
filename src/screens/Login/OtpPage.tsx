@@ -17,7 +17,7 @@ const OTPScreen: React.FC<OtpScreenProps> = ({ navigation }) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(57);
   const inputs = useRef<(TextInput | null)[]>([]);
-  const { signupemail, login, forgotPasswordMail  } = useAuth();
+  const { signupemail, login  } = useAuth();
   const [resending, setResending] = useState(false);
 
   useEffect(() => {
@@ -50,8 +50,6 @@ const OTPScreen: React.FC<OtpScreenProps> = ({ navigation }) => {
     }
   };
   const updatedOtp = otp.join('');
-  console.log(typeof(updatedOtp),updatedOtp,"updatedOtp",signupemail)
-
 
 
   const handleSubmit= async () => {
@@ -62,10 +60,10 @@ const OTPScreen: React.FC<OtpScreenProps> = ({ navigation }) => {
         body: JSON.stringify({email: signupemail,  otp: updatedOtp }),
       });
       const data = await res.json();
-
+      
         if (res.ok && data.user) {
-          login(data.user, data.token);
-          navigation.replace("HomePageScreen"); 
+          console.log(data,"datadatadataotp")
+          navigation.replace("LoginScreen");
         }
         else {
           Alert.alert("Invalid OTP", "Please try again.");

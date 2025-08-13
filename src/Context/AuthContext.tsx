@@ -18,6 +18,9 @@ type AuthContextType = {
   setSignupemail: (email: string | null) => void;
   forgotPasswordMail:  string | null;
   setForgotPasswordMail : (email: string | null) => void; // Add setter
+  storePassword: string | null;
+  setStorePassword: React.Dispatch<React.SetStateAction<string | null>>;
+
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,6 +31,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [signupemail, setSignupemail] = useState<string | null>(null);
   const [forgotPasswordMail, setForgotPasswordMail] = useState<string | null>(null);
+const [storePassword ,setStorePassword] = useState<string | null>(null);
 
   // Load stored user on app start
   useEffect(() => {
@@ -76,7 +80,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{ isLoggedIn, user, token, login, logout,signupemail,
-        setSignupemail,forgotPasswordMail, setForgotPasswordMail }}>
+        setSignupemail,forgotPasswordMail, setForgotPasswordMail , storePassword, setStorePassword }}>
       {children}
     </AuthContext.Provider>
   );

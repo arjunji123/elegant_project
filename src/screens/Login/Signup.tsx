@@ -26,10 +26,14 @@ const SignUpScreen : React.FC<SignUpScreenProps> = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
-  const { setSignupemail } = useAuth();
+  const { setSignupemail,setStorePassword } = useAuth();
 
   const handleGoBack = () => {
-    navigation.goBack();
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate('LoginSignupScreen');
+    }
   };
 
   const handleLogin=() =>{
@@ -64,6 +68,7 @@ const SignUpScreen : React.FC<SignUpScreenProps> = ({ navigation }) => {
       const data = await response.json();
       if (response.ok) {
         setSignupemail(email);
+        setStorePassword(password)
         Alert.alert('Success', 'Signup successful', [
           { text: 'OK', onPress: () => navigation.replace('OtpScreen') },
         ]);

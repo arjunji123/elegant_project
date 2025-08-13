@@ -24,15 +24,9 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
   const isDarkMode = useColorScheme() === 'dark';
-  const { isLoggedIn, loading } = useAuth(); // Assume `loading` is true while checking auth
+  const { isLoggedIn } = useAuth(); // Assume `loading` is true while checking auth
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
+  
 
   return (
     <SafeAreaProvider>

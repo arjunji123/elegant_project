@@ -17,7 +17,7 @@ const ForgotPasswordOtp: React.FC<OtpScreenProps> = ({ navigation }) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(57);
   const inputs = useRef<(TextInput | null)[]>([]);
-  const { login, forgotPasswordMail  } = useAuth();
+  const { forgotPasswordMail  } = useAuth();
   const [resending, setResending] = useState(false);
 
   useEffect(() => {
@@ -81,7 +81,7 @@ const ForgotPasswordOtp: React.FC<OtpScreenProps> = ({ navigation }) => {
       const res = await fetch("http://192.168.1.12:5000/api/resend-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: signupemail }),
+        body: JSON.stringify({ email: forgotPasswordMail }),
       });
 
       if (res.ok) {

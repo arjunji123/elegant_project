@@ -47,10 +47,8 @@ const LoginScreen : React.FC<LoginScreenProps> = ({ navigation }) => {
             body: JSON.stringify({ email, password }),
           });
           const data = await response.json();
-          if (response.ok) {
-            
+          if (response.ok) {            
             login(data.user, data.token);
-
             navigation.replace('HomePageScreen');
           } else {
             Alert.alert("Login Failed", data.message || "Invalid credentials");
