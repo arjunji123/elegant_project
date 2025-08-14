@@ -11,99 +11,59 @@ exports.register = async (req, res) => {
     if (user.length) return res.status(400).json({ message: 'Email already exists' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    // const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
     const [insert] = await db.query(
       'INSERT INTO users (name, email, phone, password, is_verified) VALUES (?, ?, ?, ?, ?)',
       [name, email, phone, hashedPassword, false]
     );
 
-      const userId = insert.insertId;
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 mins
+    const userId = insert.insertId;
+    
+    // ✅ Default OTP fix value
+    const otp = '123456';
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // still keep expiry if needed
+
     await db.query(
       'INSERT INTO user_otps (user_id, otp, expires_at) VALUES (?, ?, ?)',
       [userId, otp, expiresAt]
     );
-        await sendMail(email, 'Your OTP Code', `Your OTP is ${otp}`);
 
-    res.status(201).json({ message: 'User registered. Please verify your email.' });
+    // ❌ Remove email sending
+    // await sendMail(email, 'Your OTP Code', `Your OTP is ${otp}`);
+
+    res.status(201).json({ message: 'User registered. Use OTP 123456 to verify.' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Registration failed' });
   }
 };
 
+
 exports.verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
 
   try {
-    // Step 1: Find user by email
     const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
     if (!users.length) return res.status(404).json({ message: 'User not found' });
 
     const user = users[0];
 
-    // ✅ If user already verified, send direct response
     if (user.is_verified) {
-      const alreadyVerifiedUser = {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        is_verified: true,
-        created_at: user.created_at,
-        updated_at: user.updated_at
-      };
-
-      return res.status(200).json({
-        message: 'User already verified.',
-        user: alreadyVerifiedUser
-      });
+      return res.status(200).json({ message: 'User already verified.', user });
     }
 
-    // Step 2: Get latest OTP for that user
-    const [otps] = await db.query(
-      'SELECT * FROM user_otps WHERE user_id = ? ORDER BY created_at DESC LIMIT 1',
-      [user.id]
-    );
-
-    if (!otps.length) {
-      return res.status(400).json({ message: 'No OTP found. Please login again.' });
-    }
-
-    const otpData = otps[0];
-
-    // Step 3: Compare OTP
-    if (otpData.otp !== otp) {
+    // ✅ Direct check for default OTP
+    if (otp !== '123456') {
       return res.status(400).json({ message: 'Invalid OTP' });
     }
 
-    // Step 4: Check if OTP expired
-    const now = new Date();
-    const expiry = new Date(otpData.expires_at);
-    if (now > expiry) {
-      return res.status(400).json({ message: 'OTP expired. Please request a new one.' });
-    }
-
-    // Step 5: Mark user as verified and clean up OTPs
+    // ✅ Directly mark as verified
     await db.query('UPDATE users SET is_verified = ? WHERE id = ?', [true, user.id]);
     await db.query('DELETE FROM user_otps WHERE user_id = ?', [user.id]);
 
-    // Step 6: Prepare response with updated verified status
-    const verifiedUser = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      is_verified: true, // forcefully true after update
-      created_at: user.created_at,
-      updated_at: user.updated_at
-    };
-
     res.status(200).json({
       message: 'Email verified successfully! You can now login.',
-      user: verifiedUser
+      user: { ...user, is_verified: true }
     });
 
   } catch (err) {
