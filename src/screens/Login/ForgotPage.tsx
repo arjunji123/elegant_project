@@ -13,6 +13,7 @@ import { ForgotScreenProps } from '../../types/types';
 import Arrowleft from '../../assets/icons/Arrowleft.png';
 import Button from '../../components/Button';
 import { useAuth } from '../../Context/AuthContext';
+import { useToast } from '../../Context/ToastContext';
 // Email validation (basic + gmail domain optional)
 const isValidEmail = (email: string): boolean => {
   if (!email) return false;
@@ -24,6 +25,7 @@ const ForgotPage: React.FC<ForgotScreenProps> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState("");
 const {setForgotPasswordMail} = useAuth();
+const { showToast } = useToast();
 
   const handleGoBack = () => {
     if (navigation.canGoBack()) {
@@ -56,7 +58,7 @@ const {setForgotPasswordMail} = useAuth();
     }
   
     try {
-      const response = await fetch("http://192.168.1.12:5000/api/forgot-password", {
+      const response = await fetch("https://elegantproject-production.up.railway.app/api/forgot-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -71,11 +73,10 @@ const {setForgotPasswordMail} = useAuth();
         navigation.replace("ForgotPasswordOtp"); 
       } else {
         // Show error returned by API
-        Alert.alert("Error", data.message || "Failed to send reset code");
+        showToast( data.message || "Failed to send reset code","error")
       }
     } catch (err) {
-      console.error("Forgot password API error:", err);
-      Alert.alert("Error", "Something went wrong. Please try again.");
+      showToast( `Forgot password API error: ${err}`,"error")
     }
   };
   

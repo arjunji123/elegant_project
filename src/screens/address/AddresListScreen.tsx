@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Pressable } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
 import { useNavigation } from "@react-navigation/native";
+import Arrowleft from '../../assets/icons/Arrowleft.png';
 
 
 
@@ -22,7 +23,7 @@ const AddresListScreen = () => {
 
         const addresstAuth = async () => {
             try {
-                const res = await fetch(`http://192.168.1.12:5000/api/addresses`, {
+                const res = await fetch(`https://elegantproject-production.up.railway.app/api/addresses`, {
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json",
@@ -51,14 +52,24 @@ const AddresListScreen = () => {
         }
 
     }, []);
-    console.log(address.data, "datadatadata")
+    const handleGoBack = () => {
+        navigation.goBack();
+      };
+
     return (
         <View style={styles.container}>
             {/* Header */}
+
             <View style={styles.header}>
-                <Icon name="chevron-back" size={24} />
-                <Text style={styles.headerTitle}>My Addresses</Text>
-            </View>
+        <Pressable onPress={handleGoBack} style={styles.backButton}>
+          <Image source={Arrowleft} style={styles.backIcon} />
+        </Pressable>
+
+        <View style={styles.titleContainer}>
+          <Text style={styles.headerTitle}>Address</Text>
+        </View>
+        </View>
+
 
             {/* Address List */}
             <ScrollView contentContainerStyle={styles.listContainer}>
@@ -107,8 +118,12 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: "#F8F8F8", // Full-screen background
         paddingHorizontal: 16,
-        paddingTop: 50,
+        paddingTop: 10,
     },
+    titleContainer: { flex: 1, alignItems: "center" },
+
+    backButton: { padding: 8 },
+  backIcon: { width: 24, height: 24, resizeMode: "contain" },
     header: {
         flexDirection: "row",
         alignItems: "center",
@@ -117,10 +132,10 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: "600",
-        marginLeft: 10,
+        // marginLeft: 5,
     },
     listContainer: {
-        paddingBottom: 30,
+        paddingBottom: 10,
     },
     addressCard: {
         backgroundColor: "#fff",

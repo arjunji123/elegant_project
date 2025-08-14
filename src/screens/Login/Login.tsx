@@ -7,13 +7,13 @@ import {
   Pressable,
   TouchableOpacity,
   Image,
-  Alert
 } from 'react-native';
 import { useAuth } from '../../Context/AuthContext';
 import Arrowleft from '../../assets/icons/Arrowleft.png';
 import Button from '../../components/Button';
 import SocialLoginOptions from '../../components/SocialLoginOptions';
 import { LoginScreenProps } from '../../types/types';
+import { useToast } from "../../Context/ToastContext";
 
 
 
@@ -22,6 +22,7 @@ const LoginScreen : React.FC<LoginScreenProps> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const { showToast } = useToast();
 
   const { login } = useAuth();
   const handleGoBack = () => {
@@ -36,25 +37,26 @@ const LoginScreen : React.FC<LoginScreenProps> = ({ navigation }) => {
 
   const handleLogin=async () =>{
      if ( !email || !password ) {
-          Alert.alert('Error', 'Please fill all required fields');
+      showToast("Please fill all required fields", "warning")
           return;
         }
         try {
           // Send login request
-          const response = await fetch("http://192.168.1.12:5000/api/login", {
+          const response = await fetch("https://elegantproject-production.up.railway.app/api/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
           });
           const data = await response.json();
-          if (response.ok) {            
+          if (response.ok) { 
+            showToast("Login Successfull", "success")           
             login(data.user, data.token);
             navigation.replace('HomePageScreen');
           } else {
-            Alert.alert("Login Failed", data.message || "Invalid credentials");
+            showToast(data.message || "login Failed", "error")
           }
         } catch (error) {
-          Alert.alert("Error", "Something went wrong");
+          showToast("Login Failed", "error")
         }
   }
 

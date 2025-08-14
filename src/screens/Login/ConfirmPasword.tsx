@@ -3,12 +3,13 @@ import Arrowleft from '../../assets/icons/Arrowleft.png';
 import { ConfirmPasswordScreenProps } from "../../types/types";
 import { useState } from "react";
 import { useAuth } from "../../Context/AuthContext";
+import { useToast } from "../../Context/ToastContext";
 
 const ConfirmPasword: React.FC<ConfirmPasswordScreenProps> = ({ navigation }) => {
-  const { forgotPasswordMail } = useAuth(); // assuming OTP is stored in context
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [email, setEmail] = useState('');
+  const { showToast } = useToast();
 
   const handleGoBack = () => {
     navigation.goBack();
@@ -16,17 +17,17 @@ const ConfirmPasword: React.FC<ConfirmPasswordScreenProps> = ({ navigation }) =>
 
   const handleSubmit = async () => {
     if (!newPassword.trim() || !confirmPassword.trim()) {
-      Alert.alert("Error", "All fields are required");
+        showToast("All fields are required","error")
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match");
+        showToast("Passwords do not match","error")
       return;
     }
 
     try {
-      const response = await fetch("http://192.168.1.12:5000/api/reset-password", {
+      const response = await fetch("https://elegantproject-production.up.railway.app/api/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -39,16 +40,14 @@ const ConfirmPasword: React.FC<ConfirmPasswordScreenProps> = ({ navigation }) =>
       const data = await response.json();
 console.log(data,"datadatadatadata")
       if (response.ok && data.success) {
-        Alert.alert("Success", "Password reset successfully");
+        showToast("Password reset successfully","success")
         navigation.replace("LoginSignupScreen");
       } else {
-        Alert.alert("Error", data.message || "Failed to reset password");
-        console.log("Failed to reset password", data.message || "Failed to reset password");
+        showToast( data.message || "Failed to reset password","error")
 
       }
     } catch (error) {
-      console.error("Reset password error:", error);
-      Alert.alert("Error", "Something went wrong. Please try again.");
+        showToast("Something went wrong. Please try again.","error")
     }
   };
 

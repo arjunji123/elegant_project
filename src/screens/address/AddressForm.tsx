@@ -3,12 +3,14 @@ import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, ScrollView,
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from "../../Context/AuthContext";
+import { useToast } from "../../Context/ToastContext";
 
 
 const AddressForm = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { token } = useAuth();
+  const { showToast } = useToast();
 
   const { mode = 'add', addressData = {} } = route.params || {};
 
@@ -26,7 +28,8 @@ const AddressForm = () => {
 
   const handleSave = async () => {
     if (!title.trim() || !address.trim()) {
-        Alert.alert("Please enter both title and address");
+      showToast("Please enter both title and address","warning")
+        // Alert.alert("Please enter both title and address");
       return;
     }
 
@@ -60,7 +63,8 @@ const AddressForm = () => {
       navigation.navigate("AddresListScreen", { refresh: true });
     } catch (error) {
       console.error("Error saving address:", error.message);
-      Alert.alert(error.message);
+      showToast(error?.message,"error")
+      // Alert.alert(error.message);
     }
   };
 

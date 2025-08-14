@@ -23,22 +23,21 @@ import ForgotPasswordOtp from '../screens/Login/ForgotPasswordOtp';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
-  const isDarkMode = useColorScheme() === 'dark';
   const { isLoggedIn } = useAuth(); // Assume `loading` is true while checking auth
 
   
 
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+      <StatusBar />
       <NavigationContainer>
         {isLoggedIn ? (
           // Logged in flow
           <Stack.Navigator initialRouteName="HomePageScreen">
             <Stack.Screen name="HomePageScreen" component={HomePage} options={{ headerShown: false }} />
             <Stack.Screen name="ProfileScreen" component={ProfileScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="AddresListScreen" component={AddresListScreen} />
-            <Stack.Screen name="AddressForm" component={AddressForm} />
+            <Stack.Screen name="AddresListScreen" component={AddresListScreen} options={{ headerShown: false }}/>
+            <Stack.Screen name="AddressForm" component={AddressForm} options={{ title:"Add Address" }} />
           </Stack.Navigator>
         ) : (
           // Logged out flow

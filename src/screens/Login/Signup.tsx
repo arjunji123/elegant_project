@@ -11,12 +11,13 @@ import {
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import Arrowleft from '../../assets/icons/Arrowleft.png';
 import Button from '../../components/Button';
 import SocialLoginOptions from '../../components/SocialLoginOptions';
 import { SignUpScreenProps } from '../../types/types';
 import { useAuth } from '../../Context/AuthContext';
+import { useToast } from '../../Context/ToastContext';
+
 
 const SignUpScreen : React.FC<SignUpScreenProps> = ({ navigation }) => {
   const [name, setName] = useState('');
@@ -27,6 +28,9 @@ const SignUpScreen : React.FC<SignUpScreenProps> = ({ navigation }) => {
   const [inviteCode, setInviteCode] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const { setSignupemail,setStorePassword } = useAuth();
+  const { colors } = useTheme();
+
+const { showToast } = useToast();
 
   const handleGoBack = () => {
     if (navigation.canGoBack()) {
@@ -41,17 +45,17 @@ const SignUpScreen : React.FC<SignUpScreenProps> = ({ navigation }) => {
   }
   const handleSignup = async () => {
     if (!name || !phone || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill all required fields');
+      showToast('Please fill all required fields',"warning")
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      showToast('Passwords do not match',"error")
       return;
     }
 
     try {
-      const response = await fetch('http://192.168.1.12:5000/api/register', {
+      const response = await fetch('https://elegantproject-production.up.railway.app/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -69,15 +73,14 @@ const SignUpScreen : React.FC<SignUpScreenProps> = ({ navigation }) => {
       if (response.ok) {
         setSignupemail(email);
         setStorePassword(password)
-        Alert.alert('Success', 'Signup successful', [
-          { text: 'OK', onPress: () => navigation.replace('OtpScreen') },
-        ]);
+        showToast('Signup successful',"success")
+        navigation.replace('OtpScreen')
       } else {
-        Alert.alert('Error', data.message || 'Signup failed');
+        showToast( data.message || 'Signup failed',"error")
       }
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      showToast("Something went wrong. Please try again.","error")
     }
   };
 

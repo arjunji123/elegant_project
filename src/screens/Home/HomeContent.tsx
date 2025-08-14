@@ -6,20 +6,22 @@ import { useAuth } from "../../Context/AuthContext";
 import avtar from "../../assets/images/avatar.png";
 import DiscoutImage from "../../assets/images/DiscoutImage.png";
 
-const HomeContent = () => {
+const HomeContent = ({navigation}) => {
   const { user } = useAuth();
 
   return (
     <View style={styles.container}>
-      <View style={styles.leftContainer}>
+      <View style={styles.leftContainer} >
+      <TouchableOpacity onPress={()=>navigation.navigate('ProfileScreen')}>
         <Image source={avtar} style={styles.avatar} />
+        </TouchableOpacity>
         <View>
           <Text style={styles.greeting}>Have a nice day!</Text>
           <Text style={styles.userName}>{user?.name}</Text>
         </View>
       </View>
 
-      <TouchableOpacity style={styles.notificationButton}>
+      <TouchableOpacity style={styles.notificationButton} >
         <Image
           source={{ uri: "https://img.icons8.com/ios-filled/50/shopping-bag.png" }}
           style={styles.notificationIcon}

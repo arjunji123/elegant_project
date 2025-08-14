@@ -11,12 +11,11 @@ import {
   ScrollView
 } from "react-native";
 import Button from "../../components/Button";
-import avtar from "../../assets/images/avatar.png";
+import avtar from "../../assets/images/profileImg.png";
 import Arrowleft from "../../assets/icons/Arrowleft.png";
 import { ProfileScreenProps } from "../../types/types";
 import { useAuth } from "../../Context/AuthContext";
-import { launchImageLibrary } from "react-native-image-picker";
-import {readFile} from 'react-native-fs';
+import { useToast } from "../../Context/ToastContext";
 
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const [mobile, setMobile] = useState("");
@@ -25,27 +24,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const [loading, setLoading] = useState(false);
   const { user,token } = useAuth();
   const [profilePic, setProfilePic] = useState(null);
+const { showToast } = useToast();
 
-  const pickImage = () => {
-    launchImageLibrary(
-      {
-        mediaType: "photo",
-        maxWidth: 512,
-        maxHeight: 512,
-        quality: 0.8,
-      },
-      (response) => {
-        if (response.didCancel) return;
-        if (response.errorMessage) return console.log("ImagePicker Error:", response.errorMessage);
-  
-        if (response.assets && response.assets.length > 0) {
-          setProfilePic(response.assets[0].uri); // store local file URI
-          console.log("Selected image URI:", response.assets[0].uri);
-        }
-      }
-    );
-  };
-  
+
   
   // Assuming you're passing user id from navigation params
 const userId = user?.id || "123"; // fallback id for testing
@@ -61,7 +42,7 @@ const userId = user?.id || "123"; // fallback id for testing
 
     const testAuth = async () => {
       try {
-        const res = await fetch(`http://192.168.1.12:5000/api/user/${userId}`, {
+        const res = await fetch(`https://elegantproject-production.up.railway.app/api/user/${userId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -72,7 +53,7 @@ const userId = user?.id || "123"; // fallback id for testing
         const text = await res.text();
   
         const data = JSON.parse(text);
-        console.log(data.data,"data.data")
+      
 
         if (data.success && data.data) {
           // ✅ Use API result directly to set form fields
@@ -98,24 +79,24 @@ const userId = user?.id || "123"; // fallback id for testing
   const handleUpdate = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`http://192.168.1.12:5000/api/user/${userId}`, {
+      const res = await fetch(`https://elegantproject-production.up.railway.app/api/user/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
          Authorization: `Bearer ${tokens.token}`,
           },
-        body: JSON.stringify({ name, email, phone:mobile ,profile_pic: profilePic}),
-      });
+          body: JSON.stringify({ name, email, phone: mobile, profile_pic: profilePic }),
+        });
 
       if (!res.ok) throw new Error("Failed to update user data");
       const updatedData = await res.json();
-      console.log(profilePic,updatedData,"updatedDataupdatedData")
-      console.log(profilePic,"profilePic")
-      Alert.alert("Profile updated successfully!");
+      
+
+    
+      showToast("Profile updated successfully!","success")
       setLoading(false)
     } catch (err) {
-      console.error("Error updating user data:", err);
-      Alert.alert("Failed to update profile");
+      showToast("Failed to update profile","error")
     } 
     
   };
@@ -139,13 +120,10 @@ const userId = user?.id || "123"; // fallback id for testing
       {/* Profile Section */}
       <View style={styles.profilcontainer}>
       <Image
-        source={profilePic ? { uri: profilePic } : require("../../assets/images/avatar.png")}
+        source={avtar}
         style={styles.profileImage}
       />
-        {/* <Image source={avtar} style={styles.profileImage} /> */}
-        <TouchableOpacity onPress={pickImage}>
-          <Text style={styles.updateText}>Update Picture</Text>
-        </TouchableOpacity>
+     
 
         {/* Name */}
         <View style={styles.inputContainer}>

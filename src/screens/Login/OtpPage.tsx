@@ -12,13 +12,15 @@ import { OtpScreenProps } from '../../types/types';
 import Arrowleft from '../../assets/icons/Arrowleft.png';
 import Button from '../../components/Button';
 import { useAuth } from '../../Context/AuthContext';
+import { useToast } from '../../Context/ToastContext';
 
 const OTPScreen: React.FC<OtpScreenProps> = ({ navigation }) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(57);
   const inputs = useRef<(TextInput | null)[]>([]);
-  const { signupemail, login  } = useAuth();
+  const { signupemail  } = useAuth();
   const [resending, setResending] = useState(false);
+const { showToast } = useToast();
 
   useEffect(() => {
     const countdown = setInterval(() => {
@@ -54,7 +56,7 @@ const OTPScreen: React.FC<OtpScreenProps> = ({ navigation }) => {
 
   const handleSubmit= async () => {
     try {
-      const res = await fetch("http://192.168.1.12:5000/api/verify-otp", {
+      const res = await fetch("https://elegantproject-production.up.railway.app/api/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({email: signupemail,  otp: updatedOtp }),
@@ -66,34 +68,34 @@ const OTPScreen: React.FC<OtpScreenProps> = ({ navigation }) => {
           navigation.replace("LoginScreen");
         }
         else {
-          Alert.alert("Invalid OTP", "Please try again.");
+          showToast("Invalid OTP, Please try again.", "error")
         }
       
 
     } catch (error) {
-      console.error("OTP verification error:", error);
-      Alert.alert("Error", "Something went wrong, please try again.");
+      showToast( "Something went wrong, please try again.","error")
+     
     }
   };
 
   const handleResendOtp = async () => {
     try {
       setResending(true);
-      const res = await fetch("http://192.168.1.12:5000/api/resend-otp", {
+      const res = await fetch("https://elegantproject-production.up.railway.app/api/resend-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: signupemail }),
       });
 
       if (res.ok) {
-        Alert.alert("OTP Sent", "A new OTP has been sent to your email.");
+        showToast("OTP Sent, A new OTP has been sent to your email.","success" )
         setTimer(57); // restart timer
       } else {
-        Alert.alert("Error", "Failed to resend OTP.");
+        showToast("Failed to resend OTP.","error")
       }
     } catch (error) {
-      console.error("Resend OTP error:", error);
-      Alert.alert("Error", "Something went wrong, please try again.");
+      showToast("Something went wrong, please try again.","error")
+     
     } finally {
       setResending(false);
     }

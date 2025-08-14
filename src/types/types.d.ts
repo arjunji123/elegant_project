@@ -37,4 +37,5 @@ export type HomePageProps = ScreenProps<'HomePageScreen'>;
 export type ProfileScreenProps = ScreenProps<'ProfileScreen'>;
 export type AccountScreenProps = ScreenProps<'AccountScreen'>;
 export type ConfirmPasswordScreenProps = ScreenProps<'ConfirmPasswordScreen'>;
+export type ForgotPasswordOtpProps = ScreenProps<'ForgotPasswordOtp'>;
 
