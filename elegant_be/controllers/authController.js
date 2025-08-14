@@ -143,24 +143,29 @@ exports.login = async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
     const user = rows[0];
-    if (!user) return res.status(400).json({ message: 'Invalid email or password' });
-
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Invalid email or password' });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: 'Invalid email or password' });
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Invalid email or password' });
+    }
 
-   if (!user.is_verified) {
-      // Send info to frontend: "User not verified" + email so frontend can send OTP and redirect
-      return res.status(200).json({
-        success: true,
-        message: 'User not verified. OTP required.',
-        isActive: false,
+    // ✅ If not verified, block login
+    if (!user.is_verified) {
+      return res.status(403).json({
+        success: false,
+        message: 'User not verified. Please verify OTP before logging in.',
         email: user.email
       });
     }
-    const token = generateToken(user.id);
 
-    await db.query('INSERT INTO auth_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))', [user.id, token]);
+    const token = generateToken(user.id);
+    await db.query(
+      'INSERT INTO auth_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))',
+      [user.id, token]
+    );
 
     res.status(200).json({
       success: true,
@@ -174,7 +179,8 @@ exports.login = async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ message: 'Login failed' });
+    console.error('Login error:', err);
+    res.status(500).json({ success: false, message: 'Login failed' });
   }
 };
 
