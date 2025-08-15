@@ -7,29 +7,37 @@ const sendMail = require('../utils/sendMail');
 exports.register = async (req, res) => {
   const { name, email, phone, password } = req.body;
   try {
-    const [user] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (user.length) return res.status(400).json({ message: 'Email already exists' });
+    // Check if email already exists
+    const [emailCheck] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (emailCheck.length) {
+      return res.status(400).json({ message: 'Email already registered' });
+    }
 
+    // Check if phone already exists
+    const [phoneCheck] = await db.query('SELECT * FROM users WHERE phone = ?', [phone]);
+    if (phoneCheck.length) {
+      return res.status(400).json({ message: 'Mobile already registered' });
+    }
+
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Insert user
     const [insert] = await db.query(
       'INSERT INTO users (name, email, phone, password, is_verified) VALUES (?, ?, ?, ?, ?)',
       [name, email, phone, hashedPassword, false]
     );
 
     const userId = insert.insertId;
-    
-    // ✅ Default OTP fix value
+
+    // Insert default OTP
     const otp = '123456';
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // still keep expiry if needed
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
 
     await db.query(
       'INSERT INTO user_otps (user_id, otp, expires_at) VALUES (?, ?, ?)',
       [userId, otp, expiresAt]
     );
-
-    // ❌ Remove email sending
-    // await sendMail(email, 'Your OTP Code', `Your OTP is ${otp}`);
 
     res.status(201).json({ message: 'User registered. Use OTP 123456 to verify.' });
   } catch (err) {
@@ -37,6 +45,7 @@ exports.register = async (req, res) => {
     res.status(500).json({ message: 'Registration failed' });
   }
 };
+
 
 
 exports.verifyOtp = async (req, res) => {
