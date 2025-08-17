@@ -49,23 +49,25 @@ const AccountScreen: React.FC<AccountScreenProps> = ({ navigation }) => {
       </View>
 
       {/* Profile Header */}
-      <View style={styles.header}>
-        <Icon name="person-circle-outline" size={60} color="#555" style={styles.avatar} />
-        <View>
-          <Text style={styles.name}>{user?.name}</Text>
-          <Text style={styles.email}>{user?.email}</Text>
-        </View>
-        <TouchableOpacity onPress={editHandle}>
-          <Image source={editIcon} style={styles.editIcon} />
-        </TouchableOpacity>
-      </View>
+      <View style={styles.profileHeader}>
+  <Icon name="person-circle-outline" size={60} color="#555" style={styles.avatar} />
+
+  <View style={styles.userInfo}>
+    <Text style={styles.name}>{user?.name}</Text>
+    <Text style={styles.email}>{user?.email}</Text>
+  </View>
+
+  <TouchableOpacity onPress={editHandle} style={styles.editButton}>
+    <Image source={editIcon} style={styles.editIcon} />
+  </TouchableOpacity>
+</View>
 
       {/* Menu List */}
       {menuItems.map((item, index) => (
         <TouchableOpacity
           key={index}
           style={styles.menuItem}
-          onPress={() => navigation.navigate(item.screen)}
+          onPress={() => navigation.navigate(`${item.screen}`)}
         >
           <Icon name={item.icon} size={22} color="#555" style={styles.menuIcon} />
           <Text style={styles.menuText}>{item.label}</Text>
@@ -90,6 +92,31 @@ const styles = StyleSheet.create({
   name: { fontSize: 18, fontWeight: 'bold' },
   email: { color: '#888' },
   editIcon: { marginLeft: 100 },
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  
+  editButton: {
+    marginRight: 10,
+    padding: 5,
+  },
+  
+  avatar: {
+    marginRight: 15,
+  },
+  
+  userInfo: {
+    flex: 1,
+  },
+  editIcon: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+  },
+
+  
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -102,7 +129,7 @@ const styles = StyleSheet.create({
   logout: { marginTop: 20, flexDirection: 'row', alignItems: 'center' },
   logoutText: { color: 'red', fontSize: 16 },
   backButton: { padding: 8 },
-  backIcon: { width: 24, height: 24, resizeMode: 'contain' },
+  backIcon: { width: 24, height: 32 },
   title: {
     flex: 1,
     textAlign: 'center',

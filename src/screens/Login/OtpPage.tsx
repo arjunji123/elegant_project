@@ -62,9 +62,8 @@ const { showToast } = useToast();
         body: JSON.stringify({email: signupemail,  otp: updatedOtp }),
       });
       const data = await res.json();
-      
+
         if (res.ok && data.user) {
-          console.log(data,"datadatadataotp")
           navigation.replace("LoginScreen");
         }
         else {
@@ -73,7 +72,7 @@ const { showToast } = useToast();
       
 
     } catch (error) {
-      showToast( "Something went wrong, please try again.","error")
+      showToast( `Something went wrong, please try again.${error}`,"error")
      
     }
   };
@@ -86,7 +85,6 @@ const { showToast } = useToast();
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: signupemail }),
       });
-
       if (res.ok) {
         showToast("OTP Sent, A new OTP has been sent to your email.","success" )
         setTimer(57); // restart timer
@@ -100,12 +98,11 @@ const { showToast } = useToast();
       setResending(false);
     }
   };
-
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={handleGoBack} style={styles.backButton}>
+        <Pressable onPress={handleGoBack} >
           <Image source={Arrowleft} style={styles.backIcon} />
         </Pressable>
         <Text style={styles.title}>Verify OTP</Text>
@@ -154,7 +151,6 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    marginTop: 20,
     backgroundColor: '#fff',
   },
   header: {
@@ -162,13 +158,10 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
-  backButton: {
-    padding: 8,
-  },
+
   backIcon: {
     width: 24,
-    height: 24,
-    resizeMode: 'contain',
+    height: 32,
   },
   title: {
     flex: 1,

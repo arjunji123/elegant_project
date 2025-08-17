@@ -16,6 +16,7 @@ import Arrowleft from "../../assets/icons/Arrowleft.png";
 import { ProfileScreenProps } from "../../types/types";
 import { useAuth } from "../../Context/AuthContext";
 import { useToast } from "../../Context/ToastContext";
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const [mobile, setMobile] = useState("");
@@ -54,7 +55,7 @@ const userId = user?.id || "123"; // fallback id for testing
   
         const data = JSON.parse(text);
       
-
+console.log(data.data,"data.datadata.data")
         if (data.success && data.data) {
           // ✅ Use API result directly to set form fields
           setEmail(data.data.email || "");
@@ -90,9 +91,7 @@ const userId = user?.id || "123"; // fallback id for testing
 
       if (!res.ok) throw new Error("Failed to update user data");
       const updatedData = await res.json();
-      
-
-    
+          
       showToast("Profile updated successfully!","success")
       setLoading(false)
     } catch (err) {
@@ -103,7 +102,7 @@ const userId = user?.id || "123"; // fallback id for testing
 
   return (
     <ScrollView>
-         <View style={styles.container}>
+     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={handleGoBack} style={styles.backButton}>
@@ -180,18 +179,23 @@ export default ProfileScreen;
 
 const styles = StyleSheet.create({
   backButton: { padding: 8 },
-  backIcon: { width: 24, height: 24, resizeMode: "contain" },
-  profilcontainer: { padding: 5, alignItems: "center" },
-  container: { flex: 1, padding: 24, backgroundColor: "#fff" },
-  header: { flexDirection: "row", alignItems: "center" },
-  titleContainer: { flex: 1, alignItems: "center" },
-  placeholder: { width: 32 },
+  backIcon: {
+    width: 24,
+    height: 32,  
+  },
   headerTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: "500",
     color: "#000",
     fontFamily: "Poppins",
   },
+  
+  profilcontainer: { padding: 5, alignItems: "center" },
+  container: { flex: 1, padding: 24, backgroundColor: "#fff" },
+  header: { flexDirection: "row" },
+  titleContainer: { flex: 1, alignItems: "center" },
+  placeholder: { width: 32 },
+ 
   profileImage: { width: 100, height: 100, borderRadius: 20 },
   updateText: {
     color: "#7B61FF",

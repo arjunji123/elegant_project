@@ -61,14 +61,13 @@ const AddresListScreen = () => {
             {/* Header */}
 
             <View style={styles.header}>
-        <Pressable onPress={handleGoBack} style={styles.backButton}>
-          <Image source={Arrowleft} style={styles.backIcon} />
-        </Pressable>
+  <Pressable onPress={handleGoBack} style={styles.backButton}>
+    <Image source={Arrowleft} style={styles.backIcon} />
+  </Pressable>
 
-        <View style={styles.titleContainer}>
-          <Text style={styles.headerTitle}>Address</Text>
-        </View>
-        </View>
+  <Text style={styles.headerTitle}>My Addresses</Text>
+</View>
+
 
 
             {/* Address List */}
@@ -124,16 +123,23 @@ const styles = StyleSheet.create({
 
     backButton: { padding: 8 },
   backIcon: { width: 24, height: 24, resizeMode: "contain" },
-    header: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 20,
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: "600",
-        // marginLeft: 5,
-    },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    position: 'relative', // allow absolute positioning
+    height: 40, // adjust as needed
+  },
+  
+  headerTitle: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  
     listContainer: {
         paddingBottom: 10,
     },

@@ -80,7 +80,7 @@ const { showToast } = useToast();
   const handleResendOtp = async () => {
     try {
       setResending(true);
-      const res = await fetch("https://elegantproject-production.up.railway.app/api/resend-otp", {
+      const res = await fetch("https://elegantproject-production.up.railway.app/api/verify-forgot-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: forgotPasswordMail }),
@@ -104,7 +104,7 @@ const { showToast } = useToast();
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={handleGoBack} style={styles.backButton}>
+        <Pressable onPress={handleGoBack} >
           <Image source={Arrowleft} style={styles.backIcon} />
         </Pressable>
         <Text style={styles.title}>Verify OTP</Text>
@@ -161,13 +161,11 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
-  backButton: {
-    padding: 8,
-  },
+
   backIcon: {
     width: 24,
-    height: 24,
-    resizeMode: 'contain',
+    height: 32,
+
   },
   title: {
     flex: 1,

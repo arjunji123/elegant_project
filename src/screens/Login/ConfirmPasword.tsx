@@ -54,7 +54,7 @@ console.log(data,"datadatadatadata")
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Pressable onPress={handleGoBack} style={styles.backButton}>
+        <Pressable onPress={handleGoBack} >
           <Image source={Arrowleft} style={styles.backIcon} />
         </Pressable>
         <Text style={styles.title}>Reset Password</Text>       
@@ -101,8 +101,7 @@ export default ConfirmPasword;
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 24, backgroundColor: '#fff' },
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
-  backButton: { padding: 8 },
-  backIcon: { width: 24, height: 24, resizeMode: 'contain' },
+  backIcon: { width: 24, height: 32},
   title: { flex: 1, textAlign: 'center', fontSize: 24, fontWeight: '600', color: '#000', marginRight: 40 },
   inputFieldContainer: { paddingVertical: 30 },
   label: { marginBottom: 6, fontSize: 16, marginLeft: 5, fontWeight: '500', color: '#000' },

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,12 @@ import {
   Pressable,
   TouchableOpacity,
   Image,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  ScrollView,
+  Keyboard,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useAuth } from '../../Context/AuthContext';
 import Arrowleft from '../../assets/icons/Arrowleft.png';
@@ -14,6 +20,8 @@ import Button from '../../components/Button';
 import SocialLoginOptions from '../../components/SocialLoginOptions';
 import { LoginScreenProps } from '../../types/types';
 import { useToast } from "../../Context/ToastContext";
+import * as Keychain from 'react-native-keychain';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 
 
@@ -23,48 +31,83 @@ const LoginScreen : React.FC<LoginScreenProps> = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const { showToast } = useToast();
+  const [loading, setLoading] = useState(false);
 
+  console.log(Keychain,"KeychainKeychain");
   const { login } = useAuth();
   const handleGoBack = () => {
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      // Optionally handle the case where there is no screen to go back to.
-      // For example, you could navigate to a home screen or do nothing.
       navigation.navigate('LoginSignupScreen');
     }
   };
 
-  const handleLogin=async () =>{
-     if ( !email || !password ) {
-      showToast("Please fill all required fields", "warning")
-          return;
+  useEffect(() => {
+    const loadCredentials = async () => {
+      const creds = await Keychain.getGenericPassword();
+
+
+      if (creds) {
+        setEmail(creds.username);
+        setPassword(creds.password);
+        setRememberMe(true);
+      }
+    };
+    loadCredentials();
+  }, []);
+  
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      showToast("Please fill all required fields", "warning");
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await fetch("https://elegantproject-production.up.railway.app/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+  
+      const data = await response.json();
+      console.log("Login response:", data);
+     
+
+      if (response.ok) {
+        // navigation.replace("HomePageScreen"); 
+        if (rememberMe) {
+          await Keychain.setGenericPassword(email, password);
+  
+        } else {
+          await Keychain.resetGenericPassword(); // clears stored data
         }
-        try {
-          // Send login request
-          const response = await fetch("https://elegantproject-production.up.railway.app/api/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
-          });
-          const data = await response.json();
-          if (response.ok) { 
-            showToast("Login Successfull", "success")           
-            login(data.user, data.token);
-            navigation.replace('HomePageScreen');
-          } else {
-            showToast(data.message || "login Failed", "error")
-          }
-        } catch (error) {
-          showToast("Login Failed", "error")
-        }
-  }
+        showToast("Login Successful", "success");       
+        login(data.user, data.token); 
+      } else {
+        showToast(data.message || "Login Failed", "error");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      showToast("Login Failed", "error");
+    }finally{
+      setLoading(false);
+    }
+  };
+  
 
   return (
+    
+<KeyboardAwareScrollView
+  contentContainerStyle={{ flexGrow: 1 }}
+  enableOnAndroid
+  keyboardShouldPersistTaps="handled"
+>
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={handleGoBack} style={styles.backButton}>
+        <Pressable onPress={handleGoBack}>
           <Image source={Arrowleft} style={styles.backIcon} />
         </Pressable>
 
@@ -134,15 +177,20 @@ const LoginScreen : React.FC<LoginScreenProps> = ({ navigation }) => {
         <Text style={styles.forgotText}>Forgot password?</Text>
       </TouchableOpacity>
     </View>
-     <View style={styles.containerButton}>
-      <Button text="Log In"
-      bgColor="#704f38"
-      textColor="#ffffff"
-      onPress={handleLogin} border={undefined} />
-     </View>
+    {loading ? (
+          <ActivityIndicator size="large" color="#704f38" />
+        ) : ( <View style={styles.containerButton}>
+          <Button text="Log In"
+          bgColor="#704f38"
+          textColor="#ffffff"
+          onPress={handleLogin} border={undefined} />
+         </View>)}
+    
       <SocialLoginOptions />
       
     </View>
+    </KeyboardAwareScrollView>
+
   );
 };
 
@@ -153,8 +201,7 @@ const BOX_SIZE = 15;
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
-   
+    padding: 24,   
     backgroundColor: '#fff',
   },
   containerfor: {
@@ -175,13 +222,10 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  backButton: {
-    padding: 8,
-  },
   backIcon: {
     width: 24,
-    height: 24,
-    resizeMode: 'contain',
+    height: 32,
+   
   },
   title: {
     flex: 1,
@@ -245,20 +289,21 @@ export const styles = StyleSheet.create({
     borderRadius: 4,
     marginRight: 8,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center',  // this centers tick mark
     backgroundColor: 'white',
   },
   checkboxChecked: {
-    backgroundColor: '#4CAF50',  // filled green background
+    backgroundColor: '#4CAF50',  
   },
   checkboxTick: {
-    width: 10,
-    height: 6,
+    width: 8, // slightly smaller for better centering
+    height: 4,
     borderLeftWidth: 2,
     borderBottomWidth: 2,
     borderColor: 'white',
     transform: [{ rotate: '-45deg' }],
   },
+  
   rememberMeText: {
     fontSize: 14,
     color: '#000',

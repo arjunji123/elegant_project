@@ -84,7 +84,7 @@ const { showToast } = useToast();
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Pressable onPress={handleGoBack} style={styles.backButton}>
+        <Pressable onPress={handleGoBack}>
           <Image source={Arrowleft} style={styles.backIcon} />
         </Pressable>
 
@@ -123,7 +123,6 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    marginTop: 20,
     backgroundColor: '#fff',
   },
   labelText: {
@@ -147,13 +146,10 @@ export const styles = StyleSheet.create({
   inputError: {
     borderColor: "red",
   },
-  backButton: {
-    padding: 8,
-  },
   backIcon: {
     width: 24,
-    height: 24,
-    resizeMode: 'contain',
+    height: 32,
+  
   },
   title: {
     flex: 1,

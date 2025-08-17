@@ -23,6 +23,7 @@ export type RootStackParamList = {
   AddresListScreen :undefined;
   ForgotPasswordOtp :undefined;
   AddressForm  :undefined;
+  SettingsScreen: undefined;
 };
 export type ScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;
 
@@ -38,4 +39,6 @@ export type ProfileScreenProps = ScreenProps<'ProfileScreen'>;
 export type AccountScreenProps = ScreenProps<'AccountScreen'>;
 export type ConfirmPasswordScreenProps = ScreenProps<'ConfirmPasswordScreen'>;
 export type ForgotPasswordOtpProps = ScreenProps<'ForgotPasswordOtp'>;
+export type SettingsScreenProps = ScreenProps<'SettingsScreen'>;
+
 
