@@ -2,7 +2,7 @@
 const db = require('../config/db');
 
 
-export const getFilteredProducts = async (req, res) => {
+exports.getFilteredProducts = async (req, res) => {
   try {
     let { category_id, subcategory_id, min_price, max_price, sort } = req.query;
 
@@ -68,7 +68,7 @@ export const getFilteredProducts = async (req, res) => {
 //////////////////////////////////////////////////////////////////
 
 // Create Product
-export const createProduct = async (req, res) => {
+exports.createProduct = async (req, res) => {
   try {
     const { name, description, price, unit, category_id, subcategory_id, images } = req.body;
 
@@ -104,7 +104,7 @@ export const createProduct = async (req, res) => {
 
 
 // Get All Products
-export const getProducts = async (req, res) => {
+exports.getProducts = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT p.*, c.name AS category_name, s.name AS subcategory_name
@@ -119,7 +119,7 @@ export const getProducts = async (req, res) => {
 };
 
 // Get Product by ID
-export const getProductById =  async (req, res) => {
+exports.getProductById =  async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -152,7 +152,7 @@ export const getProductById =  async (req, res) => {
 
 
 // Update Product
-export const updateProduct = async (req, res) => {
+exports.updateProduct = async (req, res) => {
   try {
     const { name, description, price, unit, category_id, subcategory_id, image } = req.body;
     await db.query(
@@ -166,7 +166,7 @@ export const updateProduct = async (req, res) => {
 };
 
 // Delete Product
-export const deleteProduct = async (req, res) => {
+exports.deleteProduct = async (req, res) => {
   try {
     await db.query(`DELETE FROM products WHERE id=?`, [req.params.id]);
     res.json({ success: true, message: 'Product deleted successfully' });
@@ -176,7 +176,7 @@ export const deleteProduct = async (req, res) => {
 };
 
 // Get Products by Category
-export const getProductsByCategory = async (req, res) => {
+exports.getProductsByCategory = async (req, res) => {
   try {
     const [rows] = await db.query(
       `SELECT * FROM products WHERE category_id = ?`,
@@ -189,7 +189,7 @@ export const getProductsByCategory = async (req, res) => {
 };
 
 // Get Products by SubCategory
-export const getProductsBySubCategory = async (req, res) => {
+exports.getProductsBySubCategory = async (req, res) => {
   try {
     const [rows] = await db.query(
       `SELECT * FROM products WHERE subcategory_id = ?`,
