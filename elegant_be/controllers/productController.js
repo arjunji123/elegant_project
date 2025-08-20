@@ -1,9 +1,5 @@
-import db from "../config/db.js";
 
-// /products?category_id=1&subcategory_id=2&min_price=100&max_price=500&sort=newest
-// controllers/productController.js
-
-
+const db = require('../config/db');
 
 
 export const getFilteredProducts = async (req, res) => {
