@@ -7,7 +7,7 @@ const doc = {
     description: 'Swagger documentation for Elegant BE APIs',
     version: '1.0.0',
   },
-  host: 'localhost:8080',
+  host: 'lhttps://elegantproject-production.up.railway.app',
   schemes: ['http'],
 };
 
