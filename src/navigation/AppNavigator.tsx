@@ -19,6 +19,11 @@ import AddressForm from '../screens/address/AddressForm';
 import { useAuth } from '../Context/AuthContext';
 import ConfirmPasword from '../screens/Login/ConfirmPasword';
 import ForgotPasswordOtp from '../screens/Login/ForgotPasswordOtp';
+import SettingsScreen from '../screens/setting/SettingsScreen';
+import SearchProductScreen from '../screens/Home/SearchProductScreen';
+import AdvanceFilter from '../screens/Home/AdvanceFIlter';
+import CardScreen from '../screens/product/CardScreen';
+import CategoryScreen from '../screens/categories/CategoryScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -34,10 +39,16 @@ export default function AppNavigator() {
         {isLoggedIn ? (
           // Logged in flow
           <Stack.Navigator initialRouteName="HomePageScreen">
-            <Stack.Screen name="HomePageScreen" component={HomePage} options={{ headerShown: false }} />
+            <Stack.Screen name="HomePageScreen" component={HomePage} options={{ headerShown: false, animation: 'slide_from_right', }} />
             <Stack.Screen name="ProfileScreen" component={ProfileScreen} options={{ headerShown: false }} />
             <Stack.Screen name="AddresListScreen" component={AddresListScreen} options={{ headerShown: false }}/>
             <Stack.Screen name="AddressForm" component={AddressForm} options={{ title:"Add Address" }} />
+            <Stack.Screen name="SettingsScreen" component={SettingsScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="AdvanceFilterScreen" component={AdvanceFilter} options={{ headerShown: false }} />
+            <Stack.Screen name="CardScreen" component={CardScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="SearchProductScreen"  component={SearchProductScreen}  options={{ headerShown: false }}/>
+            <Stack.Screen name="CategoryScreen"  component={CategoryScreen}  options={{ headerShown: false }}/>
+
           </Stack.Navigator>
         ) : (
           // Logged out flow
@@ -49,7 +60,6 @@ export default function AppNavigator() {
             <Stack.Screen name="ForgotScreen" component={ForgotPage} options={{ headerShown: false }} />
             <Stack.Screen name="OtpScreen" component={OtpPage} options={{ headerShown: false }} />
             <Stack.Screen name="ForgotPasswordOtp" component={ForgotPasswordOtp} options={{ headerShown: false }} />
-
             <Stack.Screen name="ConfirmPasswordScreen" component={ConfirmPasword} options={{ headerShown: false }} />
           </Stack.Navigator>
         )}

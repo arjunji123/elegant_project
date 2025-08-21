@@ -1,61 +1,131 @@
 // HomeContent.tsx
 import React from "react";
-import { View, Text, Image, TextInput, StyleSheet, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
 import avtar from "../../assets/images/avatar.png";
 import DiscoutImage from "../../assets/images/DiscoutImage.png";
+import CategoriesHome from "../categories/CategoriesHome";
+import FlashSale from "../product/FlashSale";
+import cart from "../../assets/images/cart.png"
 
-const HomeContent = ({navigation}) => {
+const HomeContent = ({ navigation }) => {
   const { user } = useAuth();
 
   return (
-    <View style={styles.container}>
-      <View style={styles.leftContainer} >
-      <TouchableOpacity onPress={()=>navigation.navigate('ProfileScreen')}>
-        <Image source={avtar} style={styles.avatar} />
-        </TouchableOpacity>
-        <View>
-          <Text style={styles.greeting}>Have a nice day!</Text>
-          <Text style={styles.userName}>{user?.name}</Text>
-        </View>
-      </View>
+    <ScrollView
+      style={styles.scrollContainer}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+<View style={styles.headerRow}>
+  <View style={styles.leftContainer}>
+    <TouchableOpacity onPress={() => navigation.navigate("ProfileScreen")}>
+      <Image source={avtar} style={styles.avatar} />
+    </TouchableOpacity>
+    <View>
+      <Text style={styles.greeting}>Have a nice day!</Text>
+      <Text style={styles.userName}>{user?.name}</Text>
+    </View>
+  </View>
 
-      <TouchableOpacity style={styles.notificationButton} >
-        <Image
-          source={{ uri: "https://img.icons8.com/ios-filled/50/shopping-bag.png" }}
-          style={styles.notificationIcon}
-        />
-        <View style={styles.redDot} />
-      </TouchableOpacity>
+  <TouchableOpacity style={styles.notificationButton}>
+    <Image
+      source={cart}
+      style={styles.notificationIcon}
+    />
+   <View style={styles.redDotWrapper}>
+    <View style={styles.redDotInner} />
+  </View>
+  </TouchableOpacity>
+</View>
+
 
       <View style={styles.searchContainer}>
-        <Icon name="search" size={18} color="#aaa" style={{ marginHorizontal: 8 }} />
-        <TextInput placeholder="Search here" placeholderTextColor="#aaa" style={styles.searchInput} />
-        <TouchableOpacity style={styles.filterButton}>
+      <TouchableOpacity
+          style={{ flex: 1 }}
+          onPress={() => navigation.navigate("SearchProductScreen")}
+          activeOpacity={0.8}
+        >
+        <View style={styles.searchBar}>
+          <Icon
+            name="search"
+            size={18}
+            color="#aaa"
+            style={{ marginHorizontal: 8 }}
+          />
+          <TextInput
+            // placeholder="Search here"
+            // placeholderTextColor="#aaa"
+            // style={styles.searchInput}
+            onPress={() => navigation.navigate("SearchProductScreen")}    
+           />
+
+        </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.filterButton} onPress={()=>navigation.navigate("AdvanceFilterScreen")}>
           <Icon name="options-outline" size={20} color="#000" />
         </TouchableOpacity>
       </View>
 
       <Image style={styles.DiscoutImage} source={DiscoutImage} />
-    </View>
+
+      <CategoriesHome navigation={navigation} />
+      <FlashSale/>
+    </ScrollView>
   );
 };
 
 export default HomeContent;
 
 const styles = StyleSheet.create({
-  container: {
+  scrollContainer: {
+    backgroundColor: "#fff",
+  },
+  scrollContent: {
     paddingTop: 20,
     paddingHorizontal: 10,
-    backgroundColor: "#fff",
-    flex: 1,
+    paddingBottom: 30, // extra space at bottom
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 15,
   },
   leftContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 15,
   },
+  notificationButton: {
+    width: 45,
+    height: 45,
+    borderRadius: 30,
+    backgroundColor: "#F6F6F6",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  notificationIcon: {
+    width: 34,
+    height: 32,
+    tintColor: "#000",
+  },
+
   avatar: {
     width: 45,
     height: 45,
@@ -68,48 +138,63 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "500",
     color: "#000",
   },
-  notificationButton: {
+  
+  redDotWrapper: {
     position: "absolute",
-    right: 20,
-    top: 45,
+    top: 5,
+    right: 11,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: "rgba(255, 0, 0, 0.3)", // light outer ring
+    justifyContent: "center",
+    alignItems: "center",
   },
-  notificationIcon: {
-    width: 30,
-    height: 30,
-    tintColor: "#000",
-  },
-  redDot: {
-    position: "absolute",
-    right: 2,
-    top: 2,
-    width: 8,
-    height: 8,
+  
+  redDotInner: {
+    width: 6,
+    height: 6,
     borderRadius: 4,
-    backgroundColor: "red",
+    backgroundColor: "red", // solid center
   },
+  
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f5f5f5",
     borderRadius: 20,
     paddingVertical: 6,
-    marginTop: 10,
+    marginTop: 8,
+  },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    flex: 1,
+    height: 44,
   },
   searchInput: {
     flex: 1,
     fontSize: 14,
+    color: "#000",
   },
   filterButton: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 10,
     padding: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     marginHorizontal: 8,
     elevation: 2,
   },
   DiscoutImage: {
+    width: '100%',
+    resizeMode: 'cover', // scale the image properly
+    borderRadius: 8, // optional rounded corners
     marginTop: 20,
-  },
+  }
 });

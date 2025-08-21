@@ -4,20 +4,15 @@ import {
   Text,
   ImageBackground,
   StyleSheet,
-
+  SafeAreaView,
 } from 'react-native';
 import Button from '../../components/Button';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../types/types';
 
-
-
 type OnboardingScreenProps = NativeStackScreenProps<RootStackParamList, 'Onboarding'>;
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
-
-
-
   const handleGetStarted = () => {
     navigation.replace('LoginSignupScreen');
   };
@@ -28,17 +23,20 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
       style={styles.background}
       resizeMode="cover"
     >
-      <View style={styles.overlay}>
-        <Text style={styles.title}>Own the trendiest items</Text>
-        <Text style={styles.subtitle}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
-        </Text>
-        <Button text="Login"
-          bgColor="#ffffff"
-          textColor="#704f38"
-          onPress={handleGetStarted} />
-
-      </View>
+      <SafeAreaView style={styles.overlay}>
+        <View style={styles.content}>
+          <Text style={styles.title}>Own the trendiest items</Text>
+          <Text style={styles.subtitle}>
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+          </Text>
+          <Button
+            text="Login"
+            bgColor="#ffffff"
+            textColor="#704f38"
+            onPress={handleGetStarted}
+          />
+        </View>
+      </SafeAreaView>
     </ImageBackground>
   );
 };
@@ -48,11 +46,14 @@ export default OnboardingScreen;
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    justifyContent: 'flex-end',
   },
   overlay: {
-    backgroundColor: 'rgba(0,0,0,0.4)', // optional: dim background image
-
+    flex: 1,
+    justifyContent: 'flex-end', // button & text bottom par
+  },
+  content: {
+    paddingHorizontal: 24,
+    paddingBottom: 40, // bottom space for safe area
     alignItems: 'center',
   },
   title: {
@@ -61,15 +62,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     textAlign: 'center',
     marginBottom: 16,
-    fontFamily: 'System',
   },
   subtitle: {
     fontSize: 16,
     color: '#fff',
     textAlign: 'center',
     marginBottom: 40,
-    lineHeight: 24, // Improve readability
-    fontFamily: 'System',
+    lineHeight: 24,
   },
-
 });
