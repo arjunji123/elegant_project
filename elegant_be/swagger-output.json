@@ -605,6 +605,9 @@
           "200": {
             "description": "OK"
           },
+          "400": {
+            "description": "Bad Request"
+          },
           "500": {
             "description": "Internal Server Error"
           }
@@ -727,7 +730,7 @@
         }
       }
     },
-    "/api/": {
+    "/api/product": {
       "post": {
         "description": "",
         "parameters": [
@@ -773,7 +776,9 @@
             "description": "Internal Server Error"
           }
         }
-      },
+      }
+    },
+    "/api/getallProducts": {
       "get": {
         "description": "",
         "responses": {
@@ -786,7 +791,7 @@
         }
       }
     },
-    "/api/{id}": {
+    "/api/product/{id}": {
       "get": {
         "description": "",
         "parameters": [
@@ -878,7 +883,7 @@
         }
       }
     },
-    "/api/category/{categoryId}": {
+    "/api/prodcut/category/{categoryId}": {
       "get": {
         "description": "",
         "parameters": [
@@ -899,7 +904,7 @@
         }
       }
     },
-    "/api/subcategory/{subcategoryId}": {
+    "/api/product/subcategory/{subcategoryId}": {
       "get": {
         "description": "",
         "parameters": [
