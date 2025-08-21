@@ -19,3 +19,7 @@ Thumbs.db
 
 
 
+uploads/*
+
+#ignore uploads
+uploads/category_icons/*.tmp
