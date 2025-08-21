@@ -4,15 +4,41 @@ const db = require('../config/db');
 exports.createSubcategory = async (req, res) => {
   try {
     const { category_id, name, description } = req.body;
+
+    // Basic validation (optional)
+    if (!category_id || !name) {
+      return res.status(400).json({
+        success: false,
+        data: [],
+        message: "Category ID and Subcategory name are required"
+      });
+    }
+
     const [result] = await db.query(
       "INSERT INTO subcategories (category_id, name, description) VALUES (?, ?, ?)",
       [category_id, name, description]
     );
-    res.json({ success: true, id: result.insertId, message: "Subcategory created" });
+
+    res.json({
+      success: true,
+      data: {
+        id: result.insertId,
+        category_id,
+        name,
+        description: description || null
+      },
+      message: "Subcategory created successfully"
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      success: false,
+      data: [],
+      message: "Server error: " + err.message
+    });
   }
 };
+
 
 // Get Subcategories by Category
 exports.getSubcategories = async (req, res) => {
@@ -22,11 +48,30 @@ exports.getSubcategories = async (req, res) => {
       "SELECT * FROM subcategories WHERE category_id=?",
       [categoryId]
     );
-    res.json(rows);
+
+    if (rows.length > 0) {
+      res.json({
+        success: true,
+        data: rows,
+        message: "Subcategories fetched successfully"
+      });
+    } else {
+      res.json({
+        success: true,
+        data: [],
+        message: "No subcategories available"
+      });
+    }
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      success: false,
+      data: [],
+      message: "Server error: " + err.message
+    });
   }
 };
+
 
 // Update Subcategory
 exports.updateSubcategory = async (req, res) => {
