@@ -25,19 +25,37 @@ exports.getCategories = async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM categories");
 
-    // Server base URL (agar production me ho to env se le lena)
-     const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+    // Server base URL (production me env se lena best practice)
+    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
     const iconPath = "/uploads/category_icons/";
 
-    // har row me icon ko URL bana do
+    // Har row me icon ka URL set karo
     const categories = rows.map(row => ({
       ...row,
       icon: row.icon ? baseUrl + iconPath + row.icon : null
     }));
 
-    res.json(categories);
+    // Response structure
+    if (categories.length > 0) {
+      res.json({
+        success: true,
+        data: categories,
+        message: "Categories fetched successfully"
+      });
+    } else {
+      res.json({
+        success: true,
+        data: [],
+        message: "No categories available"
+      });
+    }
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ 
+      success: false,
+      data: [],
+      message: "Server error: " + err.message 
+    });
   }
 };
 
