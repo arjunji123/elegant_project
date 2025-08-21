@@ -5,23 +5,23 @@ const router = express.Router();
 router.get("/filters", getFilteredProducts);
 
 // Create Product
-router.post('/', createProduct);
+router.post('/product', createProduct);
 
 // Get All Products
-router.get('/', getProducts);
+router.get('/getallProducts', getProducts);
 
 // Get Product By ID
-router.get('/:id', getProductById);
+router.get('/product/:id', getProductById);
 
 // Update Product
-router.put('/:id', updateProduct);
+router.put('/product/:id', updateProduct);
 
 // Delete Product
-router.delete('/:id', deleteProduct);
+router.delete('/product/:id', deleteProduct);
 
 // Get Products by Category/SubCategory
-router.get('/category/:categoryId', getProductsByCategory);
-router.get('/subcategory/:subcategoryId', getProductsBySubCategory);
+router.get('/prodcut/category/:categoryId', getProductsByCategory);
+router.get('/product/subcategory/:subcategoryId', getProductsBySubCategory);
 
 
 module.exports = router;
