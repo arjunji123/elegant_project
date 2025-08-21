@@ -1,10 +1,14 @@
 const multer = require("multer");
 const path = require("path");
+const uploadFolder = path.join(__dirname, "../uploads/category_icons");
 
+if (!fs.existsSync(uploadFolder)) {
+  fs.mkdirSync(uploadFolder, { recursive: true });
+}
 // Storage config for category icons
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/category_icons"); // category_icons folder
+    cb(null, uploadFolder); // category_icons folder
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
