@@ -1,14 +1,14 @@
 const multer = require("multer");
 const path = require("path");
 
-// Storage config
+// Storage config for profile pics
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/profile_pics");
+    cb(null, "uploads/profile_pics"); // profile_pics folder
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
-    cb(null, `profile_${Date.now()}${ext}`);
+    cb(null, `profile_${Date.now()}${ext}`); // profile_ prefix
   }
 });
 

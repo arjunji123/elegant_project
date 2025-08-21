@@ -1,5 +1,4 @@
 const db = require("../config/db");
-const upload = require("../middlewares/upload");
 
 exports.getUserById = async (req, res) => {
   const userId = req.params.id;

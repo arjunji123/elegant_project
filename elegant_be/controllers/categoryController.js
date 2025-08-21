@@ -3,12 +3,18 @@ const db = require('../config/db');
 // Create Category
 exports.createCategory = async (req, res) => {
   try {
-    const { name,icon, description } = req.body;
+    const { name, description } = req.body;
+     const icon = req.file ? req.file.filename : null; 
     const [result] = await db.query(
       "INSERT INTO categories (name,icon, description) VALUES (?,?, ?)",
       [name,icon, description]
     );
-    res.json({ success: true, id: result.insertId, message: "Category created" });
+ res.json({
+      success: true,
+      id: result.insertId,
+      message: "Category created",
+      icon: icon,
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -18,7 +24,18 @@ exports.createCategory = async (req, res) => {
 exports.getCategories = async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM categories");
-    res.json(rows);
+
+    // Server base URL (agar production me ho to env se le lena)
+     const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+    const iconPath = "/uploads/category_icons/";
+
+    // har row me icon ko URL bana do
+    const categories = rows.map(row => ({
+      ...row,
+      icon: row.icon ? baseUrl + iconPath + row.icon : null
+    }));
+
+    res.json(categories);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

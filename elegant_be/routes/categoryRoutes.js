@@ -3,14 +3,15 @@ const router = express.Router();
 const {
    
     getCategoryWithProducts,
-    createCategory,
-    getCategories,
     updateCategory,
     deleteCategory,
     categoryWithSubCategory,
+    createCategory,
+    getCategories
 } = require('../controllers/categoryController');
+const uploadCategoryIcon = require('../middlewares/uploadCategoryIcon');
 
-router.post('/categories', createCategory);
+router.post("/categories", uploadCategoryIcon.single("icon"), createCategory);
 router.get('/categories', getCategories);
 router.put('/categories/:id', updateCategory);
 router.delete('/categories/:id', deleteCategory);
