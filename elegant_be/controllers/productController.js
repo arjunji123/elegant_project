@@ -30,12 +30,14 @@ exports.getFilteredProducts = async (req, res) => {
     params.push(min_price, max_price);
 
     // sorting
-    if (sort === "price_low_high") {
+   if (sort === "price_low_high") {
       query += " ORDER BY price ASC";
     } else if (sort === "price_high_low") {
       query += " ORDER BY price DESC";
-    } else if (sort === "latest") {
-      query += " ORDER BY created_at DESC";
+    } else if (sort === "newest") {
+      query += " ORDER BY created_at DESC"; // latest first
+    } else if (sort === "oldest") {
+      query += " ORDER BY created_at ASC"; // oldest first
     }
 
     const [rows] = await db.query(query, params);
@@ -70,7 +72,7 @@ exports.getFilteredProducts = async (req, res) => {
 // Create Product
 exports.createProduct = async (req, res) => {
   try {
-    const { name, description, price, unit, category_id, subcategory_id, images } = req.body;
+    const { name, description, price, unit, category_id, subcategory_id, images, sizes, colors} = req.body;
 
     // Step 1: Insert product
     const [productResult] = await db.query(
@@ -95,6 +97,23 @@ exports.createProduct = async (req, res) => {
       );
     }
 
+    // Step 3: Insert sizes
+    if (sizes && sizes.length > 0) {
+      const sizeValues = sizes.map(size => [productId, size]);
+      await db.query(
+        `INSERT INTO product_sizes (product_id, size) VALUES ?`,
+        [sizeValues]
+      );
+    }
+
+    // Step 4: Insert colors
+    if (colors && colors.length > 0) {
+      const colorValues = colors.map(color => [productId, color.name, color.code]);
+      await db.query(
+        `INSERT INTO product_colors (product_id, color_name, color_code) VALUES ?`,
+        [colorValues]
+      );
+    }
     res.json({ success: true, message: "Product created successfully", productId });
   } catch (error) {
     console.error("Error creating product:", error);
@@ -112,21 +131,42 @@ exports.getProducts = async (req, res) => {
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN subcategories s ON p.subcategory_id = s.id
     `);
-    res.json(rows);
+  res.status(200).json({
+      success: true,
+      message: 'Products fetched successfully',
+      data: rows
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('Error fetching products:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
 };
 
 // Get Product by ID
-exports.getProductById =  async (req, res) => {
+exports.getProductById = async (req, res) => {
   try {
     const { id } = req.params;
 
     const [product] = await db.query(
-      `SELECT p.id, p.name, p.description, p.unit, p.price, p.created_at
+      `SELECT 
+         p.id, 
+         p.name, 
+         p.description, 
+         p.unit, 
+         p.price, 
+         p.created_at,
+         p.category_id,
+         c.name AS category_name,
+         p.subcategory_id,
+         sc.name AS subcategory_name
        FROM products p
-       WHERE p.id = ?`, [id]
+       LEFT JOIN categories c ON p.category_id = c.id
+       LEFT JOIN subcategories sc ON p.subcategory_id = sc.id
+       WHERE p.id = ?`, 
+      [id]
     );
 
     if (!product.length) {
@@ -134,21 +174,41 @@ exports.getProductById =  async (req, res) => {
     }
 
     const [images] = await db.query(
-      `SELECT image_url, is_banner FROM product_images WHERE product_id = ?`, [id]
+      `SELECT image_url, is_banner 
+       FROM product_images 
+       WHERE product_id = ?`, 
+      [id]
     );
 
+      const [colors] = await db.query(
+      `SELECT color_name, color_code
+       FROM product_colors 
+       WHERE product_id = ?`, 
+      [id]
+    );
+       // Sizes
+    const [sizes] = await db.query(
+      `SELECT size 
+       FROM product_sizes 
+       WHERE product_id = ?`, 
+      [id]
+    );
+
+  
     res.json({
       success: true,
       data: {
         ...product[0],
-        images
-      }
+        images,
+          colors,
+         sizes: sizes.map(s => s.size)      }
     });
   } catch (error) {
     console.error("Error fetching product details:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 
 // Update Product
@@ -182,9 +242,17 @@ exports.getProductsByCategory = async (req, res) => {
       `SELECT * FROM products WHERE category_id = ?`,
       [req.params.categoryId]
     );
-    res.json(rows);
+   res.status(200).json({
+      success: true,
+      message: 'Products fetched successfully',
+      data: rows
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('Error fetching products:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
 };
 
@@ -195,8 +263,40 @@ exports.getProductsBySubCategory = async (req, res) => {
       `SELECT * FROM products WHERE subcategory_id = ?`,
       [req.params.subcategoryId]
     );
-    res.json(rows);
+   res.status(200).json({
+      success: true,
+      message: 'Products fetched successfully',
+      data: rows
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('Error fetching products:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
+
+exports.getNewestProducts = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT p.*, c.name AS category_name, s.name AS subcategory_name
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN subcategories s ON p.subcategory_id = s.id
+      ORDER BY p.created_at DESC 
+    `);
+
+   res.status(200).json({
+      success: true,
+      message: 'Products fetched successfully',
+      data: rows
+    });
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
 };

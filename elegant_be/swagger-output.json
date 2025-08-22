@@ -760,6 +760,12 @@
                 },
                 "images": {
                   "example": "any"
+                },
+                "sizes": {
+                  "example": "any"
+                },
+                "colors": {
+                  "example": "any"
                 }
               }
             }
@@ -883,7 +889,7 @@
         }
       }
     },
-    "/api/prodcut/category/{categoryId}": {
+    "/api/product/category/{categoryId}": {
       "get": {
         "description": "",
         "parameters": [
@@ -915,6 +921,19 @@
             "type": "string"
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/products/newest": {
+      "get": {
+        "description": "",
         "responses": {
           "200": {
             "description": "OK"
