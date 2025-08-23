@@ -1,5 +1,6 @@
 const express = require('express');
-const { createProduct, getProducts, getProductById, updateProduct, deleteProduct, getProductsByCategory, getProductsBySubCategory, getFilteredProducts, getNewestProducts } = require('../controllers/productController');
+const { createProduct, getProducts, getProductById, updateProduct, deleteProduct, getProductsByCategory, getProductsBySubCategory, getFilteredProducts, getNewestProducts, postWishlistAddOrRemove, getWishlist, checkWishlist } = require('../controllers/productController');
+const authMiddleware = require('../middlewares/authMiddleware');
 const router = express.Router();
 
 router.get("/filters", getFilteredProducts);
@@ -24,5 +25,9 @@ router.get('/product/category/:categoryId', getProductsByCategory);
 router.get('/product/subcategory/:subcategoryId', getProductsBySubCategory);
 
 router.get("/products/newest", getNewestProducts);
+
+router.post("/add-wishlist",authMiddleware, postWishlistAddOrRemove);
+router.get("/wishlist",authMiddleware, getWishlist);
+router.get("/wishlist/check",authMiddleware, checkWishlist);
 
 module.exports = router;

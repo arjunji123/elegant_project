@@ -11,39 +11,50 @@ exports.getFilteredProducts = async (req, res) => {
     subcategory_id = subcategory_id || null;
     min_price = min_price || 0;
     max_price = max_price || 99999999;
-    sort = sort || "price_low_high";
+    sort = sort || "";
 
-    let query = "SELECT * FROM products WHERE 1=1";
-    let params = [];
+    let query = `
+      SELECT p.*, 
+             c.name AS category_name, 
+             s.name AS subcategory_name
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN subcategories s ON p.subcategory_id = s.id
+      WHERE 1=1
+    `;
+        let params = [];
 
-    if (category_id) {
-      query += " AND category_id = ?";
+     if (category_id && category_id !== "all" && category_id !== "newest") {
+      query += " AND p.category_id = ?";
       params.push(category_id);
     }
 
-    if (subcategory_id) {
-      query += " AND subcategory_id = ?";
+if (subcategory_id) {
+      query += " AND p.subcategory_id = ?";
       params.push(subcategory_id);
     }
 
-    query += " AND price BETWEEN ? AND ?";
+    query += " AND p.price BETWEEN ? AND ?";
     params.push(min_price, max_price);
 
     // sorting
-   if (sort === "price_low_high") {
-      query += " ORDER BY price ASC";
+  if (category_id === "newest" || sort === "newest") {
+      query += " ORDER BY p.created_at DESC"; // newest first
+    } else if (sort === "price_low_high") {
+      query += " ORDER BY p.price ASC";
     } else if (sort === "price_high_low") {
-      query += " ORDER BY price DESC";
-    } else if (sort === "newest") {
-      query += " ORDER BY created_at DESC"; // latest first
+      query += " ORDER BY p.price DESC";
     } else if (sort === "oldest") {
-      query += " ORDER BY created_at ASC"; // oldest first
+      query += " ORDER BY p.created_at ASC";
+    } else {
+      query += " ORDER BY p.id ASC"; // default case
     }
 
     const [rows] = await db.query(query, params);
 
-    res.json({
+    res.status(200).json({
       success: true,
+      total_products: rows.length,
       filters: {
         category_id,
         subcategory_id,
@@ -58,8 +69,6 @@ exports.getFilteredProducts = async (req, res) => {
     res.status(500).json({ success: false, message: "Server Error" });
   }
 };
-
-
 
 
 
@@ -300,3 +309,87 @@ exports.getNewestProducts = async (req, res) => {
     });
   }
 };
+
+
+
+
+
+
+//////////////////////////////////////////////////////
+
+
+
+exports.postWishlistAddOrRemove = async (req, res) => {
+        const userId = req.user.id;
+
+ const { product_id } = req.body;
+
+  try {
+    // check if already in wishlist
+    const [exists] = await db.query(
+      `SELECT id FROM wishlist WHERE user_id = ? AND product_id = ?`,
+      [userId, product_id]
+    );
+
+    if (exists.length > 0) {
+      // remove
+      await db.query(
+        `DELETE FROM wishlist WHERE user_id = ? AND product_id = ?`,
+        [userId, product_id]
+      );
+      return res.json({ success: true, message: "Removed from wishlist" });
+    } else {
+      // add
+      await db.query(
+        `INSERT INTO wishlist (user_id, product_id) VALUES (?, ?)`,
+        [userId, product_id]
+      );
+      return res.json({ success: true, message: "Added to wishlist" });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: "Internal server error" });
+  }
+}
+
+exports.getWishlist = async (req, res) => {
+        const userId = req.user.id;
+
+  try {
+  const [rows] = await db.query(
+  `SELECT 
+      p.id, 
+      p.name, 
+      p.price, 
+      pi.image_url AS image
+   FROM wishlist w
+   INNER JOIN products p ON w.product_id = p.id
+   LEFT JOIN product_images pi ON pi.product_id = p.id AND pi.is_banner = 1
+   WHERE w.user_id = ?`,
+  [userId]
+);
+
+    res.json({ success: true, products: rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: "Internal server error" });
+  }
+}
+
+
+exports.checkWishlist = async (req, res) => {
+          const userId = req.user.id;
+
+ const { product_id } = req.body;
+
+  try {
+    const [rows] = await db.query(
+      `SELECT id FROM wishlist WHERE user_id = ? AND product_id = ?`,
+      [userId, product_id]
+    );
+
+    res.json({ inWishlist: rows.length > 0 });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: "Internal server error" });
+  }}
