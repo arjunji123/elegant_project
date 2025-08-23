@@ -219,7 +219,6 @@ exports.getProductById = async (req, res) => {
 };
 
 
-
 // Update Product
 exports.updateProduct = async (req, res) => {
   try {
@@ -393,3 +392,47 @@ exports.checkWishlist = async (req, res) => {
     console.error(error);
     res.status(500).json({ success: false, error: "Internal server error" });
   }}
+
+
+  //////////////////////////////////////////////
+
+
+  // Search Products
+exports.searchProducts = async (req, res) => {
+  try {
+    const { keyword } = req.query;
+
+    if (!keyword || keyword.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Keyword is required"
+      });
+    }
+
+    const searchTerm = `%${keyword}%`;
+
+    const [rows] = await db.query(`
+      SELECT p.*, c.name AS category_name, s.name AS subcategory_name
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN subcategories s ON p.subcategory_id = s.id
+      WHERE p.name LIKE ? 
+         OR p.description LIKE ? 
+         OR c.name LIKE ? 
+         OR s.name LIKE ?
+    `, [searchTerm, searchTerm, searchTerm, searchTerm]);
+
+    res.status(200).json({
+      success: true,
+      message: rows.length > 0 ? "Products found" : "No products found",
+      data: rows
+    });
+
+  } catch (error) {
+    console.error("Error searching products:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+};
