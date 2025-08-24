@@ -3,6 +3,8 @@ const db = require('../config/db');
 
 
 exports.getFilteredProducts = async (req, res) => {
+      const userId = req.user.id;
+
   try {
     let { category_id, subcategory_id, min_price, max_price, sort } = req.query;
 
@@ -16,13 +18,15 @@ exports.getFilteredProducts = async (req, res) => {
     let query = `
       SELECT p.*, 
              c.name AS category_name, 
-             s.name AS subcategory_name
+             s.name AS subcategory_name,
+             CASE WHEN w.id IS NOT NULL THEN 1 ELSE 0 END AS is_wishlist
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN subcategories s ON p.subcategory_id = s.id
+      LEFT JOIN wishlist w ON w.product_id = p.id AND w.user_id = ?
       WHERE 1=1
     `;
-        let params = [];
+        let params = [userId];
 
      if (category_id && category_id !== "all" && category_id !== "newest") {
       query += " AND p.category_id = ?";
@@ -133,13 +137,19 @@ exports.createProduct = async (req, res) => {
 
 // Get All Products
 exports.getProducts = async (req, res) => {
+    const userId = req.user.id;
   try {
     const [rows] = await db.query(`
-      SELECT p.*, c.name AS category_name, s.name AS subcategory_name
+      SELECT p.*, c.name AS category_name, s.name AS subcategory_name,
+        CASE 
+          WHEN w.id IS NOT NULL THEN 1 
+          ELSE 0 
+        END AS wishlist_is
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN subcategories s ON p.subcategory_id = s.id
-    `);
+      LEFT JOIN wishlist w ON w.product_id = p.id AND w.user_id = ?
+ `, [userId]);
   res.status(200).json({
       success: true,
       message: 'Products fetched successfully',
@@ -158,7 +168,7 @@ exports.getProducts = async (req, res) => {
 exports.getProductById = async (req, res) => {
   try {
     const { id } = req.params;
-
+        const userId = req.user.id;
     const [product] = await db.query(
       `SELECT 
          p.id, 
@@ -202,6 +212,15 @@ exports.getProductById = async (req, res) => {
        WHERE product_id = ?`, 
       [id]
     );
+    // Wishlist check (agar user login hai)
+    let wishlist_is = 0;
+    if (userId) {
+      const [wishlist] = await db.query(
+        `SELECT id FROM wishlist WHERE user_id = ? AND product_id = ?`,
+        [userId, id]
+      );
+      wishlist_is = wishlist.length > 0 ? 1 : 0;
+    }
 
   
     res.json({
@@ -210,7 +229,9 @@ exports.getProductById = async (req, res) => {
         ...product[0],
         images,
           colors,
-         sizes: sizes.map(s => s.size)      }
+         sizes: sizes.map(s => s.size)      },
+                 wishlist_is
+
     });
   } catch (error) {
     console.error("Error fetching product details:", error);
@@ -245,10 +266,19 @@ exports.deleteProduct = async (req, res) => {
 
 // Get Products by Category
 exports.getProductsByCategory = async (req, res) => {
+           const userId = req.user.id;
+
   try {
-    const [rows] = await db.query(
-      `SELECT * FROM products WHERE category_id = ?`,
-      [req.params.categoryId]
+const [rows] = await db.query(
+      `
+      SELECT p.*, 
+             CASE WHEN w.id IS NOT NULL THEN 1 ELSE 0 END AS wishlist_is
+      FROM products p
+      LEFT JOIN wishlist w 
+        ON p.id = w.product_id AND w.user_id = ?
+      WHERE p.category_id = ?
+      `,
+      [userId, req.params.categoryId]
     );
    res.status(200).json({
       success: true,
@@ -266,11 +296,21 @@ exports.getProductsByCategory = async (req, res) => {
 
 // Get Products by SubCategory
 exports.getProductsBySubCategory = async (req, res) => {
+
   try {
-    const [rows] = await db.query(
-      `SELECT * FROM products WHERE subcategory_id = ?`,
-      [req.params.subcategoryId]
-    );
+           const userId = req.user.id;
+          const subcategoryId = req.params.subcategoryId;
+
+    let query = `
+      SELECT p.*, 
+        CASE WHEN w.product_id IS NOT NULL THEN 1 ELSE 0 END AS wishlist_is
+      FROM products p
+      LEFT JOIN wishlist w 
+        ON p.id = w.product_id AND w.user_id = ?
+      WHERE p.subcategory_id = ?
+    `;
+      const [rows] = await db.query(query, [userId, subcategoryId]);
+
    res.status(200).json({
       success: true,
       message: 'Products fetched successfully',
@@ -287,13 +327,20 @@ exports.getProductsBySubCategory = async (req, res) => {
 
 exports.getNewestProducts = async (req, res) => {
   try {
-    const [rows] = await db.query(`
-      SELECT p.*, c.name AS category_name, s.name AS subcategory_name
+           const userId = req.user.id;
+
+  let query = `
+      SELECT p.*, 
+        c.name AS category_name, 
+        s.name AS subcategory_name,
+        CASE WHEN w.product_id IS NOT NULL THEN 1 ELSE 0 END AS wishlist_is
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN subcategories s ON p.subcategory_id = s.id
-      ORDER BY p.created_at DESC 
-    `);
+      LEFT JOIN wishlist w ON p.id = w.product_id AND w.user_id = ?
+      ORDER BY p.created_at DESC
+    `;
+    const [rows] = await db.query(query, [userId]);
 
    res.status(200).json({
       success: true,
@@ -400,6 +447,8 @@ exports.checkWishlist = async (req, res) => {
   // Search Products
 exports.searchProducts = async (req, res) => {
   try {
+              const userId = req.user.id;
+
     const { keyword } = req.query;
 
     if (!keyword || keyword.trim() === "") {
@@ -412,15 +461,20 @@ exports.searchProducts = async (req, res) => {
     const searchTerm = `%${keyword}%`;
 
     const [rows] = await db.query(`
-      SELECT p.*, c.name AS category_name, s.name AS subcategory_name
+      SELECT 
+        p.*, 
+        c.name AS category_name, 
+        s.name AS subcategory_name,
+        CASE WHEN w.id IS NOT NULL THEN true ELSE false END AS in_wishlist
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN subcategories s ON p.subcategory_id = s.id
+      LEFT JOIN wishlist w ON p.id = w.product_id AND w.user_id = ?
       WHERE p.name LIKE ? 
          OR p.description LIKE ? 
          OR c.name LIKE ? 
          OR s.name LIKE ?
-    `, [searchTerm, searchTerm, searchTerm, searchTerm]);
+    `, [userId || null, searchTerm, searchTerm, searchTerm, searchTerm]);
 
     res.status(200).json({
       success: true,

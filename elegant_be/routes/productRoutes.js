@@ -3,16 +3,16 @@ const { createProduct, getProducts, getProductById, updateProduct, deleteProduct
 const authMiddleware = require('../middlewares/authMiddleware');
 const router = express.Router();
 
-router.get("/filters", getFilteredProducts);
+router.get("/filters",authMiddleware, getFilteredProducts);
 
 // Create Product
 router.post('/product', createProduct);
 
 // Get All Products
-router.get('/getallProducts', getProducts);
+router.get('/getallProducts',authMiddleware, getProducts);
 
 // Get Product By ID
-router.get('/product/:id', getProductById);
+router.get('/product/:id',authMiddleware, getProductById);
 
 // Update Product
 router.put('/product/:id', updateProduct);
@@ -21,11 +21,11 @@ router.put('/product/:id', updateProduct);
 router.delete('/product/:id', deleteProduct);
 
 // Get Products by Category/SubCategory
-router.get('/product/category/:categoryId', getProductsByCategory);
-router.get('/product/subcategory/:subcategoryId', getProductsBySubCategory);
+router.get('/product/category/:categoryId',authMiddleware, getProductsByCategory);
+router.get('/product/subcategory/:subcategoryId',authMiddleware, getProductsBySubCategory);
 
-router.get("/products/newest", getNewestProducts);
-router.get("/products/search", searchProducts);
+router.get("/products/newest",authMiddleware, getNewestProducts);
+router.get("/products/search", authMiddleware,searchProducts);
 
 router.post("/add-wishlist",authMiddleware, postWishlistAddOrRemove);
 router.get("/wishlist",authMiddleware, getWishlist);
