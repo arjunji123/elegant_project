@@ -2,11 +2,12 @@ const express = require('express');
 const { createProduct, getProducts, getProductById, updateProduct, deleteProduct, getProductsByCategory, getProductsBySubCategory, getFilteredProducts, getNewestProducts, postWishlistAddOrRemove, getWishlist, checkWishlist, searchProducts } = require('../controllers/productController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const router = express.Router();
+const upload = require("../middlewares/productUpload");
 
 router.get("/filters",authMiddleware, getFilteredProducts);
 
 // Create Product
-router.post('/product', createProduct);
+router.post('/product', upload.array("images", 5), createProduct);
 
 // Get All Products
 router.get('/getallProducts',authMiddleware, getProducts);

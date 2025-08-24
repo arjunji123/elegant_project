@@ -9,9 +9,9 @@ const {
     createCategory,
     getCategories
 } = require('../controllers/categoryController');
-const uploadCategoryIcon = require('../middlewares/uploadCategoryIcon');
+const upload = require("../config/multer");
 
-router.post("/categories", uploadCategoryIcon.single("icon"), createCategory);
+router.post("/categories", upload.single("icon"), createCategory);
 router.get('/categories', getCategories);
 router.put('/categories/:id', updateCategory);
 router.delete('/categories/:id', deleteCategory);

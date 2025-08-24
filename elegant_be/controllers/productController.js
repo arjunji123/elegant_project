@@ -3,7 +3,7 @@ const db = require('../config/db');
 
 
 exports.getFilteredProducts = async (req, res) => {
-      const userId = req.user.id;
+  const userId = req.user.id;
 
   try {
     let { category_id, subcategory_id, min_price, max_price, sort } = req.query;
@@ -26,14 +26,14 @@ exports.getFilteredProducts = async (req, res) => {
       LEFT JOIN wishlist w ON w.product_id = p.id AND w.user_id = ?
       WHERE 1=1
     `;
-        let params = [userId];
+    let params = [userId];
 
-     if (category_id && category_id !== "all" && category_id !== "newest") {
+    if (category_id && category_id !== "all" && category_id !== "newest") {
       query += " AND p.category_id = ?";
       params.push(category_id);
     }
 
-if (subcategory_id) {
+    if (subcategory_id) {
       query += " AND p.subcategory_id = ?";
       params.push(subcategory_id);
     }
@@ -42,7 +42,7 @@ if (subcategory_id) {
     params.push(min_price, max_price);
 
     // sorting
-  if (category_id === "newest" || sort === "newest") {
+    if (category_id === "newest" || sort === "newest") {
       query += " ORDER BY p.created_at DESC"; // newest first
     } else if (sort === "price_low_high") {
       query += " ORDER BY p.price ASC";
@@ -54,11 +54,34 @@ if (subcategory_id) {
       query += " ORDER BY p.id ASC"; // default case
     }
 
-    const [rows] = await db.query(query, params);
+    // Step 1: Get filtered products
+    const [products] = await db.query(query, params);
+
+    // Step 2: Get all images for these products
+    const productIds = products.map(p => p.id);
+    let imagesMap = {};
+    if (productIds.length > 0) {
+      const [images] = await db.query(`
+        SELECT product_id, image_url
+        FROM product_images
+        WHERE product_id IN (?)
+      `, [productIds]);
+
+      images.forEach(img => {
+        if (!imagesMap[img.product_id]) imagesMap[img.product_id] = [];
+        imagesMap[img.product_id].push(img.image_url);
+      });
+    }
+
+    // Step 3: Attach images array to products
+    const finalProducts = products.map(product => ({
+      ...product,
+      images: imagesMap[product.id] || []
+    }));
 
     res.status(200).json({
       success: true,
-      total_products: rows.length,
+      total_products: finalProducts.length,
       filters: {
         category_id,
         subcategory_id,
@@ -66,8 +89,9 @@ if (subcategory_id) {
         max_price,
         sort,
       },
-      data: rows,
+      data: finalProducts,
     });
+
   } catch (error) {
     console.error("Error fetching filtered products:", error);
     res.status(500).json({ success: false, message: "Server Error" });
@@ -83,9 +107,11 @@ if (subcategory_id) {
 //////////////////////////////////////////////////////////////////
 
 // Create Product
+const cloudinary = require("../config/cloudinary");
+
 exports.createProduct = async (req, res) => {
   try {
-    const { name, description, price, unit, category_id, subcategory_id, images, sizes, colors} = req.body;
+    const { name, description, price, unit, category_id, subcategory_id } = req.body;
 
     // Step 1: Insert product
     const [productResult] = await db.query(
@@ -100,9 +126,15 @@ exports.createProduct = async (req, res) => {
       return res.status(400).json({ success: false, message: "Product not created" });
     }
 
-    // Step 2: Insert images (if provided)
-    if (images && images.length > 0) {
-      const imageValues = images.map(img => [productId, img]); // [ [productId, 'url1'], [productId, 'url2'] ]
+    // Step 2: Upload images to Cloudinary & save in DB
+    if (req.files && req.files.length > 0) {
+      const uploadPromises = req.files.map(file =>
+        cloudinary.uploader.upload(file.path, { folder: "products" })
+      );
+
+      const uploadedImages = await Promise.all(uploadPromises);
+
+      const imageValues = uploadedImages.map(img => [productId, img.secure_url]);
 
       await db.query(
         `INSERT INTO product_images (product_id, image_url) VALUES ?`,
@@ -110,24 +142,32 @@ exports.createProduct = async (req, res) => {
       );
     }
 
-    // Step 3: Insert sizes
-    if (sizes && sizes.length > 0) {
-      const sizeValues = sizes.map(size => [productId, size]);
-      await db.query(
-        `INSERT INTO product_sizes (product_id, size) VALUES ?`,
-        [sizeValues]
-      );
+    // Step 3: Insert sizes (optional)
+    if (req.body.sizes) {
+      let sizes = JSON.parse(req.body.sizes); // because form-data me string aayegi
+      if (sizes.length > 0) {
+        const sizeValues = sizes.map(size => [productId, size]);
+        await db.query(
+          `INSERT INTO product_sizes (product_id, size) VALUES ?`,
+          [sizeValues]
+        );
+      }
     }
 
-    // Step 4: Insert colors
-    if (colors && colors.length > 0) {
-      const colorValues = colors.map(color => [productId, color.name, color.code]);
-      await db.query(
-        `INSERT INTO product_colors (product_id, color_name, color_code) VALUES ?`,
-        [colorValues]
-      );
+    // Step 4: Insert colors (optional)
+    if (req.body.colors) {
+      let colors = JSON.parse(req.body.colors); // string ko JSON array me parse karo
+      if (colors.length > 0) {
+        const colorValues = colors.map(color => [productId, color.name, color.code]);
+        await db.query(
+          `INSERT INTO product_colors (product_id, color_name, color_code) VALUES ?`,
+          [colorValues]
+        );
+      }
     }
+
     res.json({ success: true, message: "Product created successfully", productId });
+
   } catch (error) {
     console.error("Error creating product:", error);
     res.status(500).json({ success: false, message: "Server error" });
@@ -137,10 +177,14 @@ exports.createProduct = async (req, res) => {
 
 // Get All Products
 exports.getProducts = async (req, res) => {
-    const userId = req.user.id;
+  const userId = req.user.id;
   try {
-    const [rows] = await db.query(`
-      SELECT p.*, c.name AS category_name, s.name AS subcategory_name,
+    // Step 1: Get products with category, subcategory, wishlist
+    const [products] = await db.query(`
+      SELECT 
+        p.*, 
+        c.name AS category_name, 
+        s.name AS subcategory_name,
         CASE 
           WHEN w.id IS NOT NULL THEN 1 
           ELSE 0 
@@ -149,12 +193,37 @@ exports.getProducts = async (req, res) => {
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN subcategories s ON p.subcategory_id = s.id
       LEFT JOIN wishlist w ON w.product_id = p.id AND w.user_id = ?
- `, [userId]);
-  res.status(200).json({
+    `, [userId]);
+
+    // Step 2: Get all product images in one query
+    const productIds = products.map(p => p.id);
+    let imagesMap = {};
+    if (productIds.length > 0) {
+      const [images] = await db.query(`
+        SELECT product_id, image_url 
+        FROM product_images 
+        WHERE product_id IN (?)
+      `, [productIds]);
+
+      // Map images to product_id
+      images.forEach(img => {
+        if (!imagesMap[img.product_id]) imagesMap[img.product_id] = [];
+        imagesMap[img.product_id].push(img.image_url);
+      });
+    }
+
+    // Step 3: Attach images array to products
+    const finalProducts = products.map(product => ({
+      ...product,
+      images: imagesMap[product.id] || []
+    }));
+
+    res.status(200).json({
       success: true,
       message: 'Products fetched successfully',
-      data: rows
+      data: finalProducts
     });
+
   } catch (error) {
     console.error('Error fetching products:', error);
     res.status(500).json({
@@ -168,8 +237,10 @@ exports.getProducts = async (req, res) => {
 exports.getProductById = async (req, res) => {
   try {
     const { id } = req.params;
-        const userId = req.user.id;
-    const [product] = await db.query(
+    const userId = req.user.id;
+
+    // Step 1: Get product basic info
+    const [productRows] = await db.query(
       `SELECT 
          p.id, 
          p.name, 
@@ -188,31 +259,30 @@ exports.getProductById = async (req, res) => {
       [id]
     );
 
-    if (!product.length) {
+    if (!productRows.length) {
       return res.status(404).json({ success: false, message: "Product not found" });
     }
+    const product = productRows[0];
 
-    const [images] = await db.query(
-      `SELECT image_url, is_banner 
-       FROM product_images 
-       WHERE product_id = ?`, 
+    // Step 2: Get product images
+    const [imagesRows] = await db.query(
+      `SELECT image_url, is_banner FROM product_images WHERE product_id = ?`,
       [id]
     );
 
-      const [colors] = await db.query(
-      `SELECT color_name, color_code
-       FROM product_colors 
-       WHERE product_id = ?`, 
+    // Step 3: Get colors
+    const [colorsRows] = await db.query(
+      `SELECT color_name, color_code FROM product_colors WHERE product_id = ?`,
       [id]
     );
-       // Sizes
-    const [sizes] = await db.query(
-      `SELECT size 
-       FROM product_sizes 
-       WHERE product_id = ?`, 
+
+    // Step 4: Get sizes
+    const [sizesRows] = await db.query(
+      `SELECT size FROM product_sizes WHERE product_id = ?`,
       [id]
     );
-    // Wishlist check (agar user login hai)
+
+    // Step 5: Wishlist check
     let wishlist_is = 0;
     if (userId) {
       const [wishlist] = await db.query(
@@ -222,22 +292,24 @@ exports.getProductById = async (req, res) => {
       wishlist_is = wishlist.length > 0 ? 1 : 0;
     }
 
-  
+    // Step 6: Respond
     res.json({
       success: true,
       data: {
-        ...product[0],
-        images,
-          colors,
-         sizes: sizes.map(s => s.size)      },
-                 wishlist_is
-
+        ...product,
+        images: imagesRows.map(img => img.image_url), // array of URLs
+        colors: colorsRows,
+        sizes: sizesRows.map(s => s.size),
+        wishlist_is
+      }
     });
+
   } catch (error) {
     console.error("Error fetching product details:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 
 // Update Product
@@ -266,27 +338,52 @@ exports.deleteProduct = async (req, res) => {
 
 // Get Products by Category
 exports.getProductsByCategory = async (req, res) => {
-           const userId = req.user.id;
+  const userId = req.user.id;
+  const categoryId = req.params.categoryId;
 
   try {
-const [rows] = await db.query(
-      `
-      SELECT p.*, 
-             CASE WHEN w.id IS NOT NULL THEN 1 ELSE 0 END AS wishlist_is
+    // Step 1: Get products in category with wishlist info
+    const [products] = await db.query(`
+      SELECT 
+        p.*, 
+        CASE WHEN w.id IS NOT NULL THEN 1 ELSE 0 END AS wishlist_is
       FROM products p
       LEFT JOIN wishlist w 
         ON p.id = w.product_id AND w.user_id = ?
       WHERE p.category_id = ?
-      `,
-      [userId, req.params.categoryId]
-    );
-   res.status(200).json({
+    `, [userId, categoryId]);
+
+    // Step 2: Get all images for these products
+    const productIds = products.map(p => p.id);
+    let imagesMap = {};
+    if (productIds.length > 0) {
+      const [images] = await db.query(`
+        SELECT product_id, image_url
+        FROM product_images
+        WHERE product_id IN (?)
+      `, [productIds]);
+
+      // Map images to product_id
+      images.forEach(img => {
+        if (!imagesMap[img.product_id]) imagesMap[img.product_id] = [];
+        imagesMap[img.product_id].push(img.image_url);
+      });
+    }
+
+    // Step 3: Attach images array to products
+    const finalProducts = products.map(product => ({
+      ...product,
+      images: imagesMap[product.id] || []
+    }));
+
+    res.status(200).json({
       success: true,
       message: 'Products fetched successfully',
-      data: rows
+      data: finalProducts
     });
+
   } catch (error) {
-    console.error('Error fetching products:', error);
+    console.error('Error fetching products by category:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -294,30 +391,54 @@ const [rows] = await db.query(
   }
 };
 
+
 // Get Products by SubCategory
 exports.getProductsBySubCategory = async (req, res) => {
-
   try {
-           const userId = req.user.id;
-          const subcategoryId = req.params.subcategoryId;
+    const userId = req.user.id;
+    const subcategoryId = req.params.subcategoryId;
 
-    let query = `
+    // Step 1: Get products with wishlist info
+    const [products] = await db.query(`
       SELECT p.*, 
         CASE WHEN w.product_id IS NOT NULL THEN 1 ELSE 0 END AS wishlist_is
       FROM products p
       LEFT JOIN wishlist w 
         ON p.id = w.product_id AND w.user_id = ?
       WHERE p.subcategory_id = ?
-    `;
-      const [rows] = await db.query(query, [userId, subcategoryId]);
+    `, [userId, subcategoryId]);
 
-   res.status(200).json({
+    // Step 2: Get all images for these products
+    const productIds = products.map(p => p.id);
+    let imagesMap = {};
+    if (productIds.length > 0) {
+      const [images] = await db.query(`
+        SELECT product_id, image_url
+        FROM product_images
+        WHERE product_id IN (?)
+      `, [productIds]);
+
+      // Map images to product_id
+      images.forEach(img => {
+        if (!imagesMap[img.product_id]) imagesMap[img.product_id] = [];
+        imagesMap[img.product_id].push(img.image_url);
+      });
+    }
+
+    // Step 3: Attach images array to products
+    const finalProducts = products.map(product => ({
+      ...product,
+      images: imagesMap[product.id] || []
+    }));
+
+    res.status(200).json({
       success: true,
       message: 'Products fetched successfully',
-      data: rows
+      data: finalProducts
     });
+
   } catch (error) {
-    console.error('Error fetching products:', error);
+    console.error('Error fetching products by subcategory:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -399,28 +520,51 @@ exports.postWishlistAddOrRemove = async (req, res) => {
 }
 
 exports.getWishlist = async (req, res) => {
-        const userId = req.user.id;
+  const userId = req.user.id;
 
   try {
-  const [rows] = await db.query(
-  `SELECT 
-      p.id, 
-      p.name, 
-      p.price, 
-      pi.image_url AS image
-   FROM wishlist w
-   INNER JOIN products p ON w.product_id = p.id
-   LEFT JOIN product_images pi ON pi.product_id = p.id AND pi.is_banner = 1
-   WHERE w.user_id = ?`,
-  [userId]
-);
+    // Step 1: Get wishlist products
+    const [products] = await db.query(
+      `SELECT p.id, p.name, p.price
+       FROM wishlist w
+       INNER JOIN products p ON w.product_id = p.id
+       WHERE w.user_id = ?`,
+      [userId]
+    );
 
-    res.json({ success: true, products: rows });
+    // Step 2: Get all images for wishlist products
+    const productIds = products.map(p => p.id);
+    let imagesMap = {};
+    if (productIds.length > 0) {
+      const [images] = await db.query(
+        `SELECT product_id, image_url, is_banner 
+         FROM product_images 
+         WHERE product_id IN (?)`,
+        [productIds]
+      );
+
+      images.forEach(img => {
+        if (!imagesMap[img.product_id]) imagesMap[img.product_id] = [];
+        imagesMap[img.product_id].push({
+          url: img.image_url,
+          is_banner: img.is_banner
+        });
+      });
+    }
+
+    // Step 3: Attach images array to products
+    const finalProducts = products.map(p => ({
+      ...p,
+      images: imagesMap[p.id] || []
+    }));
+
+    res.json({ success: true, products: finalProducts });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, error: "Internal server error" });
   }
-}
+};
 
 
 exports.checkWishlist = async (req, res) => {
@@ -447,8 +591,7 @@ exports.checkWishlist = async (req, res) => {
   // Search Products
 exports.searchProducts = async (req, res) => {
   try {
-              const userId = req.user.id;
-
+    const userId = req.user.id;
     const { keyword } = req.query;
 
     if (!keyword || keyword.trim() === "") {
@@ -460,12 +603,13 @@ exports.searchProducts = async (req, res) => {
 
     const searchTerm = `%${keyword}%`;
 
-    const [rows] = await db.query(`
+    // Step 1: Search products with wishlist info
+    const [products] = await db.query(`
       SELECT 
         p.*, 
         c.name AS category_name, 
         s.name AS subcategory_name,
-        CASE WHEN w.id IS NOT NULL THEN true ELSE false END AS in_wishlist
+        CASE WHEN w.id IS NOT NULL THEN 1 ELSE 0 END AS wishlist_is
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN subcategories s ON p.subcategory_id = s.id
@@ -476,10 +620,32 @@ exports.searchProducts = async (req, res) => {
          OR s.name LIKE ?
     `, [userId || null, searchTerm, searchTerm, searchTerm, searchTerm]);
 
+    // Step 2: Get all images for searched products
+    const productIds = products.map(p => p.id);
+    let imagesMap = {};
+    if (productIds.length > 0) {
+      const [images] = await db.query(`
+        SELECT product_id, image_url
+        FROM product_images
+        WHERE product_id IN (?)
+      `, [productIds]);
+
+      images.forEach(img => {
+        if (!imagesMap[img.product_id]) imagesMap[img.product_id] = [];
+        imagesMap[img.product_id].push(img.image_url);
+      });
+    }
+
+    // Step 3: Attach images array to products
+    const finalProducts = products.map(p => ({
+      ...p,
+      images: imagesMap[p.id] || []
+    }));
+
     res.status(200).json({
       success: true,
-      message: rows.length > 0 ? "Products found" : "No products found",
-      data: rows
+      message: finalProducts.length > 0 ? "Products found" : "No products found",
+      data: finalProducts
     });
 
   } catch (error) {

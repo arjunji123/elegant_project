@@ -4,8 +4,8 @@ const db = require('../config/db');
 exports.createCategory = async (req, res) => {
   try {
     const { name, description } = req.body;
-     const icon = req.file ? req.file.filename : null; 
-    const [result] = await db.query(
+    const icon = req.file ? req.file.path : null;
+        const [result] = await db.query(
       "INSERT INTO categories (name,icon, description) VALUES (?,?, ?)",
       [name,icon, description]
     );
@@ -25,14 +25,10 @@ exports.getCategories = async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM categories");
 
-    // Server base URL (production me env se lena best practice)
-    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
-    const iconPath = "/uploads/category_icons/";
-
     // Har row me icon ka URL set karo
     const categories = rows.map(row => ({
       ...row,
-      icon: row.icon ? baseUrl + iconPath + row.icon : null
+      icon: row.icon 
     }));
 
     // Response structure

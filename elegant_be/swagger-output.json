@@ -748,6 +748,12 @@
             "schema": {
               "type": "object",
               "properties": {
+                "sizes": {
+                  "example": "any"
+                },
+                "colors": {
+                  "example": "any"
+                },
                 "name": {
                   "example": "any"
                 },
@@ -764,15 +770,6 @@
                   "example": "any"
                 },
                 "subcategory_id": {
-                  "example": "any"
-                },
-                "images": {
-                  "example": "any"
-                },
-                "sizes": {
-                  "example": "any"
-                },
-                "colors": {
                   "example": "any"
                 }
               }
