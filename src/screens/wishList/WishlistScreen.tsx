@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, TextInput } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import { useAuth } from "../../Context/AuthContext";
+import { useIsFocused } from "@react-navigation/native";
 
 interface Product {
   id: string;
@@ -11,64 +13,124 @@ interface Product {
   rating: number;
 }
 
-const categories = ["All Items", "Newest", "T-shirt", "Pants", "Shoes"];
 
-const FlashSale: React.FC = () => {
+const WishlistScreen: React.FC = ({ navigation }) => {
+  const { productId, token } = useAuth()
+  const isFocused = useIsFocused();
+
   const [activeCategory, setActiveCategory] = useState("Newest");
   const [products, setProducts] = useState<Product[]>([]);
   const [timeLeft, setTimeLeft] = useState({ h: 3, m: 38, s: 10 });
-
-  useEffect(() => {
-    setProducts([ { id: "1", name: "Modern Light Clothes", price: 212.99, image: "https://images.squarespace-cdn.com/content/v1/5911f31c725e251d002da9ac/1613210424136-AS3MY547OBB5Y3GSQ359/Product+Photography", rating: 5.0, },
-     { id: "2", name: "Light Dress Bless", price: 162.99, image: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.shutterstock.com%2Fsearch%2Fmodels-red&psig=AOvVaw1AhHJWdo_Nf_r3mVBf6FcH&ust=1755289568697000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCOCUqKyRi48DFQAAAAAdAAAAABAL", rating: 5.0, }, 
-     { id: "3", name: "Maroon Dark Top", price: 199.99, image: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.shutterstock.com%2Fsearch%2Fmodels-red&psig=AOvVaw1AhHJWdo_Nf_r3mVBf6FcH&ust=1755289568697000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCOCUqKyRi48DFQAAAAAdAAAAABAL", rating: 5.0, }, 
-     { id: "4", name: "Light Dress Yellow", price: 129.99, image: "https://images.squarespace-cdn.com/content/v1/5911f31c725e251d002da9ac/1613210424136-AS3MY547OBB5Y3GSQ359/Product+Photography", rating: 5.0, },
-     { id: "5", name: "Light Dress Yellow", price: 129.99, image: "https://images.squarespace-cdn.com/content/v1/5911f31c725e251d002da9ac/1613210424136-AS3MY547OBB5Y3GSQ359/Product+Photography", rating: 5.0, }, 
-    { id: "6", name: "Light Dress Yellow", price: 129.99, image: "https://images.squarespace-cdn.com/content/v1/5911f31c725e251d002da9ac/1613210424136-AS3MY547OBB5Y3GSQ359/Product+Photography", rating: 5.0, }, 
-    { id: "7", name: "Light Dress Yellow", price: 129.99, image: "https://images.squarespace-cdn.com/content/v1/5911f31c725e251d002da9ac/1613210424136-AS3MY547OBB5Y3GSQ359/Product+Photography", rating: 5.0, },
-    { id: "8", name: "Light Dress Yellow", price: 129.99, image: "https://images.squarespace-cdn.com/content/v1/5911f31c725e251d002da9ac/1613210424136-AS3MY547OBB5Y3GSQ359/Product+Photography", rating: 5.0, }, 
-    { id: "9", name: "Light Dress Yellow", price: 129.99, image: "https://images.squarespace-cdn.com/content/v1/5911f31c725e251d002da9ac/1613210424136-AS3MY547OBB5Y3GSQ359/Product+Photography", rating: 5.0, }, ]); }, []);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        let { h, m, s } = prev;
-        if (s > 0) s--;
-        else if (m > 0) {
-          m--;
-          s = 59;
-        } else if (h > 0) {
-          h--;
-          m = 59;
-          s = 59;
+  const getWishlistProducts = async () => {
+    try {
+      const res = await fetch(
+        `https://elegant-project.onrender.com/api/getallProducts?wishlist_is=1`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
         }
-        return { h, m, s };
+      );
+
+      const text = await res.text();
+      const data = JSON.parse(text);
+
+      if (data.success && data.data) {
+        setProducts(data.data);
+      } else {
+        setProducts([]);
+      }
+    } catch (error) {
+      console.error("Server Error:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (isFocused) {
+      getWishlistProducts();
+    }
+  }, [isFocused]);
+
+
+  const toggleFavorite = async (productId: string, currentStatus: number) => {
+    const newStatus = currentStatus === 1 ? 0 : 1;
+
+    try {
+      const res = await fetch(`https://elegant-project.onrender.com/api/add-wishlist`, {
+        method: "post", // or PATCH depending on backend
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`, // 👈 check token value
+        },
+        body: JSON.stringify({
+          product_id: productId,
+        }),
       });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+
+      const text = await res.text(); // get raw text first
+      console.log("Raw response:", text);
+
+      let data;
+      try {
+        data = JSON.parse(text); // parse only if JSON
+      } catch (parseErr) {
+        console.error("JSON parse failed. Response was not JSON:", text);
+        return;
+      }
+
+      console.log("Product updated:", data);
+
+      if (data.success) {
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === productId ? { ...p, wishlist_is: newStatus } : p
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Wishlist toggle failed:", error);
+    }
+  };
+  console.log(token,'tokentoken')
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }}>
       <Text style={styles.header}>My Wishlist</Text>
-  
+
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Icon name="search-outline" size={18} color="#999" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          placeholder="Search category"
-          placeholderTextColor="#999"
-        />
+        <TouchableOpacity
+          style={{ flex: 1 }}
+          onPress={() => navigation.navigate("SearchProductScreen")}
+          activeOpacity={0.8}
+        >
+          <View style={styles.searchBar}>
+            <Icon
+              name="search"
+              size={18}
+              color="#838383"
+
+            />
+            <TextInput
+              placeholder="Search here"
+              // placeholderTextColor="#aaa"
+              // style={styles.searchInput}
+              onPress={() => navigation.navigate("SearchProductScreen")}
+            />
+
+          </View>
+        </TouchableOpacity>
       </View>
-  
+
       <View style={styles.headerRow}>
         <Text style={styles.title}>Your List</Text>
       </View>
-  
+
       {/* Categories */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
-        {categories.map((cat) => (
+        {/* {categories.map((cat) => (
           <TouchableOpacity
             key={cat}
             style={[styles.categoryChip, activeCategory === cat && styles.activeCategory]}
@@ -78,44 +140,55 @@ const FlashSale: React.FC = () => {
               {cat}
             </Text>
           </TouchableOpacity>
-        ))}
+        ))} */}
       </ScrollView>
-  
+
       {/* Products */}
       <View style={styles.productsGrid}>
-        {products.map((item) => (
+        {products.map((item) => (item.wishlist_is && (
           <View key={item.id} style={styles.productCard}>
             <View style={styles.imageContainer}>
-              <Image source={{ uri: item.image }} style={styles.productImage} />
-              <TouchableOpacity style={styles.wishlistBtn}>
-                <Icon name="heart-outline" size={18} color="#000" />
-              </TouchableOpacity>
+              <Image source={{ uri: item.images[0] }} style={styles.productImage} />
+             <TouchableOpacity
+                               style={[
+                                 styles.wishlistBtn,
+                                 { backgroundColor: item.wishlist_is ? "#ffffff" : "#000000ff" }
+                               ]}
+                               onPress={() => toggleFavorite(item.id, item.wishlist_is)} >
+                               <Icon
+                                 name={item.wishlist_is ? "heart" : "heart-outline"}
+                                 size={22}
+                                 color={item.wishlist_is ? "#000000" : "#ffffff"}  />
+                             </TouchableOpacity>
             </View>
             <Text style={styles.productName} numberOfLines={1}>
               {item.name}
             </Text>
-            <Text style={styles.productPrice}>${item.price.toFixed(2)}</Text>
-            <View style={styles.ratingRow}>
-              <Icon name="star" size={14} color="gold" />
-              <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
+            <View style={styles.priceRatingRow}>
+              <Text style={styles.productPrice}>${item.price}</Text>
+              <View style={styles.ratingRow}>
+                <Icon name="star" size={14} color="gold" />
+                <Text style={styles.ratingText}>{item.rating ?? "5"}</Text>
+              </View>
             </View>
           </View>
+        )
+
         ))}
       </View>
     </ScrollView>
   );
-  
+
 };
 
-export default FlashSale;
+export default WishlistScreen;
 
 const styles = StyleSheet.create({
-    container: {
-       
-        backgroundColor: '#fff',
-        paddingTop: 48,
-        paddingHorizontal: 12,
-      },
+  container: {
+    backgroundColor: '#fff',
+    paddingTop: 48,
+    paddingHorizontal: 12,
+  },
   header: {
     fontSize: 22,
     fontWeight: '500',
@@ -134,6 +207,15 @@ const styles = StyleSheet.create({
   icon: {
     marginRight: 8,
   },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    flex: 1,
+    height: 44,
+  },
   input: {
     flex: 1,
     fontSize: 14,
@@ -143,14 +225,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom:20,
+    marginBottom: 20,
     // marginTop:10
+  },
+  priceRatingRow: {
+    flexDirection: "row",
+    justifyContent: "space-between", // pushes price left, rating right
+    alignItems: "center",
+    marginTop: 4,
   },
   title: {
     fontSize: 18,
     fontWeight: "600",
-    color:"#010911",
-    fontFamily:"Poppins"
+    color: "#010911",
+    fontFamily: "Poppins"
   },
 
   categoryChip: {
@@ -161,7 +249,7 @@ const styles = StyleSheet.create({
     borderColor: "#000000",
     borderRadius: 20,
     marginRight: 8,
-    marginBottom:15,
+    marginBottom: 15,
   },
   activeCategory: {
     backgroundColor: "#8B5E3C",

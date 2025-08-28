@@ -1,18 +1,37 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Pressable, Image, GestureResponderEvent } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import Arrowleft from "../../assets/icons/Arrowleft.png";
 import MultiSlider from '@ptomasroos/react-native-multi-slider';
 import Button from '../../components/Button';
+import { useFilter } from "../../Context/FilterContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import AnimatedLoader from '../../components/AnimatedLoader';
 
-const CATEGORIES = ['All Items', 'Newest', 'T-shirt', 'Pants', 'Shoes'];
-const RATINGS = [5, 4, 3, 2, 1];
+
+// const CATEGORIES = ['All Items', 'Newest', 'T-shirt', 'Pants', 'Shoes'];
+const RATINGS = [7,6,5, 4, 3, 2, 1];
+
 const SORT_OPTIONS = [
-    'Price: High to Low',
-    'Price: Low to High',
-    'Newest to Old',
-    'Old to New',
+    {
+        id: "price_high_low",
+        name: 'Price: High to Low'
+    },
+    {
+        id: 'price_low_high',
+        name: 'Price: Low to High'
+    },
+    {
+        id: "newest_old",
+        name: 'Newest to Old'
+    },
+    {
+        id: 'old_new',
+        name: 'Old to New'
+    },
 ];
+
+
 
 const CustomLabel = ({ oneMarkerValue }) => (
     <View style={styles.labelContainer}>
@@ -26,24 +45,98 @@ const CustomMarker = () => (
 );
 
 const AdvanceFilter = ({ navigation }) => {
-    const [selectedCategory, setSelectedCategory] = useState('Newest');
-    const [priceRange, setPriceRange] = useState([20, 90]);
+    const [selectedCategory, setSelectedCategory] = useState(1);
+    const [priceRange, setPriceRange] = useState([100, 10000]);
     const [selectedRating, setSelectedRating] = useState('All');
     const [sortOption, setSortOption] = useState('Price: High to Low');
-    const [range, setRange] = useState([20, 90]);
+    const [range, setRange] = useState([100, 10000]);
+    const [categories, setCategories] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const { setFilter } = useFilter();
+
+    useEffect(() => {
+        const loadFilters = async () => {
+            try {
+                const savedFilter = await AsyncStorage.getItem("userFilters");
+                if (savedFilter) {
+                    const parsed = JSON.parse(savedFilter);
+                    setSelectedCategory(parsed.category_id || null);
+                    setRange([parsed.min_price || 100, parsed.max_price || 10000]);
+                    setSelectedRating(parsed.rating || "All");
+                    setSortOption(parsed.sort || "price_high_low");
+                }
+            } catch (error) {
+                console.error("Error loading filters:", error);
+            }
+        };
+
+        loadFilters();
+    }, []);
+
+    useEffect(() => {
+        const getCategories = async () => {
+            try {
+                const res = await fetch(`https://elegant-project.onrender.com/api/categories`, {
+                    method: "GET",
+                });
+
+                const text = await res.text();
+
+                const data = JSON.parse(text);
+                console.log("Response text:", data);
+
+
+
+                if (data.success && data.data) {
+                    setCategories(data.data)
+                }
+            } catch (error) {
+                console.error("Error fetching user:", error);
+            }
+        };
+        getCategories()
+
+    }, [])
+
+
 
     const onValuesChange = (vals) => setPriceRange(vals);
 
-    const resetFilter = () => {
-        setSelectedCategory('Newest');
-        setPriceRange([20, 90]);
-        setSelectedRating('All');
-        setSortOption('Price: High to Low');
+    const resetFilter = async () => {
+        const defaultFilter = {
+            category_id: null,
+            subcategory_id: null,
+            min_price: 100,
+            max_price: 10000,
+            sort: "price_high_low",
+            rating: "All",
+        };
+
+        setSelectedCategory(null);
+        setRange([100, 10000]);
+        setSelectedRating("All");
+        setSortOption("price_high_low");
+        setFilter(defaultFilter);
+        await AsyncStorage.setItem("userFilters", JSON.stringify(defaultFilter));
+    };
+
+    const applyFilters = async () => {
+        const newFilter = {
+            category_id: selectedCategory,
+            subcategory_id: null,
+            min_price: range[0],
+            max_price: range[1],
+            sort: sortOption,
+            rating: selectedRating,
+        };
+
+        setFilter(newFilter);
+        await AsyncStorage.setItem("userFilters", JSON.stringify(newFilter));
+        navigation.navigate("FilteredProductsScreen")
     };
     const handleGoBack = () => navigation.goBack();
-
     return (
-        <ScrollView style={styles.container}>
+        <><ScrollView style={styles.container}>
             <View style={styles.header}>
                 <Pressable onPress={handleGoBack} style={styles.backButton}>
                     <Image source={Arrowleft} style={styles.backIcon} />
@@ -59,22 +152,22 @@ const AdvanceFilter = ({ navigation }) => {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ alignItems: 'center' }}
             >
-                {CATEGORIES.map((cat) => (
+                {loading ? <AnimatedLoader visible={loading} /> : categories && categories.map((cat) => (
                     <TouchableOpacity
-                        key={cat}
+                        key={cat.id}
                         style={[
                             styles.chip,
-                            cat === selectedCategory && styles.chipSelected,
+                            cat.id === selectedCategory?.id && styles.chipSelected,
                         ]}
                         onPress={() => setSelectedCategory(cat)}
                     >
                         <Text
                             style={[
                                 styles.chipLabel,
-                                cat === selectedCategory && styles.chipLabelSelected,
+                                cat.id === selectedCategory?.id && styles.chipLabelSelected,
                             ]}
                         >
-                            {cat}
+                            {cat.name}
                         </Text>
                     </TouchableOpacity>
                 ))}
@@ -91,9 +184,9 @@ const AdvanceFilter = ({ navigation }) => {
                 <MultiSlider
                     values={range}
                     onValuesChange={setRange}
-                    min={0}
-                    max={100}
-                    step={1}
+                    min={100}
+                    max={1000}
+                    step={100}
                     sliderLength={270}
                     selectedStyle={{ backgroundColor: '#704F38' }}
                     unselectedStyle={{ backgroundColor: '#EEE' }}
@@ -101,8 +194,7 @@ const AdvanceFilter = ({ navigation }) => {
                     customMarker={CustomMarker}
                     trackStyle={{ height: 3, borderRadius: 5 }}
                     allowOverlap={false}
-                    snapped
-                />
+                    snapped />
             </View>
 
             {/* Rating */}
@@ -138,35 +230,31 @@ const AdvanceFilter = ({ navigation }) => {
                         </Text>
                     </TouchableOpacity>
                 ))}
-            </View>  
-             
- <Text style={styles.sectionTitle}>Sort by</Text>
-      <View>
-        {SORT_OPTIONS.map((option) => (
-          <TouchableOpacity
-            key={option}
-            style={styles.sortRow}
-            onPress={() => setSortOption(option)}
-          >
-            <View style={[
-              styles.radioCircle,
-              sortOption === option && styles.radioCircleSelected
-            ]}/>
-            <Text style={styles.sortLabel}>{option}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      <View style={styles.applyBtn}>
-<Button text={'Apply Filter'} onPress={function (event: GestureResponderEvent): void {
-                throw new Error('Function not implemented.');
-            } } bgColor={'#704F38'} textColor={'#fff'}/>
-            <Button text={'Reset'} onPress={function (event: GestureResponderEvent): void {
-                throw new Error('Function not implemented.');
-            } } bgColor={'#fff'} textColor={''}/>
-      </View>
+            </View>
+
+            <Text style={styles.sectionTitle}>Sort by</Text>
+            <View>
+                {SORT_OPTIONS.map((option) => (
+                    <TouchableOpacity
+                        key={option.id}
+                        style={styles.sortRow}
+                        onPress={() => setSortOption(option.id)}
+                    >
+                        <View style={styles.radioCircle}>
+                            {sortOption === option.id && <View style={styles.selectedDot} />}
+                        </View>
+                        <Text style={styles.sortLabel}>{option.name}</Text>
+                    </TouchableOpacity>
+                ))}
+
+            </View>
 
 
-              </ScrollView>
+
+        </ScrollView><View style={styles.footer}>
+                <Button text={'Apply Filter'} onPress={applyFilters} bgColor={'#704F38'} textColor={'#fff'} />
+                <Button text={'Reset'} onPress={resetFilter} bgColor={'#fff'} textColor={'#704f38'} border={"#704f38"} />
+            </View></>
     );
 };
 
@@ -206,16 +294,15 @@ const styles = StyleSheet.create({
     sectionTitle: { fontSize: 16, fontWeight: '500', marginVertical: 10 },
     row: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12 },
     chip: {
-        backgroundColor: '#fff',
-        borderRadius: 20,
+        paddingHorizontal: 14,
         paddingVertical: 6,
-        paddingHorizontal: 10,
-        marginHorizontal: 5,
-        marginBottom: 8,
-        borderWidth: 1,
+        borderWidth: 1.5,
+        borderRadius: 20,
+        marginRight: 8,
+        borderColor: "#AFAFAF",
     },
-    chipSelected: { backgroundColor: '#704F38' },
-    chipLabel: { color: '#855C36', fontWeight: '500' },
+    chipSelected: { backgroundColor: '#704F38', color: '#fff', borderWidth: 0 },
+    chipLabel: { color: '#704F38', fontWeight: '500' },
     chipLabelSelected: { color: '#fff' },
 
     sliderWrapper: {
@@ -273,11 +360,12 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
         paddingHorizontal: 10,
         alignItems: 'center',
-        marginRight: 8,
-        backgroundColor: '#fff'
+        backgroundColor: '#fff',
+        margin:5
     },
     ratingChipSelected: {
         backgroundColor: '#000000',
+        borderWidth: 0,
     },
     ratingLabel: {
         marginLeft: 5,
@@ -289,30 +377,45 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         marginLeft: 5
     },
-      sortRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 6,
-  },
-  radioCircle: {
-    height: 18,
-    width: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: '#704F38',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  radioCircleSelected: {
-    backgroundColor: '#704F38',
-    borderWidth: 0,
-  },
-  sortLabel: { fontSize: 15, color: '#333' },
-    applyBtn: {
-    marginTop:40
-  },
- 
+    sortRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 6,
+    },
+    radioCircle: {
+        height: 20,
+        width: 20,
+        borderRadius: 10,
+        borderWidth: 2,
+        borderColor: '#704F38',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    selectedDot: {
+        height: 10,
+        width: 10,
+        borderRadius: 5,
+        backgroundColor: '#704F38',
+    },
+    // sortLabel: {
+    //   fontSize: 16,
+    //   color: '#333',
+    // },
+
+    sortLabel: { fontSize: 15, color: '#333' },
+    footer: {
+        backgroundColor: '#fff',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: 10,
+    },
+    button: {
+        flex: 1,
+        marginHorizontal: 5,
+    },
+
 });
 
 export default AdvanceFilter;

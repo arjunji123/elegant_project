@@ -7,7 +7,7 @@ return (
           <View style={styles.buttonContainer}>
 
     <TouchableOpacity
-      style={[styles.button, { backgroundColor: bgColor }, border && { borderWidth: 1, borderColor: border }]}
+      style={[styles.button, { backgroundColor: bgColor }, border && { borderWidth: 2, borderColor: border }]}
       onPress={onPress}
       activeOpacity={0.8}
     >
@@ -25,15 +25,15 @@ return (
     borderRadius: 50, // Makes the button fully rounded
     width: '100%',
     alignItems: 'center',
-    shadowColor: "#000", // Shadow for iOS
+    // shadowColor: "#000", // Shadow for iOS
     shadowOffset: {
       width: 0,
       height: 2,
     },
 
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    // shadowOpacity: 0.25,
+    // shadowRadius: 3.84,
+    // elevation: 5,
   },
    buttonContainer: {
     width: '100%',
@@ -42,7 +42,7 @@ return (
   buttonText: {
     
     fontSize: 18,
-    fontWeight: 'regular',
+    fontWeight: 500,
   },
     })
 

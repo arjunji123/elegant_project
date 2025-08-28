@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,39 +11,84 @@ import {
   Dimensions,
 } from "react-native";
 import Arrowleft from "../../assets/icons/Arrowleft.png";
-import dress from "../../assets/icons/dress.png";
-import pant from "../../assets/icons/pant.png";
-import Hat from "../../assets/icons/cap.png";
-import tshirt from "../../assets/icons/tshirt.png";
-import other from "../../assets/icons/other.png";
 import Icon from "react-native-vector-icons/Ionicons";
+import { useAuth } from "../../Context/AuthContext";
+import Loader from "../../components/AnimatedLoader";
+import SkeletonPlaceholder from "react-native-skeleton-placeholder";
 
-const limitedCategories = [
-  { id: "1", name: "T-Shirt", icon: tshirt },
-  { id: "2", name: "Hoodies", icon: pant },
-  { id: "3", name: "Dress", icon: dress },
-  { id: "4", name: "Hat", icon: Hat },
-  { id: "5", name: "Others", icon: other },
-];
+const SubCategoryScreen = ({ navigation }) => {
+  const { categoriesName, setCategoriesId } = useAuth();
 
-const allCategories = [
-  { id: "1", name: "T-Shirt", icon: tshirt },
-  { id: "2", name: "Hoodies", icon: pant },
-  { id: "3", name: "Dress", icon: dress },
-  { id: "4", name: "Hat", icon: Hat },
-  { id: "5", name: "Others", icon: other },
-  { id: "6", name: "Others", icon: other },
-  { id: "7", name: "Others", icon: other },
-  { id: "8", name: "Others", icon: other },
-  { id: "9", name: "Others", icon: other },
-];
+  const [selected, setSelected] = useState(categoriesName || "T-shirt");
+  const [categories, setCategories] = useState([]);
+  const [subcategoriesId, setsubCategoriesID] = useState(1);
 
-const CategoryScreen = ({ navigation }) => {
-  const [selected, setSelected] = useState("T-Shirt");
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingSubcategories, setLoadingSubcategories] = useState(true);
+
+  const [subCategories, setSubCategories] = useState([]);
+
+  // ✅ Fetch categories only once
+  useEffect(() => {
+    const getCategories = async () => {
+      setLoadingCategories(true);
+      try {
+        const res = await fetch(`https://elegant-project.onrender.com/api/categories`);
+        const data = await res.json();
+        if (data.success && data.data) {
+          setCategories(data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+    getCategories();
+  }, []);
+
+  // ✅ Fetch subcategories when category changes
+  useEffect(() => {
+    const getSubCategories = async () => {
+      setLoadingSubcategories(true);
+      try {
+        const res = await fetch(
+          `https://elegant-project.onrender.com/api/categories/${subcategoriesId}/subcategories`
+        );
+        const data = await res.json();
+        if (data.success && data.data) {
+          setSubCategories(data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching subcategories:", error);
+      } finally {
+        setLoadingSubcategories(false);
+      }
+    };
+
+    if (subcategoriesId) getSubCategories();
+  }, [subcategoriesId]);
+
   const handleGoBack = () => {
     navigation.goBack();
   };
 
+    if (loading) {
+    return (
+      <SkeletonPlaceholder>
+        {[...Array(5)].map((_, i) => (
+          <View key={i} style={{ flexDirection: "row", marginBottom: 20 }}>
+            <View style={{ width: 80, height: 80, borderRadius: 8 }} />
+            <View style={{ marginLeft: 10 }}>
+              <View style={{ width: 120, height: 20, borderRadius: 4 }} />
+              <View style={{ width: 80, height: 20, borderRadius: 4, marginTop: 6 }} />
+            </View>
+          </View>
+        ))}
+      </SkeletonPlaceholder>
+    );
+  }
+  
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -55,65 +100,94 @@ const CategoryScreen = ({ navigation }) => {
       </View>
 
       {/* Search */}
-      <View style={styles.searchContainer}>
-        <Icon name="search-outline" size={18} color="#999" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          placeholder="Search category"
-          placeholderTextColor="#999"
-        />
-      </View>
-
-      {/* Body container: horizontal split */}
-      <View style={styles.bodyContainer}>
-        {/* Left sidebar: limited category icons & names */}
-        <View style={styles.sidebar}>
-          <FlatList
-            data={limitedCategories}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => {
-              const isSelected = selected === item.name;
-              return (
-                <TouchableOpacity
-                  style={[
-                    styles.sidebarItem,
-                    isSelected && styles.sidebarItemSelected,
-                  ]}
-                  onPress={() => setSelected(item.name)}
-                  activeOpacity={0.75}
-                >
-                  <View style={isSelected ? {} : styles.iconWrapper}>
-                    <Image source={item.icon} style={styles.icon} resizeMode="contain" />
-                  </View>
-                  <Text
-                    style={[
-                      styles.sidebarText
-                    ]}
-                  >
-                    {item.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            }}
-            showsVerticalScrollIndicator={false}
-          />
+      {loadingCategories ? (
+        <Loader />
+      ) : (
+        <View style={styles.searchContainer}>
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            onPress={() => navigation.navigate("SearchProductScreen")}
+            activeOpacity={0.8}
+          >
+            <View style={styles.searchBar}>
+              <Icon name="search" size={18} color="#838383" />
+              <TextInput
+                placeholder="Search here"
+                editable={false}
+                pointerEvents="none"
+              />
+            </View>
+          </TouchableOpacity>
         </View>
+      )}
 
-        {/* Right panel: all categories as list with selected highlight */}
+      {/* Body container */}
+      <View style={styles.bodyContainer}>
+        {/* Left Sidebar */}
+        {loadingCategories ? (
+          <Loader />
+        ) : (
+          <View style={styles.sidebar}>
+            <FlatList
+              data={categories}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={({ item }) => {
+                const isSelected = selected === item.name;
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.sidebarItem,
+                      isSelected && styles.sidebarItemSelected,
+                    ]}
+                    onPress={() => {
+                      setSelected(item.name);
+                      setsubCategoriesID(item.id);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={isSelected ? {} : styles.iconWrapper}>
+                      <Image
+                        source={{ uri: item.icon }}
+                        style={styles.icon}
+                        resizeMode="contain"
+                      />
+                    </View>
+                    <Text style={styles.sidebarText}>{item.name}</Text>
+                  </TouchableOpacity>
+                );
+              }}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+        )}
+
+        {/* Right Subcategories */}
         <View style={styles.subCategoryPanel}>
-          {allCategories.map((sub) => (
-            <TouchableOpacity key={sub.id} style={styles.subCategoryRow} activeOpacity={0.7}>
-              <Text >{sub.name}</Text>
-              <Icon name="chevron-forward" size={18} color="#A5A5A5" />
-            </TouchableOpacity>
-          ))}
+          {loadingSubcategories ? (
+            <Loader />
+          ) : (
+            subCategories.map((sub) => (
+              <TouchableOpacity
+                key={sub.id}
+                style={styles.subCategoryRow}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setCategoriesId(sub.category_id);
+                  navigation.navigate("ProductScreen");
+                }}
+              >
+                <Text>{sub.name}</Text>
+                <Icon name="chevron-forward" size={18} color="#A5A5A5" />
+              </TouchableOpacity>
+            ))
+          )}
         </View>
       </View>
     </View>
   );
 };
 
-export default CategoryScreen;
+export default SubCategoryScreen;
 
 const width = Dimensions.get("window").width;
 const sidebarWidth = 100;
@@ -126,28 +200,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   header: {
-    position: "relative",
     height: 40,
     justifyContent: "center",
     marginBottom: 24,
     flexDirection: "row",
     alignItems: "center",
   },
-  backButton: {
-    padding: 8,
-  },
-  backIcon: {
-    width: 24,
-    height: 24,
-    resizeMode: "contain",
-  },
+  backButton: { padding: 8 },
+  backIcon: { width: 24, height: 24, resizeMode: "contain" },
   title: {
     flex: 1,
     textAlign: "center",
     fontSize: 24,
-    color: "#000000",
-    fontWeight: "normal",
-    fontFamily: "Poppins",
+    color: "#000",
     marginRight: 40,
   },
   searchContainer: {
@@ -159,33 +224,25 @@ const styles = StyleSheet.create({
     height: 40,
     marginBottom: 8,
   },
-  icon: {
-    width: 24,
-    height: 24,
-    resizeMode: "contain",
-  },
-  input: {
-    flex: 1,
-    fontSize: 14,
-    color: "#000",
-  },
-
-  bodyContainer: {
-    flex: 1,
-    flexDirection: "row"
-  },
-
-  sidebar: {
+  searchBar: {
+    flexDirection: "row",
     alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    flex: 1,
+    height: 44,
   },
+  icon: { width: 24, height: 24, resizeMode: "contain" },
+  input: { flex: 1, fontSize: 14, color: "#000" },
+  bodyContainer: { flex: 1, flexDirection: "row" },
+  sidebar: { alignItems: "center" },
   sidebarItem: {
     alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 10,
-    borderTopLeftRadius:16,
-    borderBottomLeftRadius:16,
+    borderRadius: 16,
     marginBottom: 10,
-    flexDirection: "column",
     backgroundColor: "#fff",
   },
   iconWrapper: {
@@ -198,17 +255,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  sidebarItemSelected: {
-    backgroundColor: "#FFEBD7",
-    // alignItems: "center",
-  },
-  sidebarText: {
-    fontSize: 14,
-    color: "#272727",
-    fontWeight: "500",
-  },
-
-
+  sidebarItemSelected: { backgroundColor: "#FFEBD7" },
+  sidebarText: { fontSize: 14, color: "#272727", fontWeight: "500" },
   subCategoryPanel: {
     flex: 1,
     padding: 20,
@@ -219,20 +267,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: 13,
-    paddingHorizontal: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#ECECEC",
-  },
-  subcategoryText: {
-    flex: 1,
-    fontSize: 14,
-    color: "#202020",
-    fontFamily: "Poppins",
-  },
-  chevron: {
-    fontSize: 22,
-    color: "#A7A7A7",
-    marginLeft: 10,
-    fontWeight: "bold",
   },
 });

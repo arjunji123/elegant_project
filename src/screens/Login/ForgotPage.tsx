@@ -58,7 +58,7 @@ const { showToast } = useToast();
     }
   
     try {
-      const response = await fetch("https://elegantproject-production.up.railway.app/api/forgot-password", {
+      const response = await fetch("https://elegant-project.onrender.com/api/forgot-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

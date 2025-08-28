@@ -23,7 +23,7 @@ const AddresListScreen = () => {
 
         const addresstAuth = async () => {
             try {
-                const res = await fetch(`https://elegantproject-production.up.railway.app/api/addresses`, {
+                const res = await fetch(`https://elegant-project.onrender.com/api/addresses`, {
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json",

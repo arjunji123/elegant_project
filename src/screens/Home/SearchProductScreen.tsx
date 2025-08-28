@@ -1,9 +1,20 @@
 // SearchProductScreen.tsx
-import React from "react";
-import { View, Text, StyleSheet, TextInput } from "react-native";
+import React, { useState } from "react";
+import { View, Text, StyleSheet, TextInput, TouchableOpacity } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import { useAuth } from "../../Context/AuthContext";
 
-const SearchProductScreen = () => {
+const SearchProductScreen = ({ navigation }) => {
+  const [search, setSearch] = useState("");
+  const { setQuery } = useAuth();
+
+  const handleSearch = () => {
+    if (search.trim() !== "") {
+      setQuery(search);
+      navigation.navigate("SearchResultScren");
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Title */}
@@ -11,15 +22,21 @@ const SearchProductScreen = () => {
 
       {/* Search Box */}
       <View style={styles.searchContainer}>
-        <Icon name="search-outline" size={18} color="#999" style={styles.icon} />
+        <TouchableOpacity onPress={handleSearch}>
+          <Icon name="search-outline" size={18} color="#999" style={styles.icon} />
+        </TouchableOpacity>
+
         <TextInput
           style={styles.input}
           placeholder="Search category"
           placeholderTextColor="#999"
+          value={search}
+          onChangeText={setSearch}
           autoFocus={true}
+          returnKeyType="search"   // show "Search" on keyboard
+          onSubmitEditing={handleSearch} // trigger search on enter
         />
       </View>
-
     </View>
   );
 };

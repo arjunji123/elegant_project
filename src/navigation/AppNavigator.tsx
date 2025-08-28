@@ -24,6 +24,11 @@ import SearchProductScreen from '../screens/Home/SearchProductScreen';
 import AdvanceFilter from '../screens/Home/AdvanceFIlter';
 import CardScreen from '../screens/product/CardScreen';
 import CategoryScreen from '../screens/categories/CategoryScreen';
+import SubCategories from '../screens/categories/SubCategories';
+import ProductScreen from '../screens/product/ProductScreen';
+import FilteredProducts from '../screens/product/FilteredProducts';
+import ProductDetail from '../screens/product/ProductDetail';
+import SearchResultScren from '../screens/product/SearchResultScren';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -48,6 +53,12 @@ export default function AppNavigator() {
             <Stack.Screen name="CardScreen" component={CardScreen} options={{ headerShown: false }} />
             <Stack.Screen name="SearchProductScreen"  component={SearchProductScreen}  options={{ headerShown: false }}/>
             <Stack.Screen name="CategoryScreen"  component={CategoryScreen}  options={{ headerShown: false }}/>
+            <Stack.Screen name="SubCategoriesScreen"  component={SubCategories}  options={{ headerShown: false }}/>
+            <Stack.Screen name="ProductScreen"  component={ProductScreen}  options={{ headerShown: false }}/>
+            <Stack.Screen name="FilteredProductsScreen"  component={FilteredProducts}  options={{ headerShown: false }}/>
+            <Stack.Screen name="ProductDetailScreen"  component={ProductDetail}  options={{ headerShown: false }}/>    
+
+            <Stack.Screen name="SearchResultScren"  component={SearchResultScren}  options={{ headerShown: false }}/>    
 
           </Stack.Navigator>
         ) : (

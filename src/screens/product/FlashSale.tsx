@@ -1,8 +1,13 @@
 // FlashSale.tsx
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
-import redDress from "../../assets/images/redDress.png"
+import { useAuth } from "../../Context/AuthContext";
+import Loader from "../../components/AnimatedLoader";
+import AnimatedLoader from "../../components/AnimatedLoader";
+import { useIsFocused } from "@react-navigation/native";
+
+const redDress = "https://res.cloudinary.com/dfhzted2d/image/upload/v1756059417/products/kqnhfrcvlcs9b3nxy5fg.png"
 
 interface Product {
   id: string;
@@ -12,23 +17,117 @@ interface Product {
   rating: number;
 }
 
-const categories = ["All Items", "Newest", "T-shirt", "Pants", "Shoes"];
+// const categories = ["All Items", "Newest", "T-shirt", "Pants", "Shoes"];
 
-const FlashSale: React.FC = () => {
-  const [activeCategory, setActiveCategory] = useState("Newest");
+const FlashSale = ({ navigation }) => {
+  const [activeCategory, setActiveCategory] = useState("all");
   const [products, setProducts] = useState<Product[]>([]);
   const [timeLeft, setTimeLeft] = useState({ h: 3, m: 38, s: 10 });
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const isFocused = useIsFocused();
+  const { setProductId, token } = useAuth()
+  const getProduct = async () => {
+    try {
+      // setLoading(true)
+      let url = "";
+
+      switch (activeCategory) {
+        case "all":
+          url = "https://elegant-project.onrender.com/api/getallProducts";
+          // setLoading(true)
+          break;
+
+        case "newest":
+          url = "https://elegant-project.onrender.com/api/getallProducts";
+          // setLoading(true)
+          break;
+
+        default:
+          // For category id from backend
+          url = `https://elegant-project.onrender.com/api/product/category/${activeCategory}`;
+          // setLoading(true)
+          break;
+      }
+
+      const res = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // ✅ attach token
+        },
+      });
+      const contentType = res.headers.get("content-type");
+      console.log("Response content-type:", contentType);
+
+      // if (!res.ok) {
+      //   const text = await res.text();
+      //   console.error("Server Error:", res.status, text);
+      //   return;
+      // }
+
+      const data = await res.json();
+      console.log("Fetched products:", data);
+
+      if (activeCategory === "newest") {
+        const sorted = [...data.data].sort(
+          (a: any, b: any) =>
+            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        );
+        setProducts(sorted);
+      } else {
+        setProducts(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    }
+  };
+
+
+
+  // Fetch categories
+  const fetchCategories = async () => {
+
+    try {
+      const res = await fetch(
+        `https://elegant-project.onrender.com/api/categories`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "", // ✅ token added here
+          },
+        }
+      );
+      const text = await res.text();
+      const data = JSON.parse(text);
+      if (data.success && data.data) {
+        setCategories([
+          { id: "all", name: "All Items" },
+          { id: "newest", name: "Newest" },
+          ...data.data,
+        ]);
+      }
+    } catch (error) {
+      console.error("Categories fetch error:", error);
+    }
+  };
 
   useEffect(() => {
-    setProducts([ { id: "1", name: "Modern Light Clothes", price: 212.99, image: "https://images.squarespace-cdn.com/content/v1/5911f31c725e251d002da9ac/1613210424136-AS3MY547OBB5Y3GSQ359/Product+Photography", rating: 5.0, },
-     { id: "2", name: "Light Dress Bless", price: 162.99, image: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.shutterstock.com%2Fsearch%2Fmodels-red&psig=AOvVaw1AhHJWdo_Nf_r3mVBf6FcH&ust=1755289568697000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCOCUqKyRi48DFQAAAAAdAAAAABAL", rating: 5.0, }, 
-     { id: "3", name: "Maroon Dark Top", price: 199.99, image: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.shutterstock.com%2Fsearch%2Fmodels-red&psig=AOvVaw1AhHJWdo_Nf_r3mVBf6FcH&ust=1755289568697000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCOCUqKyRi48DFQAAAAAdAAAAABAL", rating: 5.0, }, 
-     { id: "4", name: "Light Dress Yellow", price: 129.99, image: "https://images.squarespace-cdn.com/content/v1/5911f31c725e251d002da9ac/1613210424136-AS3MY547OBB5Y3GSQ359/Product+Photography", rating: 5.0, },
-     { id: "5", name: "Light Dress Yellow", price: 129.99, image: "https://images.squarespace-cdn.com/content/v1/5911f31c725e251d002da9ac/1613210424136-AS3MY547OBB5Y3GSQ359/Product+Photography", rating: 5.0, }, 
-    { id: "6", name: "Light Dress Yellow", price: 129.99, image: "https://images.squarespace-cdn.com/content/v1/5911f31c725e251d002da9ac/1613210424136-AS3MY547OBB5Y3GSQ359/Product+Photography", rating: 5.0, }, 
-    { id: "7", name: "Light Dress Yellow", price: 129.99, image: "https://images.squarespace-cdn.com/content/v1/5911f31c725e251d002da9ac/1613210424136-AS3MY547OBB5Y3GSQ359/Product+Photography", rating: 5.0, },
-    { id: "8", name: "Light Dress Yellow", price: 129.99, image: "https://images.squarespace-cdn.com/content/v1/5911f31c725e251d002da9ac/1613210424136-AS3MY547OBB5Y3GSQ359/Product+Photography", rating: 5.0, }, 
-    { id: "9", name: "Light Dress Yellow", price: 129.99, image: "https://images.squarespace-cdn.com/content/v1/5911f31c725e251d002da9ac/1613210424136-AS3MY547OBB5Y3GSQ359/Product+Photography", rating: 5.0, }, ]); }, []);
+    if (isFocused) {
+      fetchCategories();
+      getProduct();
+    }
+  }, [isFocused]);
+
+
+
+  // Load products every time activeCategory changes
+  useEffect(() => {
+
+    setLoading(false)
+  }, [activeCategory]);
+
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -49,6 +148,51 @@ const FlashSale: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
+  const toggleFavorite = async (productId: string, currentStatus: number) => {
+    const newStatus = currentStatus === 1 ? 0 : 1;
+
+    try {
+      const res = await fetch(`https://elegant-project.onrender.com/api/add-wishlist`, {
+        method: "post", // or PATCH depending on backend
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`, // 👈 check token value
+        },
+        body: JSON.stringify({
+          product_id: productId,
+        }),
+      });
+
+      const text = await res.text(); // get raw text first
+      console.log("Raw response:", text);
+
+      let data;
+      try {
+        data = JSON.parse(text); // parse only if JSON
+      } catch (parseErr) {
+        console.error("JSON parse failed. Response was not JSON:", text);
+        return;
+      }
+
+      console.log("Product updated:", data);
+
+      if (data.success) {
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === productId ? { ...p, wishlist_is: newStatus } : p
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Wishlist toggle failed:", error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <AnimatedLoader visible={loading} />
+    );
+  }
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -67,38 +211,58 @@ const FlashSale: React.FC = () => {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
         {categories.map((cat) => (
           <TouchableOpacity
-            key={cat}
-            style={[styles.categoryChip, activeCategory === cat && styles.activeCategory]}
-            onPress={() => setActiveCategory(cat)}
+            key={cat.id}
+            style={[styles.categoryChip, activeCategory === cat.id && styles.activeCategory]}
+            onPress={() => setActiveCategory(cat.id)}
           >
-            <Text style={[styles.categoryText, activeCategory === cat && styles.activeCategoryText]}>
-              {cat}
+            <Text style={[styles.categoryText, activeCategory === cat.id && styles.activeCategoryText]}>
+              {cat.name}
             </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
+
       {/* Products */}
-      <View style={styles.productsGrid}>
-        {products.map((item) => (
-          <View key={item.id} style={styles.productCard}>
-            <View style={styles.imageContainer}>
-              <Image source={{ uri: item.image }} style={styles.productImage} />
-              <TouchableOpacity style={styles.wishlistBtn}>
-                <Icon name="heart-outline" size={18} color="#000" />
+      {loading ? <Loader /> :
+        <View style={styles.productsGrid}>
+          {products && products?.map((item) => (
+            <View key={item.id} style={styles.productCard}>
+              <View style={styles.imageContainer}>
+
+                <Image
+                  source={item.images ? { uri: item.images[0] } : redDress}
+                  style={styles.productImage}
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.wishlistBtn,
+                    { backgroundColor: item.wishlist_is ? "#ffffff" : "#000000ff" }
+                  ]}
+                  onPress={() => toggleFavorite(item.id, item.wishlist_is)} >
+                  <Icon
+                    name={item.wishlist_is ? "heart" : "heart-outline"}
+                    size={22}
+                    color={item.wishlist_is ? "#000000" : "#ffffff"}  />
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
+                <Text style={styles.productName} numberOfLines={1}>
+                  {item.name}
+                </Text>
               </TouchableOpacity>
+
+              <View style={styles.priceRatingRow}>
+                <Text style={styles.productPrice}>${item.price}</Text>
+                <View style={styles.ratingRow}>
+                  <Icon name="star" size={14} color="gold" />
+                  <Text style={styles.ratingText}>{item.rating ?? "5"}</Text>
+                </View>
+              </View>
             </View>
-            <Text style={styles.productName} numberOfLines={1}>
-              {item.name}
-            </Text>
-            <Text style={styles.productPrice}>${item.price.toFixed(2)}</Text>
-            <View style={styles.ratingRow}>
-              <Icon name="star" size={14} color="gold" />
-              <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
-            </View>
-          </View>
-        ))}
-      </View>
+          ))}
+        </View>}
+
     </View>
   );
 };
@@ -110,18 +274,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 10,
   },
+  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
+
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom:20,
+    marginBottom: 20,
     // marginTop:10
   },
   title: {
     fontSize: 18,
     fontWeight: "600",
-    color:"#010911",
-    fontFamily:"Poppins"
+    color: "#010911",
+    // fontFamily: "Poppins"
   },
   timer: {
     flexDirection: "row",
@@ -144,16 +310,25 @@ const styles = StyleSheet.create({
   categoryChip: {
     paddingHorizontal: 14,
     paddingVertical: 6,
-    backgroundColor: "#f0f0f0",
+    borderWidth: 1.5,
     borderRadius: 20,
     marginRight: 8,
+    borderColor: "#AFAFAF",
+  },
+  priceRatingRow: {
+    flexDirection: "row",
+    justifyContent: "space-between", // pushes price left, rating right
+    alignItems: "center",
+    marginTop: 4,
   },
   activeCategory: {
-    backgroundColor: "#8B5E3C",
+    backgroundColor: "#704F38",
+    borderWidth: 0,
   },
   categoryText: {
     fontSize: 13,
     color: "#000",
+    fontWeight: 500
   },
   activeCategoryText: {
     color: "#fff",
@@ -182,8 +357,8 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 8,
     right: 8,
-    backgroundColor: "#fff",
-    borderRadius: 15,
+    backgroundColor: "#000000ff",
+    borderRadius: 25,
     padding: 4,
   },
   productName: {
@@ -193,7 +368,7 @@ const styles = StyleSheet.create({
   },
   productPrice: {
     fontSize: 14,
-    fontWeight: "bold",
+    fontWeight: "600",
     color: "#000",
     marginTop: 2,
   },
@@ -205,6 +380,7 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: 12,
     marginLeft: 2,
-    color: "#555",
+    fontWeight: 400,
+    color: "#292526",
   },
 });

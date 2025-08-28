@@ -38,7 +38,7 @@ useEffect(() => {
     try {
       setLoading(true);  // show loader when fetch starts
 
-      const res = await fetch(`https://elegantproject-production.up.railway.app/api/user/${userId}`, {
+      const res = await fetch(`https://elegant-project.onrender.com/api/user/${userId}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -74,7 +74,7 @@ useEffect(() => {
   const handleUpdate = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`https://elegantproject-production.up.railway.app/api/user/${userId}`, {
+      const res = await fetch(`https://elegant-project.onrender.com/api/user/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

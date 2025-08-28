@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
   FlatList,
+  TouchableOpacity,
 } from "react-native";
 import Arrowleft from "../../assets/icons/Arrowleft.png";
 import dress from "../../assets/icons/dress.png";
@@ -17,6 +18,7 @@ import tshirt from "../../assets/icons/tshirt.png";
 import other from "../../assets/icons/other.png";
 import Icon from "react-native-vector-icons/Ionicons";
 import AnimatedLoader from "../../components/AnimatedLoader";
+import { useAuth } from "../../Context/AuthContext";
 
 const screenWidth = Dimensions.get("window").width;
 const numColumns = 5;
@@ -27,12 +29,13 @@ const CategoryScreen: React.FC = ({ navigation }) => {
 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
+    const { user,setCategoriesName } = useAuth();
 
   useEffect(() => {
-    const addresstAuth = async () => {
+    const getCategories = async () => {
       setLoading(true)
       try {
-        const res = await fetch(`https://elegantproject-production.up.railway.app/api/categories`, {
+        const res = await fetch(`https://elegant-project.onrender.com/api/categories`, {
           method: "GET",
         });
 
@@ -41,17 +44,15 @@ const CategoryScreen: React.FC = ({ navigation }) => {
         const data = JSON.parse(text);
         console.log("Response text:", data.data);
         if (data) {
-          setCategories(data)
+          setCategories(data.data)
         }
       } catch (error) {
         console.error("Error fetching user:", error);
       }
     };
-    addresstAuth()
+    getCategories()
     setLoading(false)
-  })
-
-  console.log(categories, "categoriescategories")
+  }, []);
 
   const handleGoBack = () => {
     navigation.goBack();
@@ -69,12 +70,27 @@ const CategoryScreen: React.FC = ({ navigation }) => {
 
       {/* SEARCH */}
       <View style={styles.searchContainer}>
-        <Icon name="search-outline" size={18} color="#999" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          placeholder="Search category"
-          placeholderTextColor="#999"
-        />
+       <TouchableOpacity
+                 style={{ flex: 1 }}
+                 onPress={() => navigation.navigate("SearchProductScreen")}
+                 activeOpacity={0.8}
+               >
+               <View style={styles.searchBar}>
+                 <Icon
+                   name="search"
+                   size={18}
+                   color="#838383"
+                  
+                 />
+                 <TextInput
+                   placeholder="Search here"
+                   // placeholderTextColor="#aaa"
+                   // style={styles.searchInput}
+                   onPress={() => navigation.navigate("SearchProductScreen")}    
+                  />
+       
+               </View>
+               </TouchableOpacity>
       </View>
 
       {/* ALL CATEGORIES */}
@@ -84,17 +100,23 @@ const CategoryScreen: React.FC = ({ navigation }) => {
           <View style={styles.headerRow}>
             <Text style={styles.subtitle}>All Categories</Text>
           </View>
+
           <FlatList
             data={categories}
+          
             numColumns={5} // ✅ ensures 5 items per row
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
+              <TouchableOpacity key={item.id}
+            onPress={() => {setCategoriesName(item.name),navigation.navigate("SubCategoriesScreen")}}
+            >
               <View style={styles.gridItem}>
                 <View style={styles.iconWrapper}>
-                  <Image source={item.icon} style={styles.iconImage} resizeMode="contain" />
+                  <Image source={{uri:item.icon}} style={styles.iconImage} resizeMode="contain" />
                 </View>
                 <Text style={styles.categoryName}>{item.name}</Text>
               </View>
+              </TouchableOpacity>
             )}
           />
         </View>
@@ -105,14 +127,35 @@ const CategoryScreen: React.FC = ({ navigation }) => {
             <Text style={styles.subtitle}>Top Categories</Text>
           </View>
           <View style={styles.categoriesRow}>
-            {categories && categories.slice(0, 3).map((item) => (
+            {/* {categories && categories.slice(0, 3).map((item) => (
+              <TouchableOpacity key={item.id}
+            onPress={() => {setCategoriesName(item.name),navigation.navigate("SubCategoriesScreen")}}>
               <View key={item.id} style={styles.categoryContainer}>
                 <View style={styles.iconWrapper}>
-                  <Image source={item.icon} style={styles.iconImage} resizeMode="contain" />
+                  <Image source={{uri:item.icon}} style={styles.iconImage} resizeMode="contain" />
                 </View>
                 <Text style={styles.categoryName}>{item.name}</Text>
               </View>
-            ))}
+              </TouchableOpacity>
+            ))} */}
+             <FlatList
+            data={categories.slice(0, 3)}
+          
+            numColumns={5} // ✅ ensures 5 items per row
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity key={item.id}
+            onPress={() => {setCategoriesName(item.name),navigation.navigate("SubCategoriesScreen")}}
+            >
+              <View style={styles.gridItem}>
+                <View style={styles.iconWrapper}>
+                  <Image source={{uri:item.icon}} style={styles.iconImage} resizeMode="contain" />
+                </View>
+                <Text style={styles.categoryName}>{item.name}</Text>
+              </View>
+              </TouchableOpacity>
+            )}
+          />
           </View>
         </View>
       </View>}
@@ -164,18 +207,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F6F6F6",
-    borderRadius: 10,
+    borderRadius: 15,
     paddingHorizontal: 12,
     height: 40,
     marginBottom: 8,
   },
-  icon: {
-    marginRight: 8,
-  },
+
   input: {
     flex: 1,
     fontSize: 14,
     color: "#000",
+  },
+    searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    flex: 1,
+    height: 44,
   },
 
   // SECTION HEADER
@@ -202,6 +252,7 @@ const styles = StyleSheet.create({
 
   // TOP CATEGORIES ROW
   categoriesRow: {
+    marginTop:20,
     flexDirection: "row",
     justifyContent: "space-around",
   },

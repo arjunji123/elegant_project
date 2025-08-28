@@ -23,7 +23,7 @@ function WishlistScreen() {
   }
 export default function BottomTabs() {
   return (
-    <><Text>Sonal</Text><Tab.Navigator
+    <><Tab.Navigator
           screenOptions={{
               headerShown: false,
               tabBarActiveTintColor: 'blue',

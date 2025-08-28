@@ -27,7 +27,7 @@ const ConfirmPasword: React.FC<ConfirmPasswordScreenProps> = ({ navigation }) =>
     }
 
     try {
-      const response = await fetch("https://elegantproject-production.up.railway.app/api/reset-password", {
+      const response = await fetch("https://elegant-project.onrender.com/api/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

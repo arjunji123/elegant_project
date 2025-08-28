@@ -57,7 +57,7 @@ const { showToast } = useToast();
 
   const handleSubmit= async () => {
     try {
-      const res = await fetch("https://elegantproject-production.up.railway.app/api/verify-otp", {
+      const res = await fetch("https://elegant-project.onrender.com/api/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({email: forgotPasswordMail,  otp: updatedOtp }),
@@ -80,7 +80,7 @@ const { showToast } = useToast();
   const handleResendOtp = async () => {
     try {
       setResending(true);
-      const res = await fetch("https://elegantproject-production.up.railway.app/api/resend-otp", {
+      const res = await fetch("https://elegant-project.onrender.com/api/resend-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: forgotPasswordMail }),

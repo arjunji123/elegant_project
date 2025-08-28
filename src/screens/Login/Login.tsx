@@ -17,18 +17,20 @@ import { LoginScreenProps } from '../../types/types';
 import { useToast } from "../../Context/ToastContext";
 import * as Keychain from 'react-native-keychain';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 
 
-const LoginScreen : React.FC<LoginScreenProps> = ({ navigation }) => {
+const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [rightIcon, setRightIcon] = useState('eye'); // Initial icon
 
-  console.log(Keychain,"KeychainKeychain");
   const { login } = useAuth();
   const handleGoBack = () => {
     if (navigation.canGoBack()) {
@@ -51,7 +53,7 @@ const LoginScreen : React.FC<LoginScreenProps> = ({ navigation }) => {
     };
     loadCredentials();
   }, []);
-  
+
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -60,130 +62,140 @@ const LoginScreen : React.FC<LoginScreenProps> = ({ navigation }) => {
     }
     setLoading(true);
     try {
-      const response = await fetch("https://elegantproject-production.up.railway.app/api/login", {
+      const response = await fetch("https://elegant-project.onrender.com/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-  
+
       const data = await response.json();
       console.log("Login response:", data);
-     
+
 
       if (response.ok) {
         // navigation.replace("HomePageScreen"); 
         if (rememberMe) {
           await Keychain.setGenericPassword(email, password);
-  
+
         } else {
           await Keychain.resetGenericPassword(); // clears stored data
         }
-        showToast("Login Successful", "success");       
-        login(data.user, data.token); 
+        showToast("Login Successful", "success");
+        login(data.user, data.token);
       } else {
         showToast(data.message || "Login Failed", "error");
       }
     } catch (error) {
       console.error("Login error:", error);
       showToast("Login Failed", "error");
-    }finally{
+    } finally {
       setLoading(false);
     }
   };
-  
 
+  const handlePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+    setRightIcon(showPassword ? 'eye' : 'eye-off'); // Toggle icon based on new state
+  };
   return (
-    
-<KeyboardAwareScrollView
-  contentContainerStyle={{ flexGrow: 1 }}
-  enableOnAndroid
-  keyboardShouldPersistTaps="handled"
->
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={handleGoBack}>
-          <Image source={Arrowleft} style={styles.backIcon} />
-        </Pressable>
 
-        <Text style={styles.title}>Log In</Text>
-      </View>
+    <KeyboardAwareScrollView
+      contentContainerStyle={{ flexGrow: 1 }}
+      enableOnAndroid
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Pressable onPress={handleGoBack}>
+            <Image source={Arrowleft} style={styles.backIcon} />
+          </Pressable>
 
-      {/* Mobile Number Input */}
-      <View style={styles.inputFieldContainer}>
-        <Text style={styles.label}>Mobile Number</Text>
-        <TextInput
-          placeholder="Enter your mobile number"
-          keyboardType="phone-pad"
-          style={styles.input}
-          value={phone}
-          onChangeText={setPhone}
-
-        />
-      </View>
-
-      {/* Separator */}
-      <View style={styles.separatorContainer}>
-        <View style={styles.line} />
-        <Text style={styles.separatorText}>Or</Text>
-        <View style={styles.line} />
-      </View>
-
-      {/* Email Input */}
-      <View style={styles.inputFieldContainer}>
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          placeholder="Enter your email"
-          keyboardType="email-address"
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-
-          autoCapitalize="none"
-        />
-      </View>
-
-      {/* Password Input */}
-      <View style={styles.inputFieldContainer}>
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          placeholder="Enter your password"
-          secureTextEntry={true}
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-
-        />
-      </View>
-    <View style={styles.containerfor}>
-  <TouchableOpacity
-        style={styles.rememberMeContainer}
-        onPress={() => setRememberMe(!rememberMe)}
-        activeOpacity={0.8}
-      >
-        <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-          {rememberMe && <View style={styles.checkboxTick} />}
+          <Text style={styles.title}>Log In</Text>
         </View>
-        <Text style={styles.rememberMeText}>Remember me</Text>
-      </TouchableOpacity>
 
-      {/* Forgot Password */}
-      <TouchableOpacity onPress={() => navigation.navigate('ForgotScreen')}>
-        <Text style={styles.forgotText}>Forgot password?</Text>
-      </TouchableOpacity>
-    </View>
-    {loading ? (
+        {/* Mobile Number Input */}
+        <View style={styles.inputFieldContainer}>
+          <Text style={styles.label}>Mobile Number</Text>
+          <TextInput
+            placeholder="Enter your mobile number"
+            keyboardType="phone-pad"
+            style={styles.input}
+            value={phone}
+            onChangeText={setPhone}
+
+          />
+        </View>
+
+        {/* Separator */}
+        <View style={styles.separatorContainer}>
+          <View style={styles.line} />
+          <Text style={styles.separatorText}>Or</Text>
+          <View style={styles.line} />
+        </View>
+
+        {/* Email Input */}
+        <View style={styles.inputFieldContainer}>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            placeholder="Enter your email"
+            keyboardType="email-address"
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+
+            autoCapitalize="none"
+          />
+        </View>
+
+        {/* Password Input */}
+       <View style={styles.passwordContainer}>
+  <Text style={styles.label}>Password</Text>
+
+  <View style={styles.inputWrapper}>
+    <TextInput
+      placeholder="Enter your password"
+      secureTextEntry={!showPassword}
+      style={styles.passwordInput}
+      value={password}
+      onChangeText={setPassword}
+    />
+    <TouchableOpacity onPress={handlePasswordVisibility}>
+       <Icon name={rightIcon} size={20} color="gray" />
+      {/* <Text style={styles.eyeIcon}>{showPassword ? "🙈" : "👁️"}</Text> */}
+    </TouchableOpacity>
+  </View>
+</View>
+
+        <View style={styles.containerfor}>
+          <TouchableOpacity
+            style={styles.rememberMeContainer}
+            onPress={() => setRememberMe(!rememberMe)}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+              {rememberMe && <View style={styles.checkboxTick} />}
+            </View>
+            <Text style={styles.rememberMeText}>Remember me</Text>
+          </TouchableOpacity>
+
+          {/* Forgot Password */}
+          <TouchableOpacity onPress={() => navigation.navigate('ForgotScreen')}>
+            <Text style={styles.forgotText}>Forgot password?</Text>
+          </TouchableOpacity>
+        </View>
+        {loading ? (
           <ActivityIndicator size="large" color="#704f38" />
-        ) : ( <View style={styles.containerButton}>
+        ) : (<View style={styles.containerButton}>
           <Button text="Log In"
-          bgColor="#704f38"
-          textColor="#ffffff"
-          onPress={handleLogin} border={undefined} />
-         </View>)}
-    
-      <SocialLoginOptions />
-      
-    </View>
+            bgColor="#704f38"
+            textColor="#ffffff"
+            onPress={handleLogin} border={undefined} />
+        </View>)}
+
+        <SocialLoginOptions />
+
+      </View>
     </KeyboardAwareScrollView>
 
   );
@@ -196,7 +208,7 @@ const BOX_SIZE = 15;
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,   
+    padding: 24,
     backgroundColor: '#fff',
   },
   containerfor: {
@@ -207,7 +219,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   containerButton: {
-    marginTop:40
+    marginTop: 40
   },
   header: {
     position: 'relative',
@@ -220,7 +232,7 @@ export const styles = StyleSheet.create({
   backIcon: {
     width: 24,
     height: 32,
-   
+
   },
   title: {
     flex: 1,
@@ -234,13 +246,14 @@ export const styles = StyleSheet.create({
   inputFieldContainer: {
     paddingVertical: 2,
   },
+  
   label: {
     marginBottom: 6,
     fontSize: 16,
     marginLeft: 5,
     fontWeight: '500',
     color: '#000000',
-    fontFamily: 'Poppins',
+    // fontFamily: 'Poppins',
   },
   input: {
     borderWidth: 1,
@@ -251,6 +264,30 @@ export const styles = StyleSheet.create({
     marginBottom: 12,
     fontSize: 15,
   },
+passwordContainer: {
+  marginBottom: 12,
+},
+
+inputWrapper: {
+  flexDirection: "row",
+  alignItems: "center",
+  borderWidth: 1,
+  borderColor: "#e5e5e5",
+  borderRadius: 25,
+  paddingHorizontal: 12,
+},
+
+passwordInput: {
+  flex: 1, // take up remaining space
+  paddingVertical: 12,
+  fontSize: 15,
+},
+
+eyeIcon: {
+  fontSize: 18,
+  marginLeft: 10,
+},
+
   separatorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -272,7 +309,7 @@ export const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 20,
   },
- rememberMeContainer: {
+  rememberMeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -288,7 +325,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   checkboxChecked: {
-    backgroundColor: '#4CAF50',  
+    backgroundColor: '#4CAF50',
   },
   checkboxTick: {
     width: 8, // slightly smaller for better centering
@@ -298,7 +335,7 @@ export const styles = StyleSheet.create({
     borderColor: 'white',
     transform: [{ rotate: '-45deg' }],
   },
-  
+
   rememberMeText: {
     fontSize: 14,
     color: '#000',

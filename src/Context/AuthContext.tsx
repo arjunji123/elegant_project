@@ -16,10 +16,18 @@ type AuthContextType = {
   logout: () => Promise<void>;
   signupemail: string | null;
   setSignupemail: (email: string | null) => void;
-  forgotPasswordMail:  string | null;
-  setForgotPasswordMail : (email: string | null) => void; // Add setter
+  forgotPasswordMail: string | null;
+  setForgotPasswordMail: (email: string | null) => void; // Add setter
   storePassword: string | null;
   setStorePassword: React.Dispatch<React.SetStateAction<string | null>>;
+  categoriesName: string | null;
+  setCategoriesName: React.Dispatch<React.SetStateAction<string | null>>;
+   categoriesId: string | null;
+  setCategoriesId: React.Dispatch<React.SetStateAction<string | null>>;
+  productId: string | null;
+  setProductId: React.Dispatch<React.SetStateAction<string | null>>;
+  query: string | null;
+  setQuery: React.Dispatch<React.SetStateAction<string | null>>;
 
 };
 
@@ -31,7 +39,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [signupemail, setSignupemail] = useState<string | null>(null);
   const [forgotPasswordMail, setForgotPasswordMail] = useState<string | null>(null);
-const [storePassword ,setStorePassword] = useState<string | null>(null);
+  const [storePassword, setStorePassword] = useState<string | null>(null);
+  const [categoriesName, setCategoriesName] = useState<string | null>(null);
+    const [categoriesId, setCategoriesId] = useState<string | null>(null);
+    const [query, setQuery] = useState<string | null>(null);
+
+  const [productId, setProductId] = useState<string | null>(null);
 
   // Load stored user on app start
   useEffect(() => {
@@ -79,8 +92,26 @@ const [storePassword ,setStorePassword] = useState<string | null>(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, user, token, login, logout,signupemail,
-        setSignupemail,forgotPasswordMail, setForgotPasswordMail , storePassword, setStorePassword }}>
+    <AuthContext.Provider value={{
+      isLoggedIn,
+      categoriesId, 
+      setCategoriesId,
+      user, 
+      token, 
+      login, 
+      logout, 
+      signupemail,
+      setSignupemail, 
+      forgotPasswordMail, 
+      setForgotPasswordMail, 
+      storePassword, 
+      setStorePassword, 
+      categoriesName, 
+      setCategoriesName, 
+      productId, 
+      setProductId,
+      query, setQuery
+    }}>
       {children}
     </AuthContext.Provider>
   );

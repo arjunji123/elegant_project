@@ -56,7 +56,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
 
     try {
       const response = await fetch(
-        'https://elegantproject-production.up.railway.app/api/register',
+        'https://elegant-project.onrender.com/api/register',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

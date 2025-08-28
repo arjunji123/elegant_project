@@ -1,5 +1,5 @@
 // HomeContent.tsx
-import React from "react";
+import React, { useCallback } from "react";
 import {
   View,
   Text,
@@ -16,9 +16,21 @@ import DiscoutImage from "../../assets/images/DiscoutImage.png";
 import CategoriesHome from "../categories/CategoriesHome";
 import FlashSale from "../product/FlashSale";
 import cart from "../../assets/images/cart.png"
+import { useFocusEffect } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const HomeContent = ({ navigation }) => {
+  
   const { user } = useAuth();
+ useFocusEffect(
+    useCallback(() => {
+      const clearFilters = async () => {
+        await AsyncStorage.removeItem("userFilters");
+        console.log("✅ Filters cleared when Home screen is focused");
+      };
+      clearFilters();
+    }, [])
+  );
 
   return (
     <ScrollView
@@ -38,10 +50,18 @@ const HomeContent = ({ navigation }) => {
   </View>
 
   <TouchableOpacity style={styles.notificationButton}>
-    <Image
+    {/* <Image
       source={cart}
       style={styles.notificationIcon}
-    />
+    /> */}
+     <Icon
+            name="bag-outline"
+            size={32}
+            color="#000000ff"
+            style={{ marginHorizontal: 8 }}
+          />
+  <Text style={styles.colon}>:</Text>
+
    <View style={styles.redDotWrapper}>
     <View style={styles.redDotInner} />
   </View>
@@ -80,7 +100,7 @@ const HomeContent = ({ navigation }) => {
       <Image style={styles.DiscoutImage} source={DiscoutImage} />
 
       <CategoriesHome navigation={navigation} />
-      <FlashSale/>
+      <FlashSale navigation={navigation}/>
     </ScrollView>
   );
 };
@@ -94,12 +114,13 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: 20,
     paddingHorizontal: 10,
-    paddingBottom: 30, // extra space at bottom
+    paddingBottom: 100, // extra space at bottom
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+     marginTop: 20,
     marginBottom: 15,
   },
   leftContainer: {
@@ -144,21 +165,37 @@ const styles = StyleSheet.create({
   
   redDotWrapper: {
     position: "absolute",
-    top: 5,
+    top: 8,
     right: 11,
     width: 9,
     height: 9,
     borderRadius: 5,
-    backgroundColor: "rgba(255, 0, 0, 0.3)", // light outer ring
+    backgroundColor: "#FFC4C4", // light outer ring
     justifyContent: "center",
     alignItems: "center",
   },
-  
+  blackDot:{
+    position: "absolute",
+    backgroundColor: "#1D1E20",
+    top: 23,
+    width: 3,
+    height: 3,
+    borderRadius: 5,
+  },
+  colon: {
+    position: "absolute",
+    right: 15,   // adjust to move
+    top: 8,     // adjust to move
+    fontSize: 20,
+    color: "black",
+    fontWeight: "bold",
+    transform: [{ rotate: "90deg" }], // 🔹 rotates colon
+  },
   redDotInner: {
-    width: 6,
-    height: 6,
+    width: 5,
+    height: 5,
     borderRadius: 4,
-    backgroundColor: "red", // solid center
+    backgroundColor: "#DC1010", // solid center
   },
   
   searchContainer: {

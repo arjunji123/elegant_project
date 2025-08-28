@@ -1,40 +1,37 @@
-// HomePage.tsx
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Image } from "react-native";
+
 import ProfileScreen from "../Profile/AccountScreen";
 import HomeContent from "./HomeContent";
-import { View, Text, StyleSheet, Image } from "react-native";
 import WishlistScreen from "../wishList/WishlistScreen";
 import CategoryScreen from "../categories/CategoryScreen";
+import SubCategoryScreen from "../categories/SubCategories";
+
 const Tab = createBottomTabNavigator();
 
-
-
-
-
-const HomePage = ({ navigation }) => {
+const HomePage = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarShowLabel: false,
-       
         tabBarStyle: {
           backgroundColor: "#1c1c1c",
           borderTopWidth: 0,
-          height: 70, // make it shorter
-          marginHorizontal: 10, // equal left/right spacing
-          borderRadius: 50, // rounded pill shape
-          position: "absolute", // floats above screen
-          bottom: 10, // distance from bottom
+          height: 70,
+          marginHorizontal: 10,
+          borderRadius: 50,
+          position: "absolute",
+          bottom: 10,
           alignItems: "center",
           justifyContent: "center",
-          paddingHorizontal: 20, // optional
+          paddingHorizontal: 20,
         },
         tabBarItemStyle: {
           alignItems: "center",
           justifyContent: "center",
-          marginTop: 13, // center icons vertically
+          marginTop: 13,
         },
         tabBarIcon: ({ focused }) => {
           let iconSource;
@@ -62,20 +59,16 @@ const HomePage = ({ navigation }) => {
               break;
           }
 
-          return <Image source={iconSource} style={{ width: 36, height: 36 }} />;
+          return <Image source={iconSource} style={{ width: 30, height: 30 }} />;
         },
       })}
     >
       <Tab.Screen name="Home" component={HomeContent} />
       <Tab.Screen name="Wishlist" component={WishlistScreen} />
-      <Tab.Screen name="Categories" component={CategoryScreen} />
+      <Tab.Screen name="Categories" component={SubCategoryScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 };
 
 export default HomePage;
-
-const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-});
