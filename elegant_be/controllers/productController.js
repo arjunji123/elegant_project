@@ -656,3 +656,65 @@ exports.searchProducts = async (req, res) => {
     });
   }
 };
+
+
+
+////////////////////////////////////!SECTION
+
+exports.getOfferProducts = async (req, res) => {
+  const userId = req.user.id;
+  try {
+    // Step 1: Get products with category, subcategory, wishlist (only where offer = 50)
+    const [products] = await db.query(`
+      SELECT 
+        p.*, 
+        c.name AS category_name, 
+        s.name AS subcategory_name,
+        CASE 
+          WHEN w.id IS NOT NULL THEN 1 
+          ELSE 0 
+        END AS wishlist_is
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN subcategories s ON p.subcategory_id = s.id
+      LEFT JOIN wishlist w ON w.product_id = p.id AND w.user_id = ?
+      WHERE p.offer = 50
+    `, [userId]);
+
+    // Step 2: Get all product images in one query
+    const productIds = products.map(p => p.id);
+    let imagesMap = {};
+    if (productIds.length > 0) {
+      const [images] = await db.query(`
+        SELECT product_id, image_url 
+        FROM product_images 
+        WHERE product_id IN (?)
+      `, [productIds]);
+
+      // Map images to product_id
+      images.forEach(img => {
+        if (!imagesMap[img.product_id]) imagesMap[img.product_id] = [];
+        imagesMap[img.product_id].push(img.image_url);
+      });
+    }
+
+    // Step 3: Attach images array to products
+    const finalProducts = products.map(product => ({
+      ...product,
+      images: imagesMap[product.id] || []
+    }));
+
+    res.status(200).json({
+      success: true,
+      message: 'Offer products (50%) fetched successfully',
+      data: finalProducts
+    });
+
+  } catch (error) {
+    console.error('Error fetching offer products:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
