@@ -254,16 +254,10 @@
         }
       }
     },
-    "/api/user/{id}": {
+    "/api/user": {
       "get": {
         "description": "",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
           {
             "name": "authorization",
             "in": "header",
@@ -289,12 +283,6 @@
         "description": "",
         "parameters": [
           {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
             "name": "authorization",
             "in": "header",
             "type": "string"
@@ -312,9 +300,6 @@
                   "example": "any"
                 },
                 "phone": {
-                  "example": "any"
-                },
-                "profile_pic": {
                   "example": "any"
                 }
               }

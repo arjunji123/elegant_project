@@ -1,7 +1,7 @@
 const db = require("../config/db");
 
 exports.getUserById = async (req, res) => {
-  const userId = req.params.id;
+    const userId = req.user.id;
 
   try {
 const [rows] = await db.query(
@@ -16,7 +16,7 @@ const [rows] = await db.query(
       });
     }
   if (rows[0].profile_pic) {
-      rows[0].profile_pic = `${req.protocol}://${req.get("host")}/${rows[0].profile_pic}`;
+      rows[0].profile_pic = `${rows[0].profile_pic}`;
     }
     return res.status(200).json({
       success: true,
@@ -33,18 +33,16 @@ const [rows] = await db.query(
 };
 
 exports.updateUserById = async (req, res) => {
-  const userId = req.params.id;
-const { name, email, phone, profile_pic } = req.body;
-  let profilePicPath = null;
- if (req.file) {
-    profilePicPath = `uploads/profile_pics/${req.file.filename}`;
-  }
+    const userId = req.user.id;
+const { name, email, phone } = req.body;
+      const profile_pic = req.file ? req.file.path : null;
+
   try {
 const [result] = await db.query(
   `UPDATE users 
    SET name = ?, email = ?, phone = ?, profile_pic = ?, updated_at = NOW() 
    WHERE id = ?`,
-  [name, email, phone, profilePicPath, userId]
+  [name, email, phone, profile_pic, userId]
 );
 
 
@@ -54,6 +52,7 @@ const [result] = await db.query(
         message: "User not found or no changes made",
       });
     }
+console.log(userId);
 
    return res.status(200).json({
       success: true,
@@ -64,7 +63,7 @@ const [result] = await db.query(
           name,
           email,
           phone,
-          profile_pic: profilePicPath 
+          profile_pic 
         },
       },
     });
