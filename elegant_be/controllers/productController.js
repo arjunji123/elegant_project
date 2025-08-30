@@ -601,24 +601,35 @@ exports.searchProducts = async (req, res) => {
       });
     }
 
-    const searchTerm = `%${keyword}%`;
+    const searchTerm = `%${keyword.toLowerCase()}%`;
 
-    // Step 1: Search products with wishlist info
+    // Step 1: Search products with stronger LIKE
     const [products] = await db.query(`
       SELECT 
         p.*, 
         c.name AS category_name, 
         s.name AS subcategory_name,
-        CASE WHEN w.id IS NOT NULL THEN 1 ELSE 0 END AS wishlist_is
+        CASE WHEN w.id IS NOT NULL THEN 1 ELSE 0 END AS wishlist_is,
+         (
+          (CASE WHEN LOWER(p.name) LIKE ? THEN 3 ELSE 0 END) +
+          (CASE WHEN LOWER(p.description) LIKE ? THEN 2 ELSE 0 END) +
+          (CASE WHEN LOWER(c.name) LIKE ? THEN 1 ELSE 0 END) +
+          (CASE WHEN LOWER(s.name) LIKE ? THEN 1 ELSE 0 END)
+        ) AS relevance
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN subcategories s ON p.subcategory_id = s.id
       LEFT JOIN wishlist w ON p.id = w.product_id AND w.user_id = ?
-      WHERE p.name LIKE ? 
-         OR p.description LIKE ? 
-         OR c.name LIKE ? 
-         OR s.name LIKE ?
-    `, [userId || null, searchTerm, searchTerm, searchTerm, searchTerm]);
+   WHERE LOWER(p.name) LIKE ? 
+         OR LOWER(p.description) LIKE ? 
+         OR LOWER(c.name) LIKE ? 
+         OR LOWER(s.name) LIKE ?
+      ORDER BY relevance DESC, p.name ASC
+    `, [
+      searchTerm, searchTerm, searchTerm, searchTerm,
+      userId || null,
+      searchTerm, searchTerm, searchTerm, searchTerm
+    ]);
 
     // Step 2: Get all images for searched products
     const productIds = products.map(p => p.id);
