@@ -16,6 +16,8 @@ import { ProfileScreenProps } from "../../types/types";
 import { useAuth } from "../../Context/AuthContext";
 import { useToast } from "../../Context/ToastContext";
 import AnimatedLoader from "../../components/AnimatedLoader";
+import * as ImagePicker from "react-native-image-picker"; // 👈 for selecting images
+import Header from "../../components/Header";
 
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const [mobile, setMobile] = useState("");
@@ -23,7 +25,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const { user, token } = useAuth();
-  const [profilePic, setProfilePic] = useState(null);
+  const [profilePic, setProfilePic] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const userId = user?.id || "123"; // fallback id for testing
@@ -32,89 +34,121 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   };
   const tokens = { token };
 
-useEffect(() => {
-  let mounted = true;
-  const testAuth = async () => {
-    try {
-      setLoading(true);  // show loader when fetch starts
+  useEffect(() => {
+    let mounted = true;
+    const testAuth = async () => {
+      try {
+        setLoading(true);  // show loader when fetch starts
 
-      const res = await fetch(`https://elegant-project.onrender.com/api/user/${userId}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${tokens.token}`,
-        },
-      });
+        const res = await fetch(`https://elegant-project.onrender.com/api/user`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${tokens.token}`,
+          },
+        });
 
-      const text = await res.text();
-      const data = JSON.parse(text);
-
-      if (data.success && data.data && mounted) {
-        setEmail(data.data.email || "");
-        setMobile(data.data.phone || "");
-        setName(data.data.name || "");
-        setProfilePic(data.data.profil_pic);
+        const text = await res.text();
+        const data = JSON.parse(text);
+        if (data.success && data.data && mounted) {
+          setEmail(data.data.email || "");
+          setMobile(data.data.phone || "");
+          setName(data.data.name || "");
+          setProfilePic(data.data.profile_pic);
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      } finally {
+        if (mounted) setLoading(false);  // hide loader after fetch finishes
       }
-    } catch (error) {
-      console.error("Error fetching user:", error);
-    } finally {
-      if (mounted) setLoading(false);  // hide loader after fetch finishes
-    }
-  };
+    };
 
-  if (tokens?.token && userId) {
-    testAuth();
-  }
-  return () => {
-    mounted = false;
+    if (tokens?.token && userId) {
+      testAuth();
+    }
+    return () => {
+      mounted = false;
+    };
+  }, [profilePic]);
+
+
+  const handlePickImage = () => {
+    ImagePicker.launchImageLibrary(
+      { mediaType: "photo", quality: 0.8 },
+      (response) => {
+        if (response.didCancel) return;
+        if (response.errorMessage) {
+          showToast("Image pick failed", "error");
+          return;
+        }
+        if (response.assets && response.assets[0].uri) {
+          setProfilePic(response.assets[0].uri); // set local image uri
+        }
+      }
+    );
   };
-}, []);
 
 
   const handleUpdate = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`https://elegant-project.onrender.com/api/user/${userId}`, {
+
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("email", email);
+      formData.append("phone", mobile);
+
+ if (profilePic && (profilePic.startsWith("file://") || profilePic.startsWith("content://"))) {
+      const filename = profilePic.split("/").pop() || "profile.jpg";
+      const fileType = filename.split(".").pop();
+
+      formData.append("profile_pic", {
+        uri: profilePic,
+        name: filename,
+        type: `image/${fileType}`,
+      } as any);
+    }
+
+
+
+      const res = await fetch(`https://elegant-project.onrender.com/api/user`, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${tokens.token}`,
         },
-        body: JSON.stringify({ name, email, phone: mobile, profile_pic: profilePic }),
+        body: formData,
       });
 
       if (!res.ok) throw new Error("Failed to update user data");
-      const updatedData = await res.json();
 
+      const updatedData = await res.json();
       showToast("Profile updated successfully!", "success");
+
+      // update local state
+      setProfilePic(updatedData.data.profile_pic);
       setLoading(false);
     } catch (err) {
+      console.log(err, "Failed to update profile");
       showToast("Failed to update profile", "error");
       setLoading(false);
     }
   };
-
   return (
     <View style={styles.rootContainer}>
-      <AnimatedLoader visible={loading} size={50} color="#704F38" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.container}>
           {/* Header */}
-          <View style={styles.header}>
-            <Pressable onPress={handleGoBack} style={styles.backButton}>
-              <Image source={Arrowleft} style={styles.backIcon} />
-            </Pressable>
-
-            <View style={styles.titleContainer}>
-              <Text style={styles.headerTitle}>My Profile</Text>
-            </View>
-
-            <View style={styles.placeholder} />
-          </View>
+          <Header text={"My Profile"} onPress={handleGoBack} />
 
           {/* Profile Section */}
           <View style={styles.profilcontainer}>
-            <Image source={avtar} style={styles.profileImage} />
+            <TouchableOpacity onPress={handlePickImage}>
+              <Image
+                source={profilePic ? { uri: profilePic } : require("../../assets/images/profileImg.png")}
+                style={styles.profileImage}
+              />
+              <Text style={styles.changePicText}>Update Picture</Text>
+            </TouchableOpacity>
 
             {/* Name */}
             <View style={styles.inputContainer}>
@@ -175,18 +209,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', // Full page background color here
   },
   scrollContent: {
+    paddingTop: 10,
+    paddingHorizontal: 10,
     flexGrow: 1,
   },
   backButton: { padding: 2 },
   backIcon: { width: 29, height: 29, resizeMode: "contain" },
 
-  profilcontainer: { alignItems: "center" },
+  profilcontainer: { alignItems: "center", marginTop: 50 },
 
   container: {
     padding: 15,
     backgroundColor: '#fff',
     borderRadius: 12, // optional: card effect on background
-    margin: 10,       // optional: spacing from edges
+    // margin: 10,       
     flexGrow: 1,
   },
   header: { flexDirection: "row", alignItems: "center" },
@@ -198,7 +234,16 @@ const styles = StyleSheet.create({
     color: "#000",
     fontFamily: "Poppins",
   },
-  profileImage: { width: 100, height: 100, borderRadius: 20 },
+  profileImage: { width: 135, height: 135, borderRadius: 30 },
+  changePicText: {
+    alignItems: "center",
+    marginTop: 6,
+    fontSize: 16,
+    textDecorationLine: 'underline',
+    color: "#838383",
+    fontWeight: "400",
+    textAlign: "center",
+  },
 
   inputContainer: { width: "100%", marginBottom: 15 },
   label: {

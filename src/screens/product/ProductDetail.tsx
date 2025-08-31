@@ -1,5 +1,5 @@
 // ProductDetail.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
     View,
     Text,
@@ -8,84 +8,131 @@ import {
     Image,
     TouchableOpacity,
     FlatList,
+    Dimensions,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
+import Skeleton, { SkeletonCard, SkeletonText } from "../../components/Skeleton";
 
+const { width } = Dimensions.get("window");
 
-const redDress = "https://res.cloudinary.com/dfhzted2d/image/upload/v1756059417/products/kqnhfrcvlcs9b3nxy5fg.png"
+const redDress =
+    "https://res.cloudinary.com/dfhzted2d/image/upload/v1756059417/products/kqnhfrcvlcs9b3nxy5fg.png";
 
 const imageUpdate = [
     "https://res.cloudinary.com/dfhzted2d/image/upload/v1756059366/products/plq88fklqrfax81qodjl.png",
     "https://res.cloudinary.com/dfhzted2d/image/upload/v1756059366/products/rjrgj6gvgut7oeviuxi1.png",
-    "https://res.cloudinary.com/dfhzted2d/image/upload/v1756059366/products/xk5ggguxapefdivmhqqc.jpg"
-]
+    "https://res.cloudinary.com/dfhzted2d/image/upload/v1756059366/products/xk5ggguxapefdivmhqqc.jpg",
+];
 
 const ProductDetail = ({ navigation }) => {
     const [selectedSize, setSelectedSize] = useState("M");
-    const [selectedColor, setSelectedColor] = useState("#c68958");
-    const [product, setProduct] = useState<any>(null)
-    const [isFavorite, setIsFavorite] = useState(false);
-    const [recommeded, setrecommeded] = useState<any>(null)
+    const [product, setProduct] = useState<any>(null);
+    const [recommeded, setrecommeded] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [fav, setIsFav] = useState(false);
 
-    const imageObjects = product?.images ? product.images.map((index) => ({
-        uri: index
-    })) : redDress
+    const [showFull, setShowFull] = useState(false);
+    const wordLimit = 20;
+    const description = product?.description || "";
+    const words = description.split(" ");
+    const truncated = words.slice(0, wordLimit).join(" ");
+    const isLong = words.length > wordLimit;
+    const [selectedColor, setSelectedColor] = useState(
+        product?.colors?.[0].color_code || null
+    );
+    const { productId, token } = useAuth();
 
-    const [selectedImage, setSelectedImage] = useState<any>(imageObjects ? imageObjects[0]?.uri : redDress);
+    // 🔥 slider states
+    const [selectedIndex, setSelectedIndex] = useState(0);
+    const sliderRef = useRef<FlatList<any>>(null);
+    const thumbRef = useRef<FlatList<any>>(null);
 
     const toggleFavorite = async (productId: string, currentStatus: number) => {
         const newStatus = currentStatus === 1 ? 0 : 1;
 
         try {
-            const res = await fetch(`https://elegant-project.onrender.com/api/add-wishlist`, {
-                method: "post", // or PATCH depending on backend
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`, // 👈 check token value
-                },
-                body: JSON.stringify({
-                    product_id: productId,
-                }),
-            });
+            const res = await fetch(
+                `https://elegant-project.onrender.com/api/add-wishlist`,
+                {
+                    method: "post",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        product_id: productId,
+                    }),
+                }
+            );
 
-            const text = await res.text(); // get raw text first
-            console.log("Raw response:", text);
-
+            const text = await res.text();
             let data;
             try {
-                data = JSON.parse(text); // parse only if JSON
-            } catch (parseErr) {
-                console.error("JSON parse failed. Response was not JSON:", text);
+                data = JSON.parse(text);
+            } catch {
+                console.error("Wishlist parse error:", text);
                 return;
             }
-
-            console.log("Product updated:", data);
 
             if (data.success) {
                 setProduct((prev: any) => ({
                     ...prev,
-                    wishlist_is: newStatus
+                    wishlist_is: newStatus,
                 }));
             }
         } catch (error) {
             console.error("Wishlist toggle failed:", error);
         }
     };
+    const toggleFavoriteRecommed = async (productId: string, currentStatus: number) => {
+        const newStatus = currentStatus === 1 ? 0 : 1;
 
+        try {
+            const res = await fetch(
+                `https://elegant-project.onrender.com/api/add-wishlist`,
+                {
+                    method: "post",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        product_id: productId,
+                    }),
+                }
+            );
 
-    const { productId, token } = useAuth()
+            const text = await res.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch {
+                console.error("Wishlist parse error:", text);
+                return;
+            }
+
+            if (data.success) {
+                setProduct((prev: any) => ({
+                    ...prev,
+                    wishlist_is: newStatus,
+                }));
+            }
+        } catch (error) {
+            console.error("Wishlist toggle failed:", error);
+        }
+    };
     useEffect(() => {
         const getProductDetail = async () => {
             try {
+                setLoading(true);
                 const res = await fetch(
                     `https://elegant-project.onrender.com/api/product/${productId}`,
                     {
                         method: "GET",
                         headers: {
                             "Content-Type": "application/json",
-                            Authorization: token ? `Bearer ${token}` : "", // ✅ token added here
+                            Authorization: token ? `Bearer ${token}` : "",
                         },
                     }
                 );
@@ -93,191 +140,310 @@ const ProductDetail = ({ navigation }) => {
                 const data = JSON.parse(text);
                 if (data.success && data.data) {
                     setProduct(data.data);
+                    setLoading(false);
                 }
-
             } catch (error) {
                 console.error("Server Error:", error);
             }
         };
+
         const getRecommedProduct = async () => {
             try {
                 if (!product) return;
+                setLoading(true);
                 const res = await fetch(
                     `https://elegant-project.onrender.com/api/product/category/${product.category_id}`,
                     {
                         method: "GET",
                         headers: {
                             "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`, // ✅ token added here too
+                            Authorization: `Bearer ${token}`,
                         },
                     }
                 );
                 const text = await res.text();
                 const data = JSON.parse(text);
-                console.log(data, "datadatadata")
                 if (data.success && data.data) {
                     setrecommeded(data.data);
+                    setLoading(false);
                 }
             } catch (error) {
                 console.error("Categories fetch error:", error);
             }
-        }
+        };
 
         getProductDetail();
         getRecommedProduct();
     }, [productId]);
+
     const handleGoBack = () => navigation.goBack();
+
+    const onSelectImage = (index: number) => {
+        setSelectedIndex(index);
+        sliderRef.current?.scrollToIndex({ index, animated: true });
+        thumbRef.current?.scrollToIndex({
+            index,
+            animated: true,
+            viewPosition: 0.5,
+        });
+    };
+
+    const images = product?.images && product.images.length > 0 ? product.images : imageUpdate;
+    if (loading) {
+        return (
+            <>
+                <SkeletonCard height={400} />
+                <View style={styles.imagealign}>
+                    <SkeletonCard height={50} width="50" style={{
+                        width: 55,
+                        height: 55,
+                        borderRadius: 10,
+                        margin: 10,
+                    }} />
+                </View>
+                <SkeletonText height={30} style={{ margin: 10 }} />
+                <SkeletonText height={30} style={{ margin: 10 }} />
+                <SkeletonText height={30} style={{ margin: 10 }} />
+                <SkeletonText height={30} style={{ margin: 10 }} />
+                <SkeletonText height={30} style={{ margin: 10 }} />
+
+            </>
+        );
+    }
+    console.log(recommeded, "product?.colors?.[0]")
     return (
+
+
         <View style={styles.container}>
             <View style={styles.backheader}>
-                {/* Back button */}
                 <TouchableOpacity style={styles.iconWrapper} onPress={handleGoBack}>
                     <Icon name="chevron-back" size={22} color="#000" />
                 </TouchableOpacity>
 
-                {/* Wishlist button */}
                 <TouchableOpacity
                     style={[
                         styles.wishlistBtn,
-                        { backgroundColor: product?.wishlist_is && product.wishlist_is ? "#ffffff" : "#000000ff" }
+                        {
+                            backgroundColor:
+                                product?.wishlist_is && product.wishlist_is
+                                    ? "#ffffff"
+                                    : "#000000ff",
+                        },
                     ]}
-                    onPress={() => toggleFavorite(product.id, product.wishlist_is)}>
+                    onPress={() => toggleFavorite(product.id, product.wishlist_is)}
+                >
                     <Icon
-                        name={product?.wishlist_is && product.wishlist_is ? "heart" : "heart-outline"}
+                        name={
+                            product?.wishlist_is && product.wishlist_is
+                                ? "heart"
+                                : "heart-outline"
+                        }
                         size={22}
-                        color={product?.wishlist_is && product.wishlist_is ? "#000000" : "#ffffff"} />
+                        color={
+                            product?.wishlist_is && product.wishlist_is
+                                ? "#000000"
+                                : "#ffffff"
+                        }
+                    />
                 </TouchableOpacity>
             </View>
 
-
             <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Product Image */}
-                <Image
-                    source={selectedImage ? { uri: selectedImage } : { uri: product?.images[0] }}
-                    style={styles.mainImage}
-                    resizeMode="cover"
+                {/* 🔥 Image Slider */}
+
+
+                <FlatList
+                    ref={sliderRef}
+                    data={images}
+                    keyExtractor={(item, index) => index.toString()}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    onMomentumScrollEnd={(event) => {
+                        const index = Math.round(
+                            event.nativeEvent.contentOffset.x / width
+                        );
+                        setSelectedIndex(index);
+                        thumbRef.current?.scrollToIndex({
+                            index,
+                            animated: true,
+                            viewPosition: 0.5,
+                        });
+                    }}
+                    renderItem={({ item }) => (
+                        <Image source={{ uri: item }} style={styles.mainImage} />
+                    )}
                 />
+
+                {/* 🔥 Thumbnails */}
                 <View style={styles.imagealign}>
                     <FlatList
-                        data={product?.images ? product.images : imageUpdate}
-                        keyExtractor={(item, index) => index.toString()} // since images are strings
+                        ref={thumbRef}
+                        data={images}
+                        keyExtractor={(item, index) => index.toString()}
                         horizontal
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={styles.thumbnailList}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity onPress={() => setSelectedImage(item)}>
-                                <Image
-                                    source={{ uri: item }}
-                                    style={[styles.thumbnail]} />
-                            </TouchableOpacity>
-                        )}
+                        renderItem={({ item, index }) => {
+                            const isSelected = index === selectedIndex;
+                            return (
+                                <TouchableOpacity onPress={() => onSelectImage(index)}>
+                                    <Image
+                                        source={{ uri: item }}
+                                        style={[
+                                            styles.thumbnail,
+                                            isSelected && styles.activeThumbnail,
+                                        ]}
+                                    />
+                                </TouchableOpacity>
+                            );
+                        }}
                     />
                 </View>
 
-                <View style={styles.tittleContainer}>
-                    {/* Row for category and rating */}
-                    <View style={styles.categoryRatingRow}>
-                        <Text style={styles.categoriesName}>{product?.category_name}</Text>
-                        <View style={styles.ratingRow}>
-                            <Icon name="star" size={16} color="gold" />
-                            <Text style={styles.ratingText}>4.0</Text>
-                        </View>
-                    </View>
+                <View style={styles.mainContainer}>
 
-                    {/* Product name below */}
-                    <Text style={styles.productTitle}>{product?.name}</Text>
-                </View>
-
-                {/* Description */}
-                <Text style={styles.sectionDescription}>Description</Text>
-                <Text style={styles.description}>
-                    {product && product.description}
-                </Text>
-
-                {/* Sizes */}
-                <Text style={styles.sectionTitle}>Select Size</Text>
-                <View style={styles.sizeRow}>
-                    {product && product.sizes.map((size) => (
-                        <TouchableOpacity
-                            key={size}
-                            style={[
-                                styles.sizeBox,
-                                selectedSize === size && styles.sizeBoxActive,
-                            ]}
-                            onPress={() => setSelectedSize(size)}
-                        >
-                            <Text
-                                style={[
-                                    styles.sizeText,
-                                    selectedSize === size && styles.sizeTextActive,
-                                ]}
-                            >
-                                {size}
+                    <View >
+                        <View style={styles.categoryRatingRow}>
+                            <Text style={styles.categoriesName}>
+                                {product?.category_name}
                             </Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-
-                {/* Colors */}
-                <Text style={styles.sectionTitle}>Choose Color</Text>
-                <View style={styles.colorRow}>
-                    {product && product.colors.map((color) => (
-                        <TouchableOpacity
-                            key={color.color_name}
-                            style={[
-                                styles.colorCircle,
-                                { backgroundColor: color.color_code },
-                                selectedColor === color && styles.colorCircleActive,
-                            ]}
-                            onPress={() => setSelectedColor(color)}
-                        />
-                    ))}
-                </View>
-
-
-                {/* Recommendations */}
-                <Text style={styles.sectionTitle}>Recommendation</Text>
-
-                {recommeded && recommeded.length > 0 ? (
-                    <FlatList
-                        data={recommeded}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        keyExtractor={(item) => item.id.toString()}
-                        renderItem={({ item }) => (
-                            <View style={styles.recommendCard}>
-                                <Image
-                                    source={{
-                                        uri: item.images
-                                            ? item.images[0]
-                                            : "https://via.placeholder.com/150", // 👈 fallback
-                                    }}
-                                    style={styles.recommendImage}
-                                />
-                                <Text style={styles.recommendName}>{item.name}</Text>
-                                <Text style={styles.recommendPrice}>
-                                    {item.unit}{item.price}
-                                </Text>
+                            <View style={styles.ratingRow}>
+                                <Icon name="star" size={16} color="gold" />
+                                <Text style={styles.ratingText}>4.0</Text>
                             </View>
+                        </View>
+                        <Text style={styles.productTitle}>{product?.name}</Text>
+                    </View>
+                    <Text style={styles.sectionTitle}>Description</Text>
+                    <Text style={styles.description}>
+                        {showFull ? description : truncated + (isLong ? "..." : "")}
+                        {isLong && (
+                            <Text
+                                style={styles.seeMoreText}
+                                onPress={() => setShowFull(!showFull)}
+                            >
+                                {showFull ? " See Less" : " Read More"}
+                            </Text>
                         )}
-                    />
-                ) : (
-                    <Text style={styles.productHeader}>No recommended products found</Text>
-                )}
+                    </Text>
+                    <Text style={styles.sectionTitle}>Select Size</Text>
+                    <View style={styles.sizeRow}>
+                        {product &&
+                            product.sizes.map((size) => (
+                                <TouchableOpacity
+                                    key={size}
+                                    style={[
+                                        styles.sizeBox,
+                                        selectedSize === size && styles.sizeBoxActive,
+                                    ]}
+                                    onPress={() => setSelectedSize(size)}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.sizeText,
+                                            selectedSize === size && styles.sizeTextActive,
+                                        ]}
+                                    >
+                                        {size}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                    </View>
+                    <Text style={styles.sectionTitle}>Choose Color</Text>
+                    <View style={styles.colorRow}>
+                        {product &&
+                            product.colors.map((color) => (
+                                <TouchableOpacity
+                                    key={color.color_name}
+                                    style={[
+                                        styles.colorWrapper,
+                                        selectedColor === color && styles.colorWrapperActive,
+                                    ]}
+                                    onPress={() => setSelectedColor(color)}
+                                >
+                                    <View
+                                        style={[
+                                            styles.colorCircle,
+                                            { backgroundColor: color.color_code },
+                                        ]}
+                                    />
+                                </TouchableOpacity>
+                            ))}
+                    </View>
+                    {recommeded && recommeded.length > 0 ? (
+                        <><Text style={styles.sectionTitle}>Recommendation</Text><FlatList
+                            data={recommeded}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            keyExtractor={(item) => item.id.toString()}
+                            renderItem={({ item }) => (
+                                <View style={styles.recommendCard}>
+                                    <Image
+                                        source={{
+                                            uri: item.images
+                                                ? item.images[0]
+                                                : "https://via.placeholder.com/150",
+                                        }}
+                                        style={styles.recommendImage} />
+
+                                    {/* Wishlist Button */}
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.wishlistBtnRecommeder,
+                                            {
+                                                backgroundColor: fav
+                                                    ? "#ffffff"
+                                                    : "#000000ff",
+                                            },
+                                        ]}
+                                        onPress={() => setIsFav(fav == true ? false : true)}
+                                    >
+                                        <Icon
+                                            name={fav ? "heart" : "heart-outline"}
+                                            size={22}
+                                            color={fav ? "#000000" : "#ffffff"} />
+                                    </TouchableOpacity>
+
+                                    <Text style={styles.recommendName}>{item.name}</Text>
+                                    <Text style={styles.recommendPrice}>
+                                        {item.unit}
+                                        {item.price}
+                                    </Text>
+                                </View>
+                            )} /></>
+                    ) : (
+                        <Text style={styles.productHeader}>
+                            No recommended products found
+                        </Text>
+                    )}
+
+
+                </View>
+                {/* Rest of product detail UI */}
+
+
+
+
+
+
 
             </ScrollView>
 
             <View style={styles.bottomBar}>
-                <Text style={styles.totalPrice}>
-                    Total Price{"\n"}
+                <View>
+                    <Text style={styles.totalPrice}>Total Price</Text>
                     <Text style={styles.price}>
-                        {product?.unit}{product?.price}
+                        {product?.unit}
+                        {product?.price}
                     </Text>
-                </Text>
+                </View>
+
                 <TouchableOpacity style={styles.addToCartBtn}>
                     <Text style={styles.addToCartText}>Add to Cart</Text>
                 </TouchableOpacity>
             </View>
+
         </View>
     );
 };
@@ -286,60 +452,8 @@ export default ProductDetail;
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: "#fff" },
-    header: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        padding: 16,
-        alignItems: "center",
-    },
-    mainImage: { width: "100%", height: 400 },
-    categoriesName: {
-        color: "#838383",
-        paddingLeft: 16,
-        marginTop: 15
-
-    },
-    tittleContainer: {
-        marginRight: 10
-    },
-    imagealign: {
-        alignItems: 'center'
-
-    },
-    wishlistBtn: {
-        right: 10,
-        marginRight: 10,
-        backgroundColor: "#000000ff",
-        borderRadius: 25,
-        width: 42,
-        height: 42,
-        justifyContent: "center",   // center vertically
-        alignItems: "center",       // center horizontally
-    },
-    backheader: {
-        position: "absolute",
-        top: 40, // adjust depending on status bar
-        left: 20,
-        right: 25,
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        zIndex: 10,
-    },
-    iconWrapper: {
-        width: 42,
-        height: 42,
-        marginLeft: 15,
-        borderRadius: 20,
-        backgroundColor: "#fff",
-        justifyContent: "center",
-        alignItems: "center",
-        shadowColor: "#000",
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
-    },
-
+    mainImage: { width: 428, height: 425, resizeMode: "cover" },
+    imagealign: { alignItems: "center" },
     thumbnailList: {
         marginTop: 25,
         paddingHorizontal: 5,
@@ -350,83 +464,145 @@ const styles = StyleSheet.create({
         height: 55,
         borderRadius: 10,
         marginRight: 10,
+        borderWidth: 1,
+        borderColor: "#ccc",
     },
     activeThumbnail: {
         borderWidth: 2,
+        borderColor: "#000",
     },
-    productHeader: {
+    backheader: {
+        position: "absolute",
+        top: 40,
+        left: 20,
+        right: 25,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        gap: 24,
+        zIndex: 10,
+    },
+    iconWrapper: {
+        width: 45,
+        height: 45,
+        marginLeft: 15,
+        borderRadius: 25,
+        backgroundColor: "#fff",
+        justifyContent: "center",
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
+    },
+    wishlistBtn: {
+        right: 10,
+        marginRight: 10,
+        borderRadius: 25,
+        width: 45,
+        height: 45,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+        productHeader: {
         flexDirection: "row",
         justifyContent: "space-between",
         marginTop: 5,
         paddingLeft: 16,
         alignItems: "center",
     },
+    wishlistBtnRecommeder: {
+        position: "absolute",
+        top: 8,
+        right: 8,
+        borderRadius: 20,
+        padding: 6,
+        elevation: 3, // shadow for Android
+        shadowColor: "#000", // shadow for iOS
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
+    },
+
+    // (keep your other styles unchanged…)
+    mainContainer: {
+        margin: 20
+    },
+    categoriesName: {
+        color: "#838383",
+        marginTop: 15
+
+    },
+    productTitle: { fontSize: 20, fontWeight: "600", color: "#222" },
+    seeMoreText: {
+        color: '#000000ff',
+        fontWeight: '600',
+        fontSize: 14,
+    },
     categoryRatingRow: {
         flexDirection: "row",
-        justifyContent: "space-between", // category on left, rating on right
+        justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 4, // space between row and product name
+        marginBottom: 4,
     },
-    productTitle: { fontSize: 20, fontWeight: "600", color: "#222", paddingLeft: 16 },
+
     ratingRow: { flexDirection: "row", alignItems: "center" },
     ratingText: { marginLeft: 4, color: "#555" },
     sectionDescription: {
         fontSize: 16,
         fontWeight: "600",
         marginTop: 16,
-        marginHorizontal: 16,
+
         color: "#222",
     },
     sectionTitle: {
         fontSize: 16,
         fontWeight: "600",
         marginTop: 16,
-        marginHorizontal: 16,
+
         color: "#222",
     },
-    description: { marginHorizontal: 16, marginTop: 6, color: "#838383" },
-    sizeRow: { flexDirection: "row", marginHorizontal: 16, marginTop: 10 },
+    description: { marginTop: 6, color: "#838383" },
+    sizeRow: { flexDirection: "row", marginTop: 10 },
     sizeBox: {
+        width: 40,               // make width = height
+        height: 40,
         borderWidth: 1,
         borderColor: "#aaa",
-        borderRadius: 8,
-        paddingVertical: 8,
-        paddingHorizontal: 14,
+        borderRadius: 20,        // half of width/height for circle
+        justifyContent: "center",
+        alignItems: "center",
         marginRight: 10,
     },
     sizeBoxActive: { backgroundColor: "#222", borderColor: "#222" },
     sizeText: { color: "#222" },
     sizeTextActive: { color: "#fff" },
-    colorRow: { flexDirection: "row", margin: 16, gap: 12 },
-    colorCircle: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: "#ccc",
-    },
-    colorCircleActive: { borderWidth: 2, borderColor: "#000" },
-    reviewHeader: {
+    colorRow: {
         flexDirection: "row",
-        justifyContent: "space-between",
-        marginHorizontal: 16,
-        marginTop: 16,
+        margin: 16,
+        gap: 12
+    },
+
+    // Outer wrapper for border
+    colorWrapper: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: "center",
         alignItems: "center",
     },
-    addReviewBtn: {
-        backgroundColor: "#654321",
-        paddingVertical: 6,
-        paddingHorizontal: 14,
-        borderRadius: 20,
+
+    colorWrapperActive: {
+        borderWidth: 2,
+        borderColor: "#5a3c2c", // dark brown outer border
     },
-    addReviewText: { color: "#fff", fontSize: 12 },
-    reviewCard: { marginHorizontal: 16, marginTop: 12 },
-    reviewRow: { flexDirection: "row", justifyContent: "space-between" },
-    reviewName: { fontWeight: "600", color: "#222" },
-    reviewDate: { fontSize: 12, color: "#888" },
-    reviewComment: { marginTop: 6, color: "#555" },
-    reviewImagesRow: { flexDirection: "row", marginTop: 8, gap: 8 },
-    reviewImage: { width: 60, height: 60, borderRadius: 8 },
+
+    // Inner color circle
+    colorCircle: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+    },
+
     recommendCard: { margin: 10, width: 120 },
     recommendImage: { width: "100%", height: 120, borderRadius: 8 },
     recommendName: { fontSize: 14, fontWeight: "500", marginTop: 6 },
@@ -438,30 +614,34 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderColor: "#eee",
         alignItems: "center",
+        backgroundColor: "#F6F6F6"
     },
+
     totalPrice: {
-        color: "#838383", // gray for "Total Price"
+        color: "#838383",
         fontSize: 14,
     },
 
     price: {
-        color: "#000000", // black for the price
-        fontSize: 16,
+        color: "#000",
+        fontSize: 18,
+        fontWeight: "700",
+    },
+
+    addToCartBtn: {
+        backgroundColor: "#6b4226",
+        paddingVertical: 14,       // slightly taller
+        paddingHorizontal: 40,     // wider pill
+        borderRadius: 40,          // fully rounded pill
+        alignItems: "center",
+        justifyContent: "center",
+        minWidth: 200,             // ensures wide button
+    },
+
+    addToCartText: {
+        color: "#fff",
         fontWeight: "600",
-    }, 
-    
-addToCartBtn: {
-    backgroundColor: "#654321",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 30,
-    width: 250,
-    alignItems: "center",
-    justifyContent: "center",
-},
-addToCartText: { 
-    color: "#fff", 
-    fontWeight: "600", 
-    textAlign: "center", // center text horizontally
-    fontSize: 16,        // optional, makes text a bit bigger
-},});
+        fontSize: 16,
+    },
+
+});

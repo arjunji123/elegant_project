@@ -4,6 +4,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
 import { useNavigation } from "@react-navigation/native";
 import Arrowleft from '../../assets/icons/Arrowleft.png';
+import Header from "../../components/Header";
 
 
 
@@ -60,15 +61,8 @@ const AddresListScreen = () => {
         <View style={styles.container}>
             {/* Header */}
 
-            <View style={styles.header}>
-        <Pressable onPress={handleGoBack} style={styles.backButton}>
-          <Image source={Arrowleft} style={styles.backIcon} />
-        </Pressable>
+         <Header text={"Address"} onPress={handleGoBack}/>
 
-        <View style={styles.titleContainer}>
-          <Text style={styles.headerTitle}>Address</Text>
-        </View>
-        </View>
 
 
             {/* Address List */}

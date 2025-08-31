@@ -4,6 +4,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from "../../Context/AuthContext";
 import { useToast } from "../../Context/ToastContext";
+import Header from '../../components/Header';
 
 
 const AddressForm = () => {
@@ -42,8 +43,8 @@ const AddressForm = () => {
     try {
       const response = await fetch(
         mode === 'edit'
-          ? `http://192.168.1.12:5000/api/address/${addressData.id}`
-          : `http://192.168.1.12:5000/api/address`,
+          ? `https://elegant-project.onrender.com/api/address/${addressData.id}`
+          : `https://elegant-project.onrender.com/api/address`,
         {
           method: mode === 'edit' ? 'PUT' : 'POST',
           headers: {
@@ -67,12 +68,13 @@ const AddressForm = () => {
       // Alert.alert(error.message);
     }
   };
-
+  const handleGoBack = () => {
+        navigation.goBack();
+      };
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {/* Search Box */}
-     
-
+      <Header text={"Add Address"} onPress={handleGoBack}/>
       {/* Current Address */}
       <View style={styles.currentAddressRow}>
         <Ionicons name="locate" size={20} color="black" />
@@ -127,7 +129,7 @@ const AddressForm = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: '#fff' },
+  container: { padding: 16, backgroundColor: '#fff',  flex: 1, },
   searchBox: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#f3f3f3',
     borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginBottom: 14,

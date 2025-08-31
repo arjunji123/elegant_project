@@ -1,6 +1,6 @@
 // FlashSale.tsx
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator, Button } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
 import Loader from "../../components/AnimatedLoader";
@@ -26,7 +26,9 @@ const FlashSale = ({ navigation }) => {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const isFocused = useIsFocused();
-  const { setProductId, token } = useAuth()
+  const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({});
+
+  const { setProductId, token, setCategoriesId } = useAuth()
   const getProduct = async () => {
     try {
       // setLoading(true)
@@ -118,15 +120,8 @@ const FlashSale = ({ navigation }) => {
       fetchCategories();
       getProduct();
     }
-  }, [isFocused]);
+  }, [isFocused, activeCategory]);
 
-
-
-  // Load products every time activeCategory changes
-  useEffect(() => {
-
-    setLoading(false)
-  }, [activeCategory]);
 
 
   useEffect(() => {
@@ -187,12 +182,25 @@ const FlashSale = ({ navigation }) => {
       console.error("Wishlist toggle failed:", error);
     }
   };
-
+  console.log(activeCategory, 'activeCategoryactiveCategory')
   if (loading) {
     return (
       <AnimatedLoader visible={loading} />
     );
   }
+  const handleToggleFavorite = async (id: number, current: boolean) => {
+    // Optimistic update
+    setWishlistItems((prev) => ({ ...prev, [id]: !current }));
+
+    try {
+      await toggleFavorite(id, current); // API call
+    } catch (error) {
+      // Revert if API fails
+      setWishlistItems((prev) => ({ ...prev, [id]: current }));
+      console.error("Failed to update wishlist", error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -226,43 +234,59 @@ const FlashSale = ({ navigation }) => {
       {/* Products */}
       {loading ? <Loader /> :
         <View style={styles.productsGrid}>
-          {products && products?.map((item) => (
-            <View key={item.id} style={styles.productCard}>
-              <View style={styles.imageContainer}>
+          {products.length ?
 
-                <Image
-                  source={item.images ? { uri: item.images[0] } : redDress}
-                  style={styles.productImage}
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.wishlistBtn,
-                    { backgroundColor: item.wishlist_is ? "#ffffff" : "#000000ff" }
-                  ]}
-                  onPress={() => toggleFavorite(item.id, item.wishlist_is)} >
-                  <Icon
-                    name={item.wishlist_is ? "heart" : "heart-outline"}
-                    size={22}
-                    color={item.wishlist_is ? "#000000" : "#ffffff"}  />
+            products.slice(0, 4)?.map((item) => (
+              <View key={item.id} style={styles.productCard}>
+                <View style={styles.imageContainer}>
+                  <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
+
+                    <Image
+                      source={item.images ? { uri: item.images[0] } : redDress}
+                      style={styles.productImage}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.wishlistBtn,
+                      { backgroundColor: wishlistItems[item.id] ?? item.wishlist_is ? "#ffffff" : "#000000ff" }
+                    ]}
+                    onPress={() => handleToggleFavorite(item.id, wishlistItems[item.id] ?? item.wishlist_is)}
+                  >
+                    <Icon
+                      name={(wishlistItems[item.id] ?? item.wishlist_is) ? "heart" : "heart-outline"}
+                      size={22}
+                      color={(wishlistItems[item.id] ?? item.wishlist_is) ? "#000000" : "#ffffff"}
+                    />
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
+                  <Text style={styles.productName} numberOfLines={1}>
+                    {item.name}
+                  </Text>
                 </TouchableOpacity>
-              </View>
-              <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
-                <Text style={styles.productName} numberOfLines={1}>
-                  {item.name}
-                </Text>
-              </TouchableOpacity>
 
-              <View style={styles.priceRatingRow}>
-                <Text style={styles.productPrice}>${item.price}</Text>
-                <View style={styles.ratingRow}>
-                  <Icon name="star" size={14} color="gold" />
-                  <Text style={styles.ratingText}>{item.rating ?? "5"}</Text>
+                <View style={styles.priceRatingRow}>
+                  <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
+                    <Text style={styles.productPrice}>₹{item.price}</Text>
+                  </TouchableOpacity>
+                  <View style={styles.ratingRow}>
+                    <Icon name="star" size={14} color="gold" />
+                    <Text style={styles.ratingText}>{item.rating ?? "5"}</Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          ))}
-        </View>}
+            )) : <View style={styles.noProductsContainer}>
+              <Text style={styles.noProductsText}>No Products</Text>
+            </View>}
 
+
+        </View>}
+      {products.length &&
+        <TouchableOpacity onPress={() => { setCategoriesId(activeCategory), navigation.navigate('ProductScreen') }}>
+          <Text style={styles.noProductsText}>View All</Text>
+        </TouchableOpacity>
+      }
     </View>
   );
 };
@@ -349,8 +373,8 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   productImage: {
-    width: "100%",
-    height: 150,
+    width: 180,
+    height: 200,
     borderRadius: 8,
   },
   wishlistBtn: {
@@ -382,5 +406,18 @@ const styles = StyleSheet.create({
     marginLeft: 2,
     fontWeight: 400,
     color: "#292526",
+  },
+  noProductsContainer: {
+    minHeight: 400,
+    flexGrow: 1,             // ensures ScrollView content takes full height
+    justifyContent: 'center', // vertical center
+    alignItems: 'center',     // horizontal center
+    backgroundColor: '#fff',  // optional
+  },
+  noProductsText: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#704F38',
+    textAlign: 'center',
   },
 });

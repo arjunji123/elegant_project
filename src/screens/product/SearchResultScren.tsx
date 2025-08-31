@@ -3,6 +3,7 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpa
 import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
 import Arrowleft from "../../assets/icons/Arrowleft.png";
+import Header from "../../components/Header";
 
 
 interface Product {
@@ -12,18 +13,18 @@ interface Product {
   image: string;
   rating: number;
 }
-const redDress  = "https://res.cloudinary.com/dfhzted2d/image/upload/v1756059417/products/kqnhfrcvlcs9b3nxy5fg.png"
+const redDress = "https://res.cloudinary.com/dfhzted2d/image/upload/v1756059417/products/kqnhfrcvlcs9b3nxy5fg.png"
 
 
 const SearchResultScren = ({ navigation }) => {
-  const {query, token} = useAuth()
+  const { query, token, setProductId } = useAuth()
 
-//   const [activeCategory, setActiveCategory] = useState(categoriesId?categoriesId:  "all");
+  //   const [activeCategory, setActiveCategory] = useState(categoriesId?categoriesId:  "all");
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({});
   const [loading, setLoading] = useState(true);
 
-  
+
   const getProducts = async () => {
     try {
       const res = await fetch(
@@ -50,86 +51,77 @@ const SearchResultScren = ({ navigation }) => {
     }
   };
 
-  useEffect(() => {  
-      getProducts();    
+  useEffect(() => {
+    getProducts();
   }, []);
-  // Fetch categories
-//   const fetchCategories = async () => {
-//     try {
-//       const res = await fetch("https://elegant-project.onrender.com/api/categories");
-//       const text = await res.text();
-//       const data = JSON.parse(text);
-//       if (data.success && data.data) {
-//         setCategories([
-//           { id: "all", name: "All Items" },
-//           { id: "newest", name: "Newest" },
-//           ...data.data,
-//         ]);
-//       }
-//     } catch (error) {
-//       console.error("Categories fetch error:", error);
-//     }
-//   };
 
-//   useEffect(() => {
-//     fetchCategories();
 
-//   }, []);
+  const toggleFavorite = async (productId: string, currentStatus: number) => {
+    const newStatus = currentStatus === 1 ? 0 : 1;
 
-const toggleFavorite = async (productId: string, currentStatus: number) => {
-  const newStatus = currentStatus === 1 ? 0 : 1;
-
-  try {
-    const res = await fetch(`https://elegant-project.onrender.com/api/add-wishlist`, {
-      method: "post", // or PATCH depending on backend
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`, // 👈 check token value
-      },
-      body: JSON.stringify({
-        product_id: productId,
-      }),
-    });
-
-    const text = await res.text(); // get raw text first
-    console.log("Raw response:", text);
-
-    let data;
     try {
-      data = JSON.parse(text); // parse only if JSON
-    } catch (parseErr) {
-      console.error("JSON parse failed. Response was not JSON:", text);
-      return;
+      const res = await fetch(`https://elegant-project.onrender.com/api/add-wishlist`, {
+        method: "post", // or PATCH depending on backend
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`, // 👈 check token value
+        },
+        body: JSON.stringify({
+          product_id: productId,
+        }),
+      });
+
+      const text = await res.text(); // get raw text first
+      console.log("Raw response:", text);
+
+      let data;
+      try {
+        data = JSON.parse(text); // parse only if JSON
+      } catch (parseErr) {
+        console.error("JSON parse failed. Response was not JSON:", text);
+        return;
+      }
+
+      console.log("Product updated:", data);
+
+      if (data.success) {
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === productId ? { ...p, wishlist_is: newStatus } : p
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Wishlist toggle failed:", error);
     }
+  };
+  const handleToggleFavorite = async (id: number, current: boolean) => {
+    // Optimistic update
+    setWishlistItems((prev) => ({ ...prev, [id]: !current }));
 
-    console.log("Product updated:", data);
-
-    if (data.success) {
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === productId ? { ...p, wishlist_is: newStatus } : p
-        )
-      );
+    try {
+      await toggleFavorite(id, current); // API call
+    } catch (error) {
+      // Revert if API fails
+      setWishlistItems((prev) => ({ ...prev, [id]: current }));
+      console.error("Failed to update wishlist", error);
     }
-  } catch (error) {
-    console.error("Wishlist toggle failed:", error);
-  }
-};
-
-    const handleGoBack = () => navigation.goBack();
+  };
+  const handleGoBack = () => navigation.goBack();
 
   return (
     <ScrollView
       style={styles.scrollContainer}
       contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.header}>
+      showsVerticalScrollIndicator={false}>
+      <Header text={"Product Listing"} onPress={handleGoBack} />
+
+      {/* <View style={styles.header}>
   <Pressable onPress={handleGoBack} style={styles.backButton}>
                     <Image source={Arrowleft} style={styles.backIcon} />
                 </Pressable>
         <Text style={styles.title}>Product Listing</Text>
-      </View>
+      </View> */}
       <View style={styles.searchContainer}>
         <TouchableOpacity
           style={{ flex: 1 }}
@@ -157,7 +149,6 @@ const toggleFavorite = async (productId: string, currentStatus: number) => {
           <Icon name="options-outline" size={20} color="#000" />
         </TouchableOpacity>
       </View>
-      <Text style={styles.subtitle}>Your List</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
         {/* {categories.map((cat) => (
           <TouchableOpacity
@@ -173,41 +164,53 @@ const toggleFavorite = async (productId: string, currentStatus: number) => {
       </ScrollView>
 
       <View style={styles.productsGrid}>
-        {products.map((item) => (
-          <View key={item.id} style={styles.productCard}>
-            <View style={styles.imageContainer}>
-              {/* Show image from API if exists, fallback to redDress */}
-              <Image
+        {products.length ?
+          products.map((item) => (
+            <View key={item.id} style={styles.productCard}>
+              <View style={styles.imageContainer}>
+                {/* Show image from API if exists, fallback to redDress */}
+                <Image
                   source={item.images ? { uri: item.images[0] } : redDress}
-                style={styles.productImage}
-              />
-             <TouchableOpacity
-                               style={[
-                                 styles.wishlistBtn,
-                                 { backgroundColor: item.wishlist_is ? "#ffffff" : "#000000ff" }
-                               ]}
-                               onPress={() => toggleFavorite(item.id, item.wishlist_is)} >
-                               <Icon
-                                 name={item.wishlist_is ? "heart" : "heart-outline"}
-                                 size={22}
-                                 color={item.wishlist_is ? "#000000" : "#ffffff"}  />
-                             </TouchableOpacity>
-            </View>
-            <TouchableOpacity onPress={() => navigation.navigate("ProductScreen")}>
-              <Text style={styles.productName} numberOfLines={1}>
-                {item.name}
-              </Text>
-            </TouchableOpacity>
+                  style={styles.productImage}
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.wishlistBtn,
+                    { backgroundColor: wishlistItems[item.id] ?? item.wishlist_is ? "#ffffff" : "#000000ff" }
+                  ]}
+                  onPress={() => handleToggleFavorite(item.id, wishlistItems[item.id] ?? item.wishlist_is)}
+                >
+                  <Icon
+                    name={(wishlistItems[item.id] ?? item.wishlist_is) ? "heart" : "heart-outline"}
+                    size={22}
+                    color={(wishlistItems[item.id] ?? item.wishlist_is) ? "#000000" : "#ffffff"}
+                  />
+                </TouchableOpacity>
 
-            <View style={styles.priceRatingRow}>
-              <Text style={styles.productPrice}>${item.price}</Text>
-              <View style={styles.ratingRow}>
-                <Icon name="star" size={14} color="gold" />
-                <Text style={styles.ratingText}>{item.rating ?? "5"}</Text>
+              </View>
+              <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
+                <Text style={styles.productName} numberOfLines={1}>
+                  {item.name}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.priceRatingRow}>
+                <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
+
+                  <Text style={styles.productPrice}>₹{item.price}</Text>
+                </TouchableOpacity>
+
+                <View style={styles.ratingRow}>
+                  <Icon name="star" size={14} color="gold" />
+                  <Text style={styles.ratingText}>{item.rating ?? "5"}</Text>
+                </View>
               </View>
             </View>
+          )) :
+          <View style={styles.noProductsContainer}>
+            <Text style={styles.noProductsText}>No Products</Text>
           </View>
-        ))}
+        }
       </View>
 
 
@@ -222,7 +225,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   scrollContent: {
-    paddingTop: 20,
+    paddingTop: 10,
     paddingHorizontal: 10,
     paddingBottom: 30, // extra space at bottom
   },
@@ -234,16 +237,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-          backButton: { padding: 8 },
-    backIcon: { width: 24, height: 24, resizeMode: 'contain' },
- title: {
-  flex: 1,
-  textAlign: "center",
-  fontSize: 24,
-  color: "#000000",
-  fontWeight: "normal",
-  fontFamily: "Poppins",
-},
+  backButton: { padding: 8 },
+  backIcon: { width: 24, height: 24, resizeMode: 'contain' },
+  title: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 24,
+    color: "#000000",
+    fontWeight: "normal",
+    fontFamily: "Poppins",
+  },
   subtitle: {
     textAlign: "left",
     fontSize: 18,
@@ -278,7 +281,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f5f5f5",
     borderRadius: 10,
     padding: 8,
-    shadowColor: "#000",
+
     shadowOffset: { width: 0, height: 2 },
     marginHorizontal: 8,
     elevation: 2,
@@ -324,7 +327,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   productImage: {
-    width: "100%",
+    width: 180,
     height: 200,
     borderRadius: 8,
   },
@@ -356,5 +359,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginLeft: 2,
     color: "#555",
+  },
+  noProductsContainer: {
+    minHeight: 400,
+    flexGrow: 1,             // ensures ScrollView content takes full height
+    justifyContent: 'center', // vertical center
+    alignItems: 'center',     // horizontal center
+    backgroundColor: '#fff',  // optional
+  },
+  noProductsText: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#704F38',
+    textAlign: 'center',
   },
 })

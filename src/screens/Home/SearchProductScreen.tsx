@@ -3,6 +3,9 @@ import React, { useState } from "react";
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
+import Arrowleft from "../../assets/icons/Arrowleft.png";
+import Header from "../../components/Header";
+
 
 const SearchProductScreen = ({ navigation }) => {
   const [search, setSearch] = useState("");
@@ -14,11 +17,13 @@ const SearchProductScreen = ({ navigation }) => {
       navigation.navigate("SearchResultScren");
     }
   };
-
+  const handleGoBack = () => {
+    navigation.goBack();
+  };
   return (
     <View style={styles.container}>
       {/* Title */}
-      <Text style={styles.title}>Search Product</Text>
+      <Header text={"Search Product"} onPress={handleGoBack} />
 
       {/* Search Box */}
       <View style={styles.searchContainer}>

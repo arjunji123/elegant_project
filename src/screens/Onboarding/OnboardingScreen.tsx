@@ -30,7 +30,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
             Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
           </Text>
           <Button
-            text="Login"
+            text="Get Started"
             bgColor="#ffffff"
             textColor="#704f38"
             onPress={handleGetStarted}

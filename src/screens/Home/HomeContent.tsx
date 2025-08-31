@@ -1,5 +1,5 @@
 // HomeContent.tsx
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -15,14 +15,56 @@ import avtar from "../../assets/images/avatar.png";
 import DiscoutImage from "../../assets/images/DiscoutImage.png";
 import CategoriesHome from "../categories/CategoriesHome";
 import FlashSale from "../product/FlashSale";
-import cart from "../../assets/images/cart.png"
 import { useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useIsFocused } from "@react-navigation/native";
 
 const HomeContent = ({ navigation }) => {
-  
-  const { user } = useAuth();
- useFocusEffect(
+
+
+
+  const { user, token } = useAuth();
+  const isFocused = useIsFocused();
+
+  const [profilePic, setProfilePic] = useState(null);
+  const userId = user?.id || "123";
+  useEffect(() => {
+       if (isFocused) {
+         let mounted = true;
+    const testAuth = async () => {
+      try {
+        // show loader when fetch starts
+
+        const res = await fetch(`https://elegant-project.onrender.com/api/user`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const text = await res.text();
+        const data = JSON.parse(text);
+        if (data.success && data.data && mounted) {
+
+          setProfilePic(data.data.profile_pic);
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
+    };
+
+    if (token && userId) {
+      testAuth();
+    }
+    return () => {
+      mounted = false;
+    };
+       }
+   
+  }, [isFocused]);
+
+  useFocusEffect(
     useCallback(() => {
       const clearFilters = async () => {
         await AsyncStorage.removeItem("userFilters");
@@ -31,76 +73,75 @@ const HomeContent = ({ navigation }) => {
       clearFilters();
     }, [])
   );
-
   return (
     <ScrollView
       style={styles.scrollContainer}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-<View style={styles.headerRow}>
-  <View style={styles.leftContainer}>
-    <TouchableOpacity onPress={() => navigation.navigate("ProfileScreen")}>
-      <Image source={avtar} style={styles.avatar} />
-    </TouchableOpacity>
-    <View>
-      <Text style={styles.greeting}>Have a nice day!</Text>
-      <Text style={styles.userName}>{user?.name}</Text>
-    </View>
-  </View>
+      <View style={styles.headerRow}>
+        <View style={styles.leftContainer}>
+          <TouchableOpacity onPress={() => navigation.navigate("ProfileScreen")}>
+            <Image source={profilePic ? { uri: profilePic } : avtar} style={styles.avatar} />
+          </TouchableOpacity>
+          <View>
+            <Text style={styles.greeting}>Have a nice day!</Text>
+            <Text style={styles.userName}>{user?.name}</Text>
+          </View>
+        </View>
 
-  <TouchableOpacity style={styles.notificationButton}>
-    {/* <Image
+        <TouchableOpacity style={styles.notificationButton}>
+          {/* <Image
       source={cart}
       style={styles.notificationIcon}
     /> */}
-     <Icon
+          <Icon
             name="bag-outline"
             size={32}
             color="#000000ff"
             style={{ marginHorizontal: 8 }}
           />
-  <Text style={styles.colon}>:</Text>
+          <Text style={styles.colon}>:</Text>
 
-   <View style={styles.redDotWrapper}>
-    <View style={styles.redDotInner} />
-  </View>
-  </TouchableOpacity>
-</View>
+          <View style={styles.redDotWrapper}>
+            <View style={styles.redDotInner} />
+          </View>
+        </TouchableOpacity>
+      </View>
 
 
       <View style={styles.searchContainer}>
-      <TouchableOpacity
+        <TouchableOpacity
           style={{ flex: 1 }}
           onPress={() => navigation.navigate("SearchProductScreen")}
           activeOpacity={0.8}
         >
-        <View style={styles.searchBar}>
-          <Icon
-            name="search"
-            size={18}
-            color="#aaa"
-            style={{ marginHorizontal: 8 }}
-          />
-          <TextInput
-            // placeholder="Search here"
-            // placeholderTextColor="#aaa"
-            // style={styles.searchInput}
-            onPress={() => navigation.navigate("SearchProductScreen")}    
-           />
+          <View style={styles.searchBar}>
+            <Icon
+              name="search"
+              size={18}
+              color="#aaa"
+              style={{ marginHorizontal: 8 }}
+            />
+            <TextInput
+              // placeholder="Search here"
+              // placeholderTextColor="#aaa"
+              // style={styles.searchInput}
+              onPress={() => navigation.navigate("SearchProductScreen")}
+            />
 
-        </View>
+          </View>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.filterButton} onPress={()=>navigation.navigate("AdvanceFilterScreen")}>
+        <TouchableOpacity style={styles.filterButton} onPress={() => navigation.navigate("AdvanceFilterScreen")}>
           <Icon name="options-outline" size={20} color="#000" />
         </TouchableOpacity>
       </View>
-
-      <Image style={styles.DiscoutImage} source={DiscoutImage} />
-
+      <TouchableOpacity onPress={() => navigation.navigate('DiscountProductScreen')}>
+        <Image style={styles.DiscoutImage} source={DiscoutImage} />
+      </TouchableOpacity>
       <CategoriesHome navigation={navigation} />
-      <FlashSale navigation={navigation}/>
+      <FlashSale navigation={navigation} />
     </ScrollView>
   );
 };
@@ -112,7 +153,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   scrollContent: {
-    paddingTop: 20,
+    paddingTop: 10,
     paddingHorizontal: 10,
     paddingBottom: 100, // extra space at bottom
   },
@@ -120,7 +161,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-     marginTop: 20,
+    marginTop: 20,
     marginBottom: 15,
   },
   leftContainer: {
@@ -162,7 +203,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "#000",
   },
-  
+
   redDotWrapper: {
     position: "absolute",
     top: 8,
@@ -174,7 +215,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  blackDot:{
+  blackDot: {
     position: "absolute",
     backgroundColor: "#1D1E20",
     top: 23,
@@ -197,7 +238,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: "#DC1010", // solid center
   },
-  
+
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -228,10 +269,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
     elevation: 2,
   },
-  DiscoutImage: {
-    width: '100%',
-    resizeMode: 'cover', // scale the image properly
-    borderRadius: 8, // optional rounded corners
-    marginTop: 20,
-  }
+DiscoutImage: {
+  width: '100%',
+  resizeMode: 'cover',
+  borderRadius: 8,
+  marginTop: 20,
+  alignSelf: "center",
+}
+
 });

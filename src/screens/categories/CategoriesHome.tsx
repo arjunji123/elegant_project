@@ -39,7 +39,7 @@ const CategoriesHome = ({ navigation }) => {
       {/* Header */}
       <View style={styles.headerRow}>
         <Text style={styles.title}>Category</Text>
-        <TouchableOpacity onPress={() => navigation.navigate("CategoryScreen")}>
+        <TouchableOpacity onPress={() => navigation.navigate("SubCategoriesScreen")}>
           <Text style={styles.seeAll}>See All</Text>
         </TouchableOpacity>
       </View>

@@ -16,14 +16,10 @@ interface Product {
     rating: number;
 }
 
-const images = [
-    { id: "1", uri: "https://placekitten.com/600/600" },
-    { id: "2", uri: "https://placekitten.com/601/600" },
-    { id: "3", uri: "https://placekitten.com/602/600" },
-    { id: "4", uri: "https://placekitten.com/603/600" },
-];
+
 const FilteredProducts = ({ navigation }) => {
     const { filter } = useFilter()
+    const [selectedCategories, setSelectedCategories] = useState<number[]>(filter.category_id);
 
     const [activeCategory, setActiveCategory] = useState(filter.category_id?.id);
     const [categorieID, setCategorieID] = useState(filter.category_id?.id);
@@ -31,8 +27,7 @@ const FilteredProducts = ({ navigation }) => {
     const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const { token, setProductId } = useAuth()
-    const [favorites, setFavorites] = useState<Set<string>>(new Set());
-
+const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({});
     const getFilteredProducts = async () => {
         try {
             setLoading(true);
@@ -44,8 +39,8 @@ const FilteredProducts = ({ navigation }) => {
             if (activeCategory && activeCategory !== "all" && activeCategory !== "newest") {
                 url.searchParams.append("category_id", categorieID);
             }
-            if (filter.subcategory_id) {
-                url.searchParams.append("subcategory_id", filter.subcategory_id);
+            if (filter.category_id) {
+                url.searchParams.append("subcategory_id", filter.category_id);
             }
             if (filter.min_price) {
                 url.searchParams.append("min_price", filter.min_price.toString());
@@ -85,7 +80,12 @@ const FilteredProducts = ({ navigation }) => {
             setLoading(false);
         }
     };
-
+    const toggleCategory = (id: number) => {
+        setSelectedCategories((prev) =>
+            prev.includes(id) ? prev.filter((catId) => catId !== id) : [...prev, id]
+        );
+    };
+    console.log(filter.category_id, 'selectedCategories')
 
     // Fetch categories
     const fetchCategories = async () => {
@@ -162,101 +162,138 @@ const FilteredProducts = ({ navigation }) => {
             console.error("Wishlist toggle failed:", error);
         }
     };
+
+    const handleToggleFavorite = async (id: number, current: boolean) => {
+  // Optimistic update
+  setWishlistItems((prev) => ({ ...prev, [id]: !current }));
+
+  try {
+    await toggleFavorite(id, current); // API call
+  } catch (error) {
+    // Revert if API fails
+    setWishlistItems((prev) => ({ ...prev, [id]: current }));
+    console.error("Failed to update wishlist", error);
+  }
+};
     const handleGoBack = () => navigation.goBack();
 
+    console.log(products.length, "productsproducts")
 
     return (
-        <ScrollView
-            style={styles.scrollContainer}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-        >
-            <View style={styles.header}>
-                 <Pressable onPress={handleGoBack} style={styles.backButton}>
-                    <Image source={Arrowleft} style={styles.backIcon} />
-                </Pressable>
-                <Text style={styles.title}>Product Listing</Text>
-            </View>
-            <View style={styles.searchContainer}>
-                <TouchableOpacity
-                    style={{ flex: 1 }}
-                    onPress={() => navigation.navigate("SearchProductScreen")}
-                    activeOpacity={0.8}>
-                    <View style={styles.searchBar}>
-                        <Icon
-                            name="search"
-                            size={18}
-                            color="#aaa"
-                            style={{ marginHorizontal: 8 }} />
-                        <TextInput
-                            // placeholder="Search here"
-                            // placeholderTextColor="#aaa"
-                            // style={styles.searchInput}
-                            onPress={() => navigation.navigate("SearchProductScreen")}
-                        />
-
-                    </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.filterButton} onPress={() => navigation.navigate("AdvanceFilterScreen")}>
-                    <Icon name="options-outline" size={20} color="#000000ff" />
-                </TouchableOpacity>
-            </View>
-            <Text style={styles.subtitle}>Your List</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
-                {categories.map((cat) => (
+        <View style={{ flex: 1 }}>
+            <ScrollView
+                style={styles.scrollContainer}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={styles.header}>
+                    <Pressable onPress={handleGoBack} style={styles.backButton}>
+                        <Image source={Arrowleft} style={styles.backIcon} />
+                    </Pressable>
+                    <Text style={styles.title}>Product Listing</Text>
+                </View>
+                <View style={styles.searchContainer}>
                     <TouchableOpacity
-                        key={cat.id}
-                        style={[styles.categoryChip, activeCategory === cat.id && styles.activeCategory]}
-                        onPress={() => { setActiveCategory(cat.id), setCategorieID(cat.id) }}
-                    >
-                        <Text style={[styles.categoryText, activeCategory === cat.id && styles.activeCategoryText]}>
-                            {cat.name}
-                        </Text>
+                        style={{ flex: 1 }}
+                        onPress={() => navigation.navigate("SearchProductScreen")}
+                        activeOpacity={0.8}>
+                        <View style={styles.searchBar}>
+                            <Icon
+                                name="search"
+                                size={18}
+                                color="#aaa"
+                                style={{ marginHorizontal: 8 }} />
+                            <TextInput
+                                // placeholder="Search here"
+                                // placeholderTextColor="#aaa"
+                                // style={styles.searchInput}
+                                onPress={() => navigation.navigate("SearchProductScreen")}
+                            />
+
+                        </View>
                     </TouchableOpacity>
-                ))}
-            </ScrollView>
 
-            <View style={styles.productsGrid}>
-                {products.map((item) => (
-                    <View key={item.id} style={styles.productCard}>
-                        <View style={styles.imageContainer}>
-
-                            <Image
-                                source={item.images ? { uri: item.images[0] } : redDress}
-                                style={styles.productImage} />
-
+                    <TouchableOpacity style={styles.filterButton} onPress={() => navigation.navigate("AdvanceFilterScreen")}>
+                        <Icon name="options-outline" size={20} color="#000000ff" />
+                    </TouchableOpacity>
+                </View>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={{ marginVertical: 10 }}
+                >
+                    {categories.map((cat) => {
+                        const isSelected = selectedCategories.includes(cat.id);
+                        return (
                             <TouchableOpacity
-                                style={[
-                                    styles.wishlistBtn,
-                                    { backgroundColor: item.wishlist_is ? "#ffffff" : "#000000ff" }
-                                ]}
-                                onPress={() => toggleFavorite(item.id, item.wishlist_is)} >
-                                <Icon
-                                    name={item.wishlist_is ? "heart" : "heart-outline"}
-                                    size={22}
-                                    color={item.wishlist_is ? "#000000" : "#ffffff"} />
+                                key={cat.id}
+                                style={[styles.categoryChip, isSelected && styles.activeCategory]}
+                                onPress={() => toggleCategory(cat.id)}
+                            >
+                                <Text style={[styles.categoryText, isSelected && styles.activeCategoryText]}>
+                                    {cat.name}
+                                </Text>
                             </TouchableOpacity>
-                        </View>
-                        <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
-                            <Text style={styles.productName} numberOfLines={1}>
-                                {item.name}
-                            </Text>
-                        </TouchableOpacity>
+                        );
+                    })}
+                </ScrollView>
 
-                        <View style={styles.priceRatingRow}>
-                            <Text style={styles.productPrice}>${item.price}</Text>
-                            <View style={styles.ratingRow}>
-                                <Icon name="star" size={14} color="gold" />
-                                <Text style={styles.ratingText}>{item.rating ?? "5"}</Text>
+                <View style={styles.productsGrid}>
+                    {products.length
+                        ?
+                        products.map((item) => (
+                            <View key={item.id} style={styles.productCard}>
+                                <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
+
+                                    <View style={styles.imageContainer}>
+                                        <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
+
+                                            <Image
+                                                source={item.images ? { uri: item.images[0] } : redDress}
+                                                style={styles.productImage} />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+  style={[
+    styles.wishlistBtn,
+    { backgroundColor: wishlistItems[item.id] ?? item.wishlist_is ? "#ffffff" : "#000000ff" }
+  ]}
+  onPress={() => handleToggleFavorite(item.id, wishlistItems[item.id] ?? item.wishlist_is)}
+>
+  <Icon
+    name={(wishlistItems[item.id] ?? item.wishlist_is) ? "heart" : "heart-outline"}
+    size={22}
+    color={(wishlistItems[item.id] ?? item.wishlist_is) ? "#000000" : "#ffffff"}
+  />
+</TouchableOpacity>
+
+                                    </View>
+                                    <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
+                                        <Text style={styles.productName} numberOfLines={1}>
+                                            {item.name}
+                                        </Text>
+                                    </TouchableOpacity>
+
+                                    <View style={styles.priceRatingRow}>
+                                        <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
+                                            <Text style={styles.productPrice}>₹{item.price}</Text>
+                                        </TouchableOpacity>
+                                        <View style={styles.ratingRow}>
+                                            <Icon name="star" size={14} color="gold" />
+                                            <Text style={styles.ratingText}>{item.rating ?? "5"}</Text>
+                                        </View>
+                                    </View>
+                                </TouchableOpacity>
                             </View>
-                        </View>
-                    </View>
-                ))}
-            </View>
+                        )) : <>
+
+                            <View style={styles.noProductsContainer}>
+                                <Text style={styles.noProductsText}>No Products</Text>
+                            </View>                </>}
+                </View>
 
 
-        </ScrollView>
+            </ScrollView>
+        </View>
     )
 }
 
@@ -267,7 +304,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#fff",
     },
     scrollContent: {
-        paddingTop: 20,
+        paddingTop: 10,
         paddingHorizontal: 10,
         paddingBottom: 30, // extra space at bottom
     },
@@ -279,16 +316,16 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
     },
-        backButton: { padding: 8 },
+    backButton: { padding: 8 },
     backIcon: { width: 24, height: 24, resizeMode: 'contain' },
- title: {
-  flex: 1,
-  textAlign: "center",
-  fontSize: 24,
-  color: "#000000",
-  fontWeight: "normal",
-  fontFamily: "Poppins",
-},
+    title: {
+        flex: 1,
+        textAlign: "center",
+        fontSize: 24,
+        color: "#000000",
+        fontWeight: "normal",
+        fontFamily: "Poppins",
+    },
     subtitle: {
         textAlign: "left",
         fontSize: 18,
@@ -371,7 +408,7 @@ const styles = StyleSheet.create({
         overflow: "hidden",
     },
     productImage: {
-        width: "100%",
+        width: 180,
         height: 200,
         borderRadius: 8,
     },
@@ -403,5 +440,18 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginLeft: 2,
         color: "#555",
+    },
+    noProductsContainer: {
+        minHeight: 400,
+        flexGrow: 1,             // ensures ScrollView content takes full height
+        justifyContent: 'center', // vertical center
+        alignItems: 'center',     // horizontal center
+        backgroundColor: '#fff',  // optional
+    },
+    noProductsText: {
+        fontSize: 18,
+        fontWeight: '500',
+        color: '#704F38',
+        textAlign: 'center',
     },
 })

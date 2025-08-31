@@ -2,7 +2,7 @@ import { Image, Pressable, StyleSheet, Text, TextInput, View, Alert } from "reac
 import Arrowleft from '../../assets/icons/Arrowleft.png';
 import { ConfirmPasswordScreenProps } from "../../types/types";
 import { useState } from "react";
-import { useAuth } from "../../Context/AuthContext";
+import Header from "../../components/Header";
 import { useToast } from "../../Context/ToastContext";
 
 const ConfirmPasword: React.FC<ConfirmPasswordScreenProps> = ({ navigation }) => {
@@ -38,7 +38,6 @@ const ConfirmPasword: React.FC<ConfirmPasswordScreenProps> = ({ navigation }) =>
       });
 
       const data = await response.json();
-console.log(data,"datadatadatadata")
       if (response.ok && data.success) {
         showToast("Password reset successfully","success")
         navigation.replace("LoginSignupScreen");
@@ -53,12 +52,14 @@ console.log(data,"datadatadatadata")
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <Header text={"Reset Password"} onPress={handleGoBack}/>
+
+      {/* <View style={styles.header}>
         <Pressable onPress={handleGoBack} style={styles.backButton}>
           <Image source={Arrowleft} style={styles.backIcon} />
         </Pressable>
         <Text style={styles.title}>Reset Password</Text>       
-      </View>
+      </View> */}
 
       <View style={styles.inputFieldContainer}>
          <Text style={styles.label}>Email</Text>

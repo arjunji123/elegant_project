@@ -3,16 +3,13 @@ import {
   View,
   Text,
   TextInput,
-  StyleSheet,
-  Pressable,
-  Image,
-  Alert
+  StyleSheet
 } from 'react-native';
 import { OtpScreenProps } from '../../types/types';
-import Arrowleft from '../../assets/icons/Arrowleft.png';
 import Button from '../../components/Button';
 import { useAuth } from '../../Context/AuthContext';
 import { useToast } from '../../Context/ToastContext';
+import Header from '../../components/Header';
 
 const OTPScreen: React.FC<OtpScreenProps> = ({ navigation }) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -64,7 +61,6 @@ const { showToast } = useToast();
       const data = await res.json();
       
         if (res.ok && data.user) {
-          console.log(data,"datadatadataotp")
           navigation.replace("LoginScreen");
         }
         else {
@@ -104,12 +100,14 @@ const { showToast } = useToast();
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+       <Header text={"Verify OTP"} onPress={handleGoBack}/>
+
+      {/* <View style={styles.header}>
         <Pressable onPress={handleGoBack} style={styles.backButton}>
           <Image source={Arrowleft} style={styles.backIcon} />
         </Pressable>
         <Text style={styles.title}>Verify OTP</Text>
-      </View>
+      </View> */}
 
       {/* Description */}
       <Text style={styles.labelText}>
@@ -154,7 +152,6 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    marginTop: 20,
     backgroundColor: '#fff',
   },
   header: {

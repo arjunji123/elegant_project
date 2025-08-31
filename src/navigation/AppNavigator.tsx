@@ -5,7 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import type { RootStackParamList } from '../types/types';
-
+import RNBootSplash from "react-native-bootsplash";
 import OnboardingScreen from '../screens/Onboarding/OnboardingScreen';
 import LoginSignupScreen from '../screens/Login/LoginSignup';
 import LoginScreen from '../screens/Login/Login';
@@ -29,6 +29,7 @@ import ProductScreen from '../screens/product/ProductScreen';
 import FilteredProducts from '../screens/product/FilteredProducts';
 import ProductDetail from '../screens/product/ProductDetail';
 import SearchResultScren from '../screens/product/SearchResultScren';
+import DiscountProductScreen from '../screens/product/DiscountProductScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -40,14 +41,21 @@ export default function AppNavigator() {
   return (
     <SafeAreaProvider>
       <StatusBar />
-      <NavigationContainer>
+      <NavigationContainer
+      onReady={() => {
+        // 👇 Hide splash only once, after 3 seconds
+        setTimeout(() => {
+          RNBootSplash.hide({ fade: true });
+        }, 3000);
+      }}
+      >
         {isLoggedIn ? (
           // Logged in flow
           <Stack.Navigator initialRouteName="HomePageScreen">
             <Stack.Screen name="HomePageScreen" component={HomePage} options={{ headerShown: false, animation: 'slide_from_right', }} />
             <Stack.Screen name="ProfileScreen" component={ProfileScreen} options={{ headerShown: false }} />
             <Stack.Screen name="AddresListScreen" component={AddresListScreen} options={{ headerShown: false }}/>
-            <Stack.Screen name="AddressForm" component={AddressForm} options={{ title:"Add Address" }} />
+            <Stack.Screen name="AddressForm" component={AddressForm} options={{ headerShown: false }} />
             <Stack.Screen name="SettingsScreen" component={SettingsScreen} options={{ headerShown: false }} />
             <Stack.Screen name="AdvanceFilterScreen" component={AdvanceFilter} options={{ headerShown: false }} />
             <Stack.Screen name="CardScreen" component={CardScreen} options={{ headerShown: false }} />
@@ -57,9 +65,8 @@ export default function AppNavigator() {
             <Stack.Screen name="ProductScreen"  component={ProductScreen}  options={{ headerShown: false }}/>
             <Stack.Screen name="FilteredProductsScreen"  component={FilteredProducts}  options={{ headerShown: false }}/>
             <Stack.Screen name="ProductDetailScreen"  component={ProductDetail}  options={{ headerShown: false }}/>    
-
+            <Stack.Screen name="DiscountProductScreen"  component={DiscountProductScreen}  options={{ headerShown: false }}/>    
             <Stack.Screen name="SearchResultScren"  component={SearchResultScren}  options={{ headerShown: false }}/>    
-
           </Stack.Navigator>
         ) : (
           // Logged out flow

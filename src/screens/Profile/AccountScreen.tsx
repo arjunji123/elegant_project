@@ -4,9 +4,10 @@ import editIcon from "../../assets/icons/editIcon.png";
 import { useAuth } from "../../Context/AuthContext";
 import Arrowleft from '../../assets/icons/Arrowleft.png';
 import { AccountScreenProps } from "../../types/types";
+import Header from '../../components/Header';
 
 const AccountScreen: React.FC<AccountScreenProps> = ({ navigation }) => {
-  const { user,logout } = useAuth();
+  const { user, logout } = useAuth();
 
   const menuItems = [
     { icon: 'person-outline', label: 'My Profile', screen: 'ProfileScreen' },
@@ -38,29 +39,33 @@ const AccountScreen: React.FC<AccountScreenProps> = ({ navigation }) => {
       console.error("Logout failed:", err);
     }
   };
+  console.log(user, 'useruser')
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <Header text={"Account"} onPress={handleGoBack} />
+
+      {/* <View style={styles.header}>
         <Pressable onPress={handleGoBack} style={styles.backButton}>
           <Image source={Arrowleft} style={styles.backIcon} />
         </Pressable>
         <Text style={styles.title}>Account</Text>
-      </View>
+      </View> */}
 
       {/* Profile Header */}
       <View style={styles.profileHeader}>
-  <Icon name="person-circle-outline" size={60} color="#555" style={styles.avatar} />
+        {/* <image/> */}
+        <Icon name="person-circle-outline" size={60} color="#555" style={styles.avatar} />
 
-  <View style={styles.userInfo}>
-    <Text style={styles.name}>{user?.name}</Text>
-    <Text style={styles.email}>{user?.email}</Text>
-  </View>
+        <View style={styles.userInfo}>
+          <Text style={styles.name}>{user?.name}</Text>
+          <Text style={styles.email}>{user?.email}</Text>
+        </View>
 
-  <TouchableOpacity onPress={editHandle} style={styles.editButton}>
-    <Image source={editIcon} style={styles.editIcon} />
-  </TouchableOpacity>
-</View>
+        <TouchableOpacity onPress={editHandle} style={styles.editButton}>
+          <Image source={editIcon} style={styles.editIcon} />
+        </TouchableOpacity>
+      </View>
 
       {/* Menu List */}
       {menuItems.map((item, index) => (
@@ -97,16 +102,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  
+
   editButton: {
     marginRight: 10,
     padding: 5,
   },
-  
+
   avatar: {
     marginRight: 15,
   },
-  
+
   userInfo: {
     flex: 1,
   },
@@ -116,7 +121,7 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
 
-  
+
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -13,30 +13,48 @@ import {
 import Arrowleft from "../../assets/icons/Arrowleft.png";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
-import Loader from "../../components/AnimatedLoader";
-import SkeletonPlaceholder from "react-native-skeleton-placeholder";
+import Skeleton from "../../components/Skeleton";
+import Header from "../../components/Header";
 
 const SubCategoryScreen = ({ navigation }) => {
   const { categoriesName, setCategoriesId } = useAuth();
 
-  const [selected, setSelected] = useState(categoriesName || "T-shirt");
+  // State to hold the fetched categories, which include nested subcategories
   const [categories, setCategories] = useState([]);
-  const [subcategoriesId, setsubCategoriesID] = useState(1);
-
-  const [loadingCategories, setLoadingCategories] = useState(true);
-  const [loadingSubcategories, setLoadingSubcategories] = useState(true);
-
+  
+  // State to hold the subcategories of the currently selected category
   const [subCategories, setSubCategories] = useState([]);
 
-  // ✅ Fetch categories only once
+  // State to track the currently selected category name
+  const [selectedCategoryName, setSelectedCategoryName] = useState(categoriesName || "T-shirt");
+
+  // State for loading indicators
+  const [loadingCategories, setLoadingCategories] = useState(true);
+
+  // We can derive the selected category object based on the selected name
+  const selectedCategory = categories.find(
+    (cat) => cat.name === selectedCategoryName
+  );
+
+  // ✅ Fetch categories and their nested subcategories in a single API call
   useEffect(() => {
     const getCategories = async () => {
       setLoadingCategories(true);
       try {
-        const res = await fetch(`https://elegant-project.onrender.com/api/categories`);
+        const res = await fetch(
+          `https://elegant-project.onrender.com/api/categories-with-subcategories`
+        );
         const data = await res.json();
         if (data.success && data.data) {
           setCategories(data.data);
+          
+          // Find the initial subcategories based on the pre-selected name
+          const initialCategory = data.data.find(
+            (cat) => cat.name === selectedCategoryName
+          );
+          if (initialCategory) {
+            setSubCategories(initialCategory.subcategories);
+          }
         }
       } catch (error) {
         console.error("Error fetching categories:", error);
@@ -45,104 +63,78 @@ const SubCategoryScreen = ({ navigation }) => {
       }
     };
     getCategories();
-  }, []);
-
-  // ✅ Fetch subcategories when category changes
-  useEffect(() => {
-    const getSubCategories = async () => {
-      setLoadingSubcategories(true);
-      try {
-        const res = await fetch(
-          `https://elegant-project.onrender.com/api/categories/${subcategoriesId}/subcategories`
-        );
-        const data = await res.json();
-        if (data.success && data.data) {
-          setSubCategories(data.data);
-        }
-      } catch (error) {
-        console.error("Error fetching subcategories:", error);
-      } finally {
-        setLoadingSubcategories(false);
-      }
-    };
-
-    if (subcategoriesId) getSubCategories();
-  }, [subcategoriesId]);
+  }, []); // Run only once on component mount
 
   const handleGoBack = () => {
     navigation.goBack();
   };
 
-    if (loading) {
-    return (
-      <SkeletonPlaceholder>
-        {[...Array(5)].map((_, i) => (
-          <View key={i} style={{ flexDirection: "row", marginBottom: 20 }}>
-            <View style={{ width: 80, height: 80, borderRadius: 8 }} />
-            <View style={{ marginLeft: 10 }}>
-              <View style={{ width: 120, height: 20, borderRadius: 4 }} />
-              <View style={{ width: 80, height: 20, borderRadius: 4, marginTop: 6 }} />
-            </View>
-          </View>
-        ))}
-      </SkeletonPlaceholder>
-    );
-  }
-  
+  const handleCategoryPress = (category) => {
+    // Update the selected category name and the subcategories displayed
+    setSelectedCategoryName(category.name);
+    setSubCategories(category.subcategories);
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+
+      <Header text={"Categories List"} onPress={handleGoBack}/>
+
+      {/* <View style={styles.header}>
         <Pressable onPress={handleGoBack} style={styles.backButton}>
           <Image source={Arrowleft} style={styles.backIcon} />
         </Pressable>
-        <Text style={styles.title}>Categories</Text>
-      </View>
+        <Text style={styles.title}>Categories List</Text>
+      </View> */}
 
       {/* Search */}
-      {loadingCategories ? (
-        <Loader />
-      ) : (
-        <View style={styles.searchContainer}>
-          <TouchableOpacity
-            style={{ flex: 1 }}
-            onPress={() => navigation.navigate("SearchProductScreen")}
-            activeOpacity={0.8}
-          >
-            <View style={styles.searchBar}>
-              <Icon name="search" size={18} color="#838383" />
-              <TextInput
-                placeholder="Search here"
-                editable={false}
-                pointerEvents="none"
-              />
-            </View>
-          </TouchableOpacity>
-        </View>
-      )}
+      <View style={styles.searchContainer}>
+        <TouchableOpacity
+          style={{ flex: 1 }}
+          onPress={() => navigation.navigate("SearchProductScreen")}
+          activeOpacity={0.8}
+        >
+          <View style={styles.searchBar}>
+            <Icon name="search" size={18} color="#838383" />
+            <TextInput
+              placeholder="Search here"
+              editable={false}
+              pointerEvents="none"
+            />
+          </View>
+        </TouchableOpacity>
+      </View>
 
       {/* Body container */}
+       <Text style={styles.allCategories}>All Categories</Text>
       <View style={styles.bodyContainer}>
-        {/* Left Sidebar */}
+        {/* Left Sidebar (Categories) */}
+       
         {loadingCategories ? (
-          <Loader />
+          <View style={styles.sidebar}>
+            <Skeleton width={50} height={50} borderRadius={10} style={{ marginRight: 10, marginTop: 10 }} />
+            <Skeleton width={50} height={50} borderRadius={10} style={{ marginRight: 10, marginTop: 10 }} />
+            <Skeleton width={50} height={50} borderRadius={10} style={{ marginRight: 10, marginTop: 10 }} />
+            <Skeleton width={50} height={50} borderRadius={10} style={{ marginRight: 10, marginTop: 10 }} />
+            <Skeleton width={50} height={50} borderRadius={10} style={{ marginRight: 10, marginTop: 10 }} />
+            <Skeleton width={50} height={50} borderRadius={10} style={{ marginRight: 10, marginTop: 10 }} />
+            <Skeleton width={50} height={50} borderRadius={10} style={{ marginRight: 10, marginTop: 10 }} />
+          </View>
         ) : (
           <View style={styles.sidebar}>
             <FlatList
               data={categories}
               keyExtractor={(item) => String(item.id)}
               renderItem={({ item }) => {
-                const isSelected = selected === item.name;
+                const isSelected = selectedCategoryName === item.name;
                 return (
                   <TouchableOpacity
                     style={[
                       styles.sidebarItem,
                       isSelected && styles.sidebarItemSelected,
                     ]}
-                    onPress={() => {
-                      setSelected(item.name);
-                      setsubCategoriesID(item.id);
-                    }}
+                    onPress={() => handleCategoryPress(item)}
                     activeOpacity={0.75}
                   >
                     <View style={isSelected ? {} : styles.iconWrapper}>
@@ -163,8 +155,15 @@ const SubCategoryScreen = ({ navigation }) => {
 
         {/* Right Subcategories */}
         <View style={styles.subCategoryPanel}>
-          {loadingSubcategories ? (
-            <Loader />
+          {loadingCategories ? ( // Use the same loading state for both panels
+            <View style={{ padding: 20 }}>
+              <Skeleton width="80%" height={20} borderRadius={6} style={{ marginTop: 12 }} />
+              <Skeleton width="80%" height={20} borderRadius={6} style={{ marginTop: 12 }} />
+              <Skeleton width="80%" height={20} borderRadius={6} style={{ marginTop: 12 }} />
+              <Skeleton width="80%" height={20} borderRadius={6} style={{ marginTop: 12 }} />
+              <Skeleton width="80%" height={20} borderRadius={6} style={{ marginTop: 12 }} />
+              <Skeleton width="80%" height={20} borderRadius={6} style={{ marginTop: 12 }} />
+            </View>
           ) : (
             subCategories.map((sub) => (
               <TouchableOpacity
@@ -215,6 +214,12 @@ const styles = StyleSheet.create({
     color: "#000",
     marginRight: 40,
   },
+    allCategories: {
+    margin:10,
+    fontSize: 16,
+    color: "#000",
+    marginRight: 40,
+  },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -241,7 +246,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 10,
-    borderRadius: 16,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+
     marginBottom: 10,
     backgroundColor: "#fff",
   },

@@ -4,18 +4,17 @@ import {
   Text,
   TextInput,
   StyleSheet,
-  Pressable,
-  Image,
+
   ScrollView,
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
-import Arrowleft from '../../assets/icons/Arrowleft.png';
 import Button from '../../components/Button';
 import SocialLoginOptions from '../../components/SocialLoginOptions';
 import { SignUpScreenProps } from '../../types/types';
 import { useAuth } from '../../Context/AuthContext';
 import { useToast } from '../../Context/ToastContext';
+import Header from '../../components/Header';
 
 const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
   const [name, setName] = useState('');
@@ -25,6 +24,24 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const { setSignupemail, setStorePassword } = useAuth();
+  const [passwordErrors, setPasswordErrors] = useState({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    specialChar: false,
+    noSpaces: false,
+  });
+  const validatePassword = (pwd: string) => {
+    setPasswordErrors({
+      length: pwd.length >= 8 && pwd.length <= 64,
+      uppercase: /[A-Z]/.test(pwd),
+      lowercase: /[a-z]/.test(pwd),
+      number: /\d/.test(pwd),
+      specialChar: /[^A-Za-z0-9]/.test(pwd),
+      noSpaces: !/\s/.test(pwd),
+    });
+  };
   const { showToast } = useToast();
 
   const handleGoBack = () => {
@@ -49,6 +66,12 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
       showToast('Please enter a valid email address', 'error');
       return;
     }
+    const isPasswordValid = Object.values(passwordErrors).every(Boolean);
+    if (!isPasswordValid) {
+      showToast("Password does not meet requirements", "error");
+      return;
+    }
+
     if (password !== confirmPassword) {
       showToast('Passwords do not match', 'error');
       return;
@@ -97,12 +120,13 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <Header text={"Sign up"} onPress={handleGoBack}/>
+        {/* <View style={styles.header}>
           <Pressable onPress={handleGoBack}>
             <Image source={Arrowleft} style={styles.backIcon} />
           </Pressable>
           <Text style={styles.headerTitle}>Sign Up</Text>
-        </View>
+        </View> */}
 
         {/* Name Input */}
         <View style={styles.inputFieldContainer}>
@@ -149,12 +173,36 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
           <TextInput
             placeholder="Enter your password"
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              validatePassword(text);
+            }}
             secureTextEntry
             style={styles.input}
             returnKeyType="next"
+
           />
         </View>
+         <View style={{ marginBottom: 12 }}>
+        {!passwordErrors.length && (
+          <Text style={styles.errorText}>• 8–64 characters</Text>
+        )}
+        {!passwordErrors.uppercase && (
+          <Text style={styles.errorText}>• At least one uppercase letter</Text>
+        )}
+        {!passwordErrors.lowercase && (
+          <Text style={styles.errorText}>• At least one lowercase letter</Text>
+        )}
+        {!passwordErrors.number && (
+          <Text style={styles.errorText}>• At least one number</Text>
+        )}
+        {!passwordErrors.specialChar && (
+          <Text style={styles.errorText}>• At least one special character</Text>
+        )}
+        {!passwordErrors.noSpaces && (
+          <Text style={styles.errorText}>• No spaces allowed</Text>
+        )}
+      </View>
 
         {/* Confirm Password */}
         <View style={styles.inputFieldContainer}>
@@ -170,7 +218,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
         </View>
 
         {/* Invite Code */}
-        <View style={styles.inputFieldContainer}>
+        {/* <View style={styles.inputFieldContainer}>
           <Text style={styles.label}>Invite Code (optional)</Text>
           <TextInput
             placeholder="Enter your invite code"
@@ -178,7 +226,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
             onChangeText={setInviteCode}
             style={styles.input}
           />
-        </View>
+        </View> */}
 
         <View style={styles.containerButton}>
           <Button
@@ -248,6 +296,11 @@ export const styles = StyleSheet.create({
   backIcon: {
     width: 24,
     height: 32,
+  },
+  errorText: {
+    fontSize: 13,
+    color: "red",
+    marginLeft: 8,
   },
   inputFieldContainer: {
     paddingVertical: 2,

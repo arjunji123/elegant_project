@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useAuth } from '../../Context/AuthContext';
-import Arrowleft from '../../assets/icons/Arrowleft.png';
 import Button from '../../components/Button';
 import SocialLoginOptions from '../../components/SocialLoginOptions';
 import { LoginScreenProps } from '../../types/types';
@@ -18,6 +17,7 @@ import { useToast } from "../../Context/ToastContext";
 import * as Keychain from 'react-native-keychain';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import Icon from 'react-native-vector-icons/Ionicons';
+import Header from '../../components/Header';
 
 
 
@@ -106,13 +106,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     >
       <View style={styles.container}>
         {/* Header */}
-        <View style={styles.header}>
+         <Header text={"Log In"} onPress={handleGoBack}/>
+        {/* <View style={styles.header}>
           <Pressable onPress={handleGoBack}>
             <Image source={Arrowleft} style={styles.backIcon} />
           </Pressable>
 
           <Text style={styles.title}>Log In</Text>
-        </View>
+        </View> */}
 
         {/* Mobile Number Input */}
         <View style={styles.inputFieldContainer}>

@@ -4,16 +4,12 @@ import {
   Text,
   TextInput,
   StyleSheet,
-  Pressable,
-  Image,
-  GestureResponderEvent,
-  Alert,
 } from 'react-native';
 import { ForgotScreenProps } from '../../types/types';
-import Arrowleft from '../../assets/icons/Arrowleft.png';
 import Button from '../../components/Button';
 import { useAuth } from '../../Context/AuthContext';
 import { useToast } from '../../Context/ToastContext';
+import Header from '../../components/Header';
 // Email validation (basic + gmail domain optional)
 const isValidEmail = (email: string): boolean => {
   if (!email) return false;
@@ -83,13 +79,15 @@ const { showToast } = useToast();
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+        <Header text={"Forgot Password"} onPress={handleGoBack}/>
+
+      {/* <View style={styles.header}>
         <Pressable onPress={handleGoBack} style={styles.backButton}>
           <Image source={Arrowleft} style={styles.backIcon} />
         </Pressable>
 
         <Text style={styles.title}>Forgot Password</Text>
-      </View>
+      </View> */}
 
       <Text style={styles.labelText}>
         Enter the email associated with your account and we’ll send an email with code to reset your password
@@ -123,7 +121,6 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    marginTop: 20,
     backgroundColor: '#fff',
   },
   labelText: {
