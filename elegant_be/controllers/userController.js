@@ -35,37 +35,34 @@ const [rows] = await db.query(
 exports.updateUserById = async (req, res) => {
   const userId = req.user.id;
   const { name, email, phone } = req.body;
-  const newProfilePic = req.file ? req.file.path : null;
+  const profile_pic = req.file ? req.file.path : null;
 
   try {
-    // Pehle purana user data nikal lo
-    const [existingUser] = await db.query(
-      `SELECT profile_pic FROM users WHERE id = ?`,
-      [userId]
-    );
+    let query = `
+      UPDATE users 
+      SET name = ?, email = ?, phone = ?, updated_at = NOW()
+    `;
+    let params = [name, email, phone];
 
-    if (!existingUser || existingUser.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+    // Sirf tabhi add karo jab file upload hui ho
+    if (profile_pic) {
+      query = `
+        UPDATE users 
+        SET name = ?, email = ?, phone = ?, profile_pic = ?, updated_at = NOW()
+        WHERE id = ?
+      `;
+      params = [name, email, phone, profile_pic, userId];
+    } else {
+      query += ` WHERE id = ?`;
+      params.push(userId);
     }
 
-    // Agar naya profile pic hai toh use lo, warna purana rakho
-    const profile_pic = newProfilePic || existingUser[0].profile_pic;
-
-    // Update query
-    const [result] = await db.query(
-      `UPDATE users 
-       SET name = ?, email = ?, phone = ?, profile_pic = ?, updated_at = NOW() 
-       WHERE id = ?`,
-      [name, email, phone, profile_pic, userId]
-    );
+    const [result] = await db.query(query, params);
 
     if (result.affectedRows === 0) {
-      return res.status(400).json({
+      return res.status(404).json({
         success: false,
-        message: "No changes made",
+        message: "User not found or no changes made",
       });
     }
 
@@ -78,7 +75,7 @@ exports.updateUserById = async (req, res) => {
           name,
           email,
           phone,
-          profile_pic,
+          profile_pic: profile_pic || "unchanged"
         },
       },
     });
