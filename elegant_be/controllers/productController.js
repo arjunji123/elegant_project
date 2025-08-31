@@ -28,14 +28,24 @@ exports.getFilteredProducts = async (req, res) => {
     `;
     let params = [userId];
 
-    if (category_id && category_id !== "all" && category_id !== "newest") {
-      query += " AND p.category_id = ?";
-      params.push(category_id);
+  if (category_id && category_id !== "all" && category_id !== "newest") {
+      if (Array.isArray(category_id)) {
+        query += ` AND p.category_id IN (?)`;
+        params.push(category_id);
+      } else {
+        query += ` AND p.category_id = ?`;
+        params.push(category_id);
+      }
     }
 
-    if (subcategory_id) {
-      query += " AND p.subcategory_id = ?";
-      params.push(subcategory_id);
+     if (subcategory_id) {
+      if (Array.isArray(subcategory_id)) {
+        query += ` AND p.subcategory_id IN (?)`;
+        params.push(subcategory_id);
+      } else {
+        query += ` AND p.subcategory_id = ?`;
+        params.push(subcategory_id);
+      }
     }
 
     query += " AND p.price BETWEEN ? AND ?";
@@ -97,12 +107,6 @@ exports.getFilteredProducts = async (req, res) => {
     res.status(500).json({ success: false, message: "Server Error" });
   }
 };
-
-
-
-
-
-
 
 //////////////////////////////////////////////////////////////////
 
