@@ -28,15 +28,22 @@ exports.getFilteredProducts = async (req, res) => {
     `;
     let params = [userId];
 
-  if (category_id && category_id !== "all" && category_id !== "newest") {
-      if (Array.isArray(category_id)) {
-        query += ` AND p.category_id IN (?)`;
-        params.push(category_id);
-      } else {
-        query += ` AND p.category_id = ?`;
-        params.push(category_id);
-      }
-    }
+ if (category_id && category_id !== "all" && category_id !== "newest") {
+  if (Array.isArray(category_id)) {
+    // Already array h to directly push kar do
+    query += ` AND p.category_id IN (?)`;
+    params.push(category_id);
+  } else if (typeof category_id === "string" && category_id.includes(",")) {
+    // Agar string comma-separated h to split kar ke array banao
+    const catArray = category_id.split(",").map(id => id.trim());
+    query += ` AND p.category_id IN (?)`;
+    params.push(catArray);
+  } else {
+    // Single category id case
+    query += ` AND p.category_id = ?`;
+    params.push(category_id);
+  }
+}
 
      if (subcategory_id) {
       if (Array.isArray(subcategory_id)) {
