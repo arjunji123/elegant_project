@@ -529,7 +529,7 @@ exports.getWishlist = async (req, res) => {
   try {
     // Step 1: Get wishlist products
     const [products] = await db.query(
-      `SELECT p.id, p.name, p.price
+      `SELECT p.id, p.name, p.price, p.category_id
        FROM wishlist w
        INNER JOIN products p ON w.product_id = p.id
        WHERE w.user_id = ?`,
