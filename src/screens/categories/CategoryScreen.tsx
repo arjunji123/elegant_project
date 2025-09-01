@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 24, // works with FlatList
-    paddingTop: 24,
+   paddingTop: 20,
     backgroundColor: "#fff",
   },
 

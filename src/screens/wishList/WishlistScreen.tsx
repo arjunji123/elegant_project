@@ -25,62 +25,79 @@ const WishlistScreen: React.FC = ({ navigation }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [timeLeft, setTimeLeft] = useState({ h: 3, m: 38, s: 10 });
 
-  const getWishlistProducts = async () => {
+useEffect(() => {
+  const fetchWishlistProducts = async () => {
     try {
-      const res = await fetch(
-        `https://elegant-project.onrender.com/api/wishlist`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-        }
-      );
+      let url = 'https://elegant-project.onrender.com/api/wishlist';
+
+      if (activeCategory) {
+        // Fetch products by activeCategory filtered wishlist items on client
+        url = `https://elegant-project.onrender.com/api/product/category/${activeCategory}`;
+      }
+
+      const res = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      });
 
       const text = await res.text();
       const data = JSON.parse(text);
 
-      if (data.success && data.products) {
-        setProducts(data.products);
+      if (data.success) {
+        if (activeCategory) {
+          // Filter only wishlist items if category-based
+          const wishlisted = data.data.filter((item: any) => item.wishlist_is === 1);
+          setProducts(wishlisted);
+        } else {
+          setProducts(data.products); // For wishlist endpoint
+        }
       } else {
         setProducts([]);
       }
     } catch (error) {
       console.error("Server Error:", error);
+      setProducts([]);
     }
   };
-  useEffect(() => {
-    const categoriesProduct = async () => {
-      try {
-        const res = await fetch(
-          `https://elegant-project.onrender.com/api/product/category/${activeCategory}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: token ? `Bearer ${token}` : "",
-            },
-          }
-        );
 
-        const text = await res.text();
-        const data = JSON.parse(text);
+  fetchWishlistProducts();
 
-        if (data.success && data.data) {
-          const wishlisted = data.data.filter(
-            (item: any) => item.wishlist_is === 1
-          );
-          setProducts(wishlisted);
-        } else {
-          setProducts([]);
-        }
-      } catch (error) {
-        console.error("Server Error:", error);
-      }
-    }
-    categoriesProduct()
-  }, [activeCategory])
+}, [activeCategory, token]);
+
+  // useEffect(() => {
+  //   const categoriesProduct = async () => {
+  //     try {
+  //       const res = await fetch(
+  //         `https://elegant-project.onrender.com/api/product/category/${activeCategory}`,
+  //         {
+  //           method: "GET",
+  //           headers: {
+  //             "Content-Type": "application/json",
+  //             Authorization: token ? `Bearer ${token}` : "",
+  //           },
+  //         }
+  //       );
+
+  //       const text = await res.text();
+  //       const data = JSON.parse(text);
+
+  //       if (data.success && data.data) {
+  //         const wishlisted = data.data.filter(
+  //           (item: any) => item.wishlist_is === 1
+  //         );
+  //         setProducts(wishlisted);
+  //       } else {
+  //         setProducts([]);
+  //       }
+  //     } catch (error) {
+  //       console.error("Server Error:", error);
+  //     }
+  //   }
+  //   categoriesProduct()
+  // }, [activeCategory])
 
   const fetchCategories = async () => {
 
@@ -109,11 +126,10 @@ const WishlistScreen: React.FC = ({ navigation }) => {
     fetchCategories();
   }, [])
 
-  useEffect(() => {
-    if (isFocused) {
-      getWishlistProducts();
-    }
-  },);
+  // useEffect(() => {
+  //  getWishlistProducts();
+  // },);
+  
   const toggleFavorite = async (productId: string, currentStatus: number) => {
     const newStatus = currentStatus === 1 ? 0 : 1;
     console.log(productId, 'productIdproductId')

@@ -54,7 +54,7 @@ const AddresListScreen = () => {
 
     }, []);
     const handleGoBack = () => {
-        navigation.goBack();
+        navigation.navigate('AccountScreen')
       };
 
     return (
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: "#F8F8F8", // Full-screen background
         paddingHorizontal: 16,
-        paddingTop: 10,
+    paddingTop: 30
     },
     titleContainer: { flex: 1, alignItems: "center" },
 

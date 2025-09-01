@@ -21,8 +21,6 @@ import { useIsFocused } from "@react-navigation/native";
 
 const HomeContent = ({ navigation }) => {
 
-
-
   const { user, token } = useAuth();
   const isFocused = useIsFocused();
 

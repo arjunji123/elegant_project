@@ -30,6 +30,7 @@ import FilteredProducts from '../screens/product/FilteredProducts';
 import ProductDetail from '../screens/product/ProductDetail';
 import SearchResultScren from '../screens/product/SearchResultScren';
 import DiscountProductScreen from '../screens/product/DiscountProductScreen';
+import AccountScreen from '../screens/Profile/AccountScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -66,7 +67,10 @@ export default function AppNavigator() {
             <Stack.Screen name="FilteredProductsScreen"  component={FilteredProducts}  options={{ headerShown: false }}/>
             <Stack.Screen name="ProductDetailScreen"  component={ProductDetail}  options={{ headerShown: false }}/>    
             <Stack.Screen name="DiscountProductScreen"  component={DiscountProductScreen}  options={{ headerShown: false }}/>    
-            <Stack.Screen name="SearchResultScren"  component={SearchResultScren}  options={{ headerShown: false }}/>    
+            <Stack.Screen name="SearchResultScren"  component={SearchResultScren}  options={{ headerShown: false }}/>
+                <Stack.Screen name="AccountScreen"  component={AccountScreen}  options={{ headerShown: false }}/>
+                <Stack.Screen name="HomeScreen"  component={HomePage}  options={{ headerShown: false }}/>
+
           </Stack.Navigator>
         ) : (
           // Logged out flow

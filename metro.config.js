@@ -1,16 +1,20 @@
-const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
-/**
- * Metro configuration
- * https://reactnative.dev/docs/metro
- *
- * @type {import('@react-native/metro-config').MetroConfig}
- */
-const config = {
-  project: {
-    ios: {},
-    android: {},
-  },
-  assets: ['./src/assets/font'],
-};
+const { getDefaultConfig } = require("metro-config");
 
-module.exports = mergeConfig(getDefaultConfig(__dirname), config);
+module.exports = (async () => {
+  const {
+    resolver: { sourceExts, assetExts },
+  } = await getDefaultConfig();
+
+  return {
+    watchFolders: [__dirname],
+    resolver: {
+      assetExts,
+      // Remove 'flow' extension so .js.flow files are ignored
+      sourceExts: sourceExts.filter(ext => ext !== "flow"),
+    },
+    // Ignore CMake build folders under node_modules
+    watch: {
+      ignore: [/node_modules[/\\].+[/\\]\.cxx[/\\].*/],
+    },
+  };
+})();

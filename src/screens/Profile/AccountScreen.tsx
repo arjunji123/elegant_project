@@ -43,14 +43,8 @@ const AccountScreen: React.FC<AccountScreenProps> = ({ navigation }) => {
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
-      <Header text={"Account"} onPress={handleGoBack} />
+      <Header text={"Account"} onPress={()=>navigation.navigate('HomeScreen')} />
 
-      {/* <View style={styles.header}>
-        <Pressable onPress={handleGoBack} style={styles.backButton}>
-          <Image source={Arrowleft} style={styles.backIcon} />
-        </Pressable>
-        <Text style={styles.title}>Account</Text>
-      </View> */}
 
       {/* Profile Header */}
       <View style={styles.profileHeader}>
