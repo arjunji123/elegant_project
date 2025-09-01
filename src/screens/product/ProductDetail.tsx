@@ -13,6 +13,7 @@ import {
 import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
 import Skeleton, { SkeletonCard, SkeletonText } from "../../components/Skeleton";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
@@ -212,9 +213,9 @@ const ProductDetail = ({ navigation }) => {
     }
     console.log(recommeded, "product?.colors?.[0]")
     return (
+<SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
 
-
-        <View style={styles.container}>
+<View style={styles.container}>
             <View style={styles.backheader}>
                 <TouchableOpacity style={styles.iconWrapper} onPress={handleGoBack}>
                     <Icon name="chevron-back" size={22} color="#000" />
@@ -248,7 +249,7 @@ const ProductDetail = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={false}  >
                 {/* 🔥 Image Slider */}
 
 
@@ -426,11 +427,7 @@ const ProductDetail = ({ navigation }) => {
 
 
 
-
-
-            </ScrollView>
-
-            <View style={styles.bottomBar}>
+  <View style={styles.bottomBar} >
                 <View>
                     <Text style={styles.totalPrice}>Total Price</Text>
                     <Text style={styles.price}>
@@ -444,14 +441,20 @@ const ProductDetail = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
+            </ScrollView>
+
+          
+
         </View>
+        </SafeAreaView>
+        
     );
 };
 
 export default ProductDetail;
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#fff" },
+    container: { flex: 1, backgroundColor: "#fff",},
     mainImage: { width: 428, height: 425, resizeMode: "cover" },
     imagealign: { alignItems: "center" },
     thumbnailList: {

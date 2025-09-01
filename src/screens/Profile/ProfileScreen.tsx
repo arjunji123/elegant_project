@@ -10,12 +10,10 @@ import {
   ScrollView
 } from "react-native";
 import Button from "../../components/Button";
-import avtar from "../../assets/images/profileImg.png";
-import Arrowleft from "../../assets/icons/Arrowleft.png";
+
 import { ProfileScreenProps } from "../../types/types";
 import { useAuth } from "../../Context/AuthContext";
 import { useToast } from "../../Context/ToastContext";
-import AnimatedLoader from "../../components/AnimatedLoader";
 import * as ImagePicker from "react-native-image-picker"; // 👈 for selecting images
 import Header from "../../components/Header";
 

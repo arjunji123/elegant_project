@@ -2,10 +2,9 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Image } from "react-native";
 
-import ProfileScreen from "../Profile/AccountScreen";
+import AccountScreen from "../Profile/AccountScreen";
 import HomeContent from "./HomeContent";
 import WishlistScreen from "../wishList/WishlistScreen";
-import CategoryScreen from "../categories/CategoryScreen";
 import SubCategoryScreen from "../categories/SubCategories";
 
 const Tab = createBottomTabNavigator();
@@ -66,7 +65,7 @@ const HomePage = () => {
       <Tab.Screen name="Home" component={HomeContent} />
       <Tab.Screen name="Wishlist" component={WishlistScreen} />
       <Tab.Screen name="Categories" component={SubCategoryScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Profile" component={AccountScreen} />
     </Tab.Navigator>
   );
 };

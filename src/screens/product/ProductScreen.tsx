@@ -263,6 +263,7 @@ export default ProductScreen
 const styles = StyleSheet.create({
   scrollContainer: {
     backgroundColor: "#fff",
+    paddingTop: 20
   },
   scrollContent: {
     paddingTop: 10,

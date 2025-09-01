@@ -145,12 +145,6 @@ const DiscountProductScreen = ({ navigation }) => {
         >
             <Header text={"Product Listing"} onPress={handleGoBack} />
 
-            {/* <View style={styles.header}>
-                <Pressable onPress={handleGoBack} style={styles.backButton}>
-                    <Image source={Arrowleft} style={styles.backIcon} />
-                </Pressable>
-                <Text style={styles.title}>Product Listing</Text>
-            </View> */}
             <View style={styles.searchContainer}>
                 <TouchableOpacity
                     style={{ flex: 1 }}
@@ -247,6 +241,7 @@ export default DiscountProductScreen
 const styles = StyleSheet.create({
     scrollContainer: {
         backgroundColor: "#fff",
+        paddingTop: 20
     },
     scrollContent: {
         paddingTop: 10,

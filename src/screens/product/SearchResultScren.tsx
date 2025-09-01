@@ -136,6 +136,7 @@ const SearchResultScren = ({ navigation }) => {
               style={{ marginHorizontal: 8 }}
             />
             <TextInput
+            value={query}
               // placeholder="Search here"
               // placeholderTextColor="#aaa"
               // style={styles.searchInput}
@@ -223,6 +224,7 @@ export default SearchResultScren
 const styles = StyleSheet.create({
   scrollContainer: {
     backgroundColor: "#fff",
+    paddingTop: 20
   },
   scrollContent: {
     paddingTop: 10,

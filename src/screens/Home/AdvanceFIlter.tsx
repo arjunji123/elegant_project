@@ -7,6 +7,7 @@ import Button from '../../components/Button';
 import { useFilter } from "../../Context/FilterContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import AnimatedLoader from '../../components/AnimatedLoader';
+import Header from '../../components/Header';
 
 
 // const CATEGORIES = ['All Items', 'Newest', 'T-shirt', 'Pants', 'Shoes'];
@@ -46,10 +47,10 @@ const CustomMarker = () => (
 
 const AdvanceFilter = ({ navigation }) => {
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-    const [priceRange, setPriceRange] = useState([100, 10000]);
+    const [priceRange, setPriceRange] = useState([0, 10000]);
     const [selectedRating, setSelectedRating] = useState('All');
     const [sortOption, setSortOption] = useState('Price: High to Low');
-    const [range, setRange] = useState([100, 10000]);
+    const [range, setRange] = useState([0, 10000]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
     const [showAllCategories, setShowAllCategories] = useState(false);
@@ -63,7 +64,7 @@ const AdvanceFilter = ({ navigation }) => {
                 if (savedFilter) {
                     const parsed = JSON.parse(savedFilter);
                     setSelectedCategories(parsed.category_ids || []);
-                    setRange([parsed.min_price || 100, parsed.max_price || 10000]);
+                    setRange([parsed.min_price || 0, parsed.max_price || 10000]);
                     setSelectedRating(parsed.rating || "All");
                     setSortOption(parsed.sort || "price_high_low");
                 }
@@ -113,14 +114,14 @@ const AdvanceFilter = ({ navigation }) => {
         const defaultFilter = {
             category_id: null,
             subcategory_id: null,
-            min_price: 100,
+            min_price: 0,
             max_price: 10000,
             sort: "price_high_low",
             rating: "All",
         };
 
         setSelectedCategories(null);
-        setRange([100, 10000]);
+        setRange([0, 10000]);
         setSelectedRating("All");
         setSortOption("price_high_low");
         setFilter(defaultFilter);
@@ -141,99 +142,139 @@ const AdvanceFilter = ({ navigation }) => {
         await AsyncStorage.setItem("userFilters", JSON.stringify(newFilter));
         navigation.navigate("FilteredProductsScreen")
     };
+
+    const [priceError, setPriceError] = useState("");
+
+    const handleMinPriceChange = (text) => {
+        const numericText = text.replace(/[^0-9]/g, "");
+
+        if (numericText === "") {
+            setRange([0, range[1]]);
+            setPriceError("");
+            return;
+        }
+
+        if (numericText.length <= 5) {
+            let num = parseInt(numericText);
+            if (num > 10000) {
+                setPriceError("You cannot add more than ₹10,000");
+            } else {
+                setPriceError("");
+                setRange([num, range[1]]);
+            }
+        }
+    };
+
+    const handleMaxPriceChange = (text) => {
+        const numericText = text.replace(/[^0-9]/g, "");
+
+        if (numericText === "") {
+            setRange([range[0], 0]);
+            setPriceError("");
+            return;
+        }
+
+        if (numericText.length <= 5) {
+            let num = parseInt(numericText);
+            if (num > 100000) {
+                setPriceError("You cannot add more than ₹10,000");
+            } else {
+                setPriceError("");
+                setRange([range[0], num]);
+            }
+        }
+    };
+
+
     const handleGoBack = () => navigation.goBack();
 
     return (
-        <><ScrollView style={styles.container}>
-            <View style={styles.header}>
-                <Pressable onPress={handleGoBack} style={styles.backButton}>
-                    <Image source={Arrowleft} style={styles.backIcon} />
-                </Pressable>
-                <Text style={styles.title}>Filter</Text>
+        <><ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 150 }}>
+            <Header text={"Filter"} onPress={handleGoBack} />
+
+
+
+            <Text style={styles.sectionTitle}>Category</Text>
+            <View style={styles.categoriesRow}>
+                {loading ? (
+                    <AnimatedLoader visible={loading} />
+                ) : (
+                    <>
+                        {categories.slice(0, 3).map(cat => (
+                            <TouchableOpacity
+                                key={cat.id}
+                                style={[
+                                    styles.chip,
+                                    selectedCategories.includes(cat.id) && styles.chipSelected
+                                ]}
+                                onPress={() => toggleCategory(cat.id)}
+                            >
+                                <Text
+                                    style={[
+                                        styles.chipLabel,
+                                        selectedCategories.includes(cat.id) && styles.chipLabelSelected
+                                    ]}
+                                >
+                                    {cat.name}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                        {categories.length > 4 && (
+                            <TouchableOpacity
+                                style={[styles.chip, { backgroundColor: '#EEE' }]}
+                                onPress={() => setShowAllCategories(true)}
+                            >
+                                <Text style={[styles.chipLabel, { color: '#704F38' }]}>
+                                    Show More
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                    </>
+                )}
             </View>
 
-        
-                <Text style={styles.sectionTitle}>Category</Text>
-                <View style={styles.categoriesRow}>
-                    {loading ? (
-                        <AnimatedLoader visible={loading} />
-                    ) : (
-                        <>
-                            {categories.slice(0, 3).map(cat => (
+            {/* Modal for all categories */}
+            <Modal
+                visible={showAllCategories}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setShowAllCategories(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>All Categories</Text>
+                        <FlatList
+                            data={categories}
+                            keyExtractor={item => item.id.toString()}
+                            renderItem={({ item }) => (
                                 <TouchableOpacity
-                                    key={cat.id}
                                     style={[
                                         styles.chip,
-                                        selectedCategories.includes(cat.id) && styles.chipSelected
+                                        selectedCategories.includes(item.id) && styles.chipSelected,
+                                        { marginVertical: 4 }
                                     ]}
-                                    onPress={() => toggleCategory(cat.id)}
+                                    onPress={() => toggleCategory(item.id)}
                                 >
                                     <Text
                                         style={[
                                             styles.chipLabel,
-                                            selectedCategories.includes(cat.id) && styles.chipLabelSelected
+                                            selectedCategories.includes(item.id) && styles.chipLabelSelected
                                         ]}
                                     >
-                                        {cat.name}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                            {categories.length > 4 && (
-                                <TouchableOpacity
-                                    style={[styles.chip, { backgroundColor: '#EEE' }]}
-                                    onPress={() => setShowAllCategories(true)}
-                                >
-                                    <Text style={[styles.chipLabel, { color: '#704F38' }]}>
-                                        Show More
+                                        {item.name}
                                     </Text>
                                 </TouchableOpacity>
                             )}
-                        </>
-                    )}
-                </View>
-
-                {/* Modal for all categories */}
-                <Modal
-                    visible={showAllCategories}
-                    animationType="slide"
-                    transparent={true}
-                    onRequestClose={() => setShowAllCategories(false)}
-                >
-                    <View style={styles.modalOverlay}>
-                        <View style={styles.modalContent}>
-                            <Text style={styles.modalTitle}>All Categories</Text>
-                            <FlatList
-                                data={categories}
-                                keyExtractor={item => item.id.toString()}
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity
-                                        style={[
-                                            styles.chip,
-                                            selectedCategories.includes(item.id) && styles.chipSelected,
-                                            { marginVertical: 4 }
-                                        ]}
-                                        onPress={() => toggleCategory(item.id)}
-                                    >
-                                        <Text
-                                            style={[
-                                                styles.chipLabel,
-                                                selectedCategories.includes(item.id) && styles.chipLabelSelected
-                                            ]}
-                                        >
-                                            {item.name}
-                                        </Text>
-                                    </TouchableOpacity>
-                                )}
-                            />
-                            <Button
-                                text="Close"
-                                onPress={() => setShowAllCategories(false)}
-                                bgColor="#704F38"
-                                textColor="#fff"
-                            />
-                        </View>
+                        />
+                        <Button
+                            text="Close"
+                            onPress={() => setShowAllCategories(false)}
+                            bgColor="#704F38"
+                            textColor="#fff"
+                        />
                     </View>
-                </Modal>
+                </View>
+            </Modal>
 
             {/* Price */}
             <Text style={styles.sectionTitle}>Price</Text>
@@ -241,30 +282,25 @@ const AdvanceFilter = ({ navigation }) => {
                 <TextInput
                     style={styles.priceInput}
                     keyboardType="numeric"
-                    value={range[0].toString()}
-                    onChangeText={(text) => {
-                        const num = parseInt(text) || 0;
-                        setRange([num, range[1]]);
-                    }}
+                    value={`₹${range[0]}`}
+                    onChangeText={handleMinPriceChange}
                 />
                 <TextInput
                     style={styles.priceInput}
                     keyboardType="numeric"
-                    value={range[1].toString()}
-                    onChangeText={(text) => {
-                        const num = parseInt(text) || 0;
-                        setRange([range[0], num]);
-                    }}
+                    value={`₹${range[1]}`}
+                    onChangeText={handleMaxPriceChange}
                 />
             </View>
-
-
+            {priceError ? (
+                <Text style={styles.errorText}>{priceError}</Text>
+            ) : null}
             <View style={styles.sliderWrapper}>
                 <MultiSlider
                     values={range}
                     onValuesChange={setRange}
-                    min={100}
-                    max={1000}
+                    min={0}
+                    max={10000}
                     step={100}
                     sliderLength={270}
                     selectedStyle={{ backgroundColor: '#704F38' }}
@@ -338,8 +374,7 @@ const AdvanceFilter = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    container: { padding: 16, backgroundColor: '#fff', flex: 1 },
-
+    container: { padding: 16, backgroundColor: '#fff', flex: 1, paddingTop: 20 },
     header: {
         position: 'relative',
         height: 40,
@@ -356,7 +391,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     categoriesRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12 },
-
+    errorText: {
+        color: "red",
+        fontSize: 12,
+        marginTop: 4,
+        marginLeft: 8,
+    },
     modalContent: {
         width: '80%',
         maxHeight: '70%',
@@ -417,6 +457,7 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         borderWidth: 1.5,
         borderRadius: 20,
+        margin: 5,
         marginRight: 8,
         borderColor: "#AFAFAF",
     },

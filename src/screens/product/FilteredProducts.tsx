@@ -5,6 +5,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { useFilter } from "../../Context/FilterContext";
 import { useAuth } from "../../Context/AuthContext";
 import Arrowleft from "../../assets/icons/Arrowleft.png";
+import Header from "../../components/Header";
 
 const redDress = "https://res.cloudinary.com/dfhzted2d/image/upload/v1756059417/products/kqnhfrcvlcs9b3nxy5fg.png"
 
@@ -20,14 +21,11 @@ interface Product {
 const FilteredProducts = ({ navigation }) => {
     const { filter } = useFilter()
     const [selectedCategories, setSelectedCategories] = useState<number[]>(filter.category_id);
-
-    const [activeCategory, setActiveCategory] = useState(filter.category_id?.id);
-    const [categorieID, setCategorieID] = useState(filter.category_id?.id);
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const { token, setProductId } = useAuth()
-const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({});
+    const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({});
     const getFilteredProducts = async () => {
         try {
             setLoading(true);
@@ -36,8 +34,8 @@ const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({
             const url = new URL("https://elegant-project.onrender.com/api/filters");
 
             // Append only if values exist
-            if (activeCategory && activeCategory !== "all" && activeCategory !== "newest") {
-                url.searchParams.append("category_id", categorieID);
+            if (filter.category_id) {
+                url.searchParams.append("category_id", selectedCategories.join(","));
             }
             if (filter.category_id) {
                 url.searchParams.append("subcategory_id", filter.category_id);
@@ -51,7 +49,7 @@ const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({
             if (filter.sort) {
                 url.searchParams.append("sort", filter.sort);
             }
-
+console.log("Filter API URL:", url.toString());
             const res = await fetch(url.toString(), {
                 method: "GET",
                 headers: {
@@ -62,14 +60,7 @@ const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({
 
             const data = await res.json();
 
-            if (activeCategory === "all") {
-                setProducts(data.data || []);
-            } else if (activeCategory === "newest") {
-                const sorted = [...(data.data || [])].sort(
-                    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                );
-                setProducts(sorted);
-            } else if (data.success && data.data) {
+            if (data.success && data.data) {
                 setProducts(data.data);
             } else {
                 setProducts([]);
@@ -85,7 +76,7 @@ const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({
             prev.includes(id) ? prev.filter((catId) => catId !== id) : [...prev, id]
         );
     };
-    console.log(filter.category_id, 'selectedCategories')
+    console.log(products, 'selectedCategories')
 
     // Fetch categories
     const fetchCategories = async () => {
@@ -102,11 +93,7 @@ const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({
             const data = await res.json();
 
             if (data.success && data.data) {
-                setCategories([
-                    { id: "all", name: "All Items" },
-                    { id: "newest", name: "Newest" },
-                    ...data.data,
-                ]);
+                setCategories(data.data);
             }
         } catch (error) {
             console.error("Categories fetch error:", error);
@@ -121,7 +108,8 @@ const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({
     // Load products every time activeCategory changes
     useEffect(() => {
         getFilteredProducts();
-    }, [activeCategory, filter]);
+        console.log("updateupdatedd")
+    }, [selectedCategories, filter]);
 
     const toggleFavorite = async (productId: string, currentStatus: number) => {
         const newStatus = currentStatus === 1 ? 0 : 1;
@@ -164,20 +152,20 @@ const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({
     };
 
     const handleToggleFavorite = async (id: number, current: boolean) => {
-  // Optimistic update
-  setWishlistItems((prev) => ({ ...prev, [id]: !current }));
+        // Optimistic update
+        setWishlistItems((prev) => ({ ...prev, [id]: !current }));
 
-  try {
-    await toggleFavorite(id, current); // API call
-  } catch (error) {
-    // Revert if API fails
-    setWishlistItems((prev) => ({ ...prev, [id]: current }));
-    console.error("Failed to update wishlist", error);
-  }
-};
-    const handleGoBack = () => navigation.goBack();
-
-    console.log(products.length, "productsproducts")
+        try {
+            await toggleFavorite(id, current); // API call
+        } catch (error) {
+            // Revert if API fails
+            setWishlistItems((prev) => ({ ...prev, [id]: current }));
+            console.error("Failed to update wishlist", error);
+        }
+    };
+    const handleGoBack = () =>{
+        navigation.navigate("HomeScreen")
+    }
 
     return (
         <View style={{ flex: 1 }}>
@@ -186,12 +174,7 @@ const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                <View style={styles.header}>
-                    <Pressable onPress={handleGoBack} style={styles.backButton}>
-                        <Image source={Arrowleft} style={styles.backIcon} />
-                    </Pressable>
-                    <Text style={styles.title}>Product Listing</Text>
-                </View>
+                <Header text={"Product Listing"} onPress={handleGoBack} />
                 <View style={styles.searchContainer}>
                     <TouchableOpacity
                         style={{ flex: 1 }}
@@ -253,18 +236,18 @@ const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({
                                                 style={styles.productImage} />
                                         </TouchableOpacity>
                                         <TouchableOpacity
-  style={[
-    styles.wishlistBtn,
-    { backgroundColor: wishlistItems[item.id] ?? item.wishlist_is ? "#ffffff" : "#000000ff" }
-  ]}
-  onPress={() => handleToggleFavorite(item.id, wishlistItems[item.id] ?? item.wishlist_is)}
->
-  <Icon
-    name={(wishlistItems[item.id] ?? item.wishlist_is) ? "heart" : "heart-outline"}
-    size={22}
-    color={(wishlistItems[item.id] ?? item.wishlist_is) ? "#000000" : "#ffffff"}
-  />
-</TouchableOpacity>
+                                            style={[
+                                                styles.wishlistBtn,
+                                                { backgroundColor: wishlistItems[item.id] ?? item.wishlist_is ? "#ffffff" : "#000000ff" }
+                                            ]}
+                                            onPress={() => handleToggleFavorite(item.id, wishlistItems[item.id] ?? item.wishlist_is)}
+                                        >
+                                            <Icon
+                                                name={(wishlistItems[item.id] ?? item.wishlist_is) ? "heart" : "heart-outline"}
+                                                size={22}
+                                                color={(wishlistItems[item.id] ?? item.wishlist_is) ? "#000000" : "#ffffff"}
+                                            />
+                                        </TouchableOpacity>
 
                                     </View>
                                     <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
@@ -302,6 +285,7 @@ export default FilteredProducts
 const styles = StyleSheet.create({
     scrollContainer: {
         backgroundColor: "#fff",
+        paddingTop: 20
     },
     scrollContent: {
         paddingTop: 10,

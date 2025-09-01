@@ -129,7 +129,7 @@ const AddressForm = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: '#fff',  flex: 1, },
+  container: { padding: 16, backgroundColor: '#fff',  flex: 1, paddingTop: 30},
   searchBox: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#f3f3f3',
     borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginBottom: 14,
