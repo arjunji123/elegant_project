@@ -1,6 +1,7 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Image } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import AccountScreen from "../Profile/AccountScreen";
 import HomeContent from "./HomeContent";
@@ -10,6 +11,8 @@ import SubCategoryScreen from "../categories/SubCategories";
 const Tab = createBottomTabNavigator();
 
 const HomePage = () => {
+    const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -22,7 +25,7 @@ const HomePage = () => {
           marginHorizontal: 10,
           borderRadius: 50,
           position: "absolute",
-          bottom: 10,
+         bottom: insets.bottom , 
           alignItems: "center",
           justifyContent: "center",
           paddingHorizontal: 20,
@@ -32,6 +35,7 @@ const HomePage = () => {
           justifyContent: "center",
           marginTop: 13,
         },
+        
         tabBarIcon: ({ focused }) => {
           let iconSource;
 

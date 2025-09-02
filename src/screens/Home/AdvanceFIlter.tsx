@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Modal, FlatList, Text, TouchableOpacity, ScrollView, StyleSheet, Pressable, Image, GestureResponderEvent, TextInput } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import Arrowleft from "../../assets/icons/Arrowleft.png";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MultiSlider from '@ptomasroos/react-native-multi-slider';
 import Button from '../../components/Button';
 import { useFilter } from "../../Context/FilterContext";
@@ -47,13 +47,13 @@ const CustomMarker = () => (
 
 const AdvanceFilter = ({ navigation }) => {
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-    const [priceRange, setPriceRange] = useState([0, 10000]);
     const [selectedRating, setSelectedRating] = useState('All');
     const [sortOption, setSortOption] = useState('Price: High to Low');
     const [range, setRange] = useState([0, 10000]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [showAllCategories, setShowAllCategories] = useState(false);
+    const [showMore, setShowMore] = useState(false);
+    const insets = useSafeAreaInsets();
 
     const { setFilter } = useFilter();
 
@@ -200,7 +200,7 @@ const AdvanceFilter = ({ navigation }) => {
                     <AnimatedLoader visible={loading} />
                 ) : (
                     <>
-                        {categories.slice(0, 3).map(cat => (
+                        {(showMore ? categories : categories.slice(0, 3)).map(cat => (
                             <TouchableOpacity
                                 key={cat.id}
                                 style={[
@@ -219,63 +219,21 @@ const AdvanceFilter = ({ navigation }) => {
                                 </Text>
                             </TouchableOpacity>
                         ))}
-                        {categories.length > 4 && (
+
+                        {/* 🟢 View More / Less Button */}
+                        {categories.length > 3 && (
                             <TouchableOpacity
                                 style={[styles.chip, { backgroundColor: '#EEE' }]}
-                                onPress={() => setShowAllCategories(true)}
+                                onPress={() => setShowMore(!showMore)}
                             >
                                 <Text style={[styles.chipLabel, { color: '#704F38' }]}>
-                                    Show More
+                                    {showMore ? "View Less" : "View More"}
                                 </Text>
                             </TouchableOpacity>
                         )}
                     </>
                 )}
             </View>
-
-            {/* Modal for all categories */}
-            <Modal
-                visible={showAllCategories}
-                animationType="slide"
-                transparent={true}
-                onRequestClose={() => setShowAllCategories(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>All Categories</Text>
-                        <FlatList
-                            data={categories}
-                            keyExtractor={item => item.id.toString()}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    style={[
-                                        styles.chip,
-                                        selectedCategories.includes(item.id) && styles.chipSelected,
-                                        { marginVertical: 4 }
-                                    ]}
-                                    onPress={() => toggleCategory(item.id)}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.chipLabel,
-                                            selectedCategories.includes(item.id) && styles.chipLabelSelected
-                                        ]}
-                                    >
-                                        {item.name}
-                                    </Text>
-                                </TouchableOpacity>
-                            )}
-                        />
-                        <Button
-                            text="Close"
-                            onPress={() => setShowAllCategories(false)}
-                            bgColor="#704F38"
-                            textColor="#fff"
-                        />
-                    </View>
-                </View>
-            </Modal>
-
             {/* Price */}
             <Text style={styles.sectionTitle}>Price</Text>
             <View style={styles.pricesRow}>
@@ -366,7 +324,7 @@ const AdvanceFilter = ({ navigation }) => {
 
 
 
-        </ScrollView><View style={styles.footer}>
+        </ScrollView><View style={[styles.footer, { paddingBottom: insets.bottom }]}>
                 <Button text={'Apply Filter'} onPress={applyFilters} bgColor={'#704F38'} textColor={'#fff'} />
                 <Button text={'Reset'} onPress={resetFilter} bgColor={'#fff'} textColor={'#704f38'} border={"#704f38"} />
             </View></>

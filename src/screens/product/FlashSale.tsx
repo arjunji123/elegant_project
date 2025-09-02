@@ -5,7 +5,6 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
 import Loader from "../../components/AnimatedLoader";
 import AnimatedLoader from "../../components/AnimatedLoader";
-import { useIsFocused } from "@react-navigation/native";
 
 const redDress = "https://res.cloudinary.com/dfhzted2d/image/upload/v1756059417/products/kqnhfrcvlcs9b3nxy5fg.png"
 
@@ -19,71 +18,62 @@ interface Product {
 
 // const categories = ["All Items", "Newest", "T-shirt", "Pants", "Shoes"];
 
-const FlashSale = ({ navigation }) => {
+const FlashSale = ({ navigation, refreshKey }) => {
   const [activeCategory, setActiveCategory] = useState("all");
   const [products, setProducts] = useState<Product[]>([]);
   const [timeLeft, setTimeLeft] = useState({ h: 3, m: 38, s: 10 });
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const isFocused = useIsFocused();
-  const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({});
+  const [wishlistItems, setWishlistItems] = useState(0)
 
   const { setProductId, token, setCategoriesId } = useAuth()
-  const getProduct = async () => {
-    try {
-      // setLoading(true)
-      let url = "";
+  useEffect(() => {
+    const getProduct = async () => {
+      try {
+        let url = "";
 
-      switch (activeCategory) {
-        case "all":
-          url = "https://elegant-project.onrender.com/api/getallProducts";
-          // setLoading(true)
-          break;
+        switch (activeCategory) {
+          case "all":
+            url = "https://elegant-project.onrender.com/api/getallProducts";
+            break;
 
-        case "newest":
-          url = "https://elegant-project.onrender.com/api/getallProducts";
-          // setLoading(true)
-          break;
+          case "newest":
+            url = "https://elegant-project.onrender.com/api/getallProducts";
+            break;
 
-        default:
-          // For category id from backend
-          url = `https://elegant-project.onrender.com/api/product/category/${activeCategory}`;
-          // setLoading(true)
-          break;
+          default:
+            url = `https://elegant-project.onrender.com/api/product/category/${activeCategory}`;
+            break;
+        }
+
+        // 👇 Force re-load when refreshKey changes, even for "all"
+        const res = await fetch(`${url}?refresh=${refreshKey}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+        console.log("Fetched products:", data);
+
+        if (activeCategory === "newest") {
+          const sorted = [...data.data].sort(
+            (a: any, b: any) =>
+              new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+          );
+          setProducts(sorted);
+        } else {
+          setProducts(data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching products:", error);
       }
+    };
 
-      const res = await fetch(url, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // ✅ attach token
-        },
-      });
-      const contentType = res.headers.get("content-type");
-      console.log("Response content-type:", contentType);
-
-      // if (!res.ok) {
-      //   const text = await res.text();
-      //   console.error("Server Error:", res.status, text);
-      //   return;
-      // }
-
-      const data = await res.json();
-      console.log("Fetched products:", data);
-
-      if (activeCategory === "newest") {
-        const sorted = [...data.data].sort(
-          (a: any, b: any) =>
-            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-        );
-        setProducts(sorted);
-      } else {
-        setProducts(data.data);
-      }
-    } catch (error) {
-      console.error("Error fetching products:", error);
-    }
-  };
+    getProduct();
+  }, [activeCategory, refreshKey, wishlistItems]);
 
 
 
@@ -116,35 +106,14 @@ const FlashSale = ({ navigation }) => {
   };
 
   useEffect(() => {
-    if (isFocused) {
-      fetchCategories();
-      getProduct();
-    }
-  }, [isFocused, activeCategory]);
 
+    fetchCategories();
+  }, [activeCategory]);
 
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        let { h, m, s } = prev;
-        if (s > 0) s--;
-        else if (m > 0) {
-          m--;
-          s = 59;
-        } else if (h > 0) {
-          h--;
-          m = 59;
-          s = 59;
-        }
-        return { h, m, s };
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   const toggleFavorite = async (productId: string, currentStatus: number) => {
     const newStatus = currentStatus === 1 ? 0 : 1;
+
 
     try {
       const res = await fetch(`https://elegant-project.onrender.com/api/add-wishlist`, {
@@ -188,18 +157,46 @@ const FlashSale = ({ navigation }) => {
       <AnimatedLoader visible={loading} />
     );
   }
-  const handleToggleFavorite = async (id: number, current: boolean) => {
+  const handleToggleFavorite = async (id: string, currentStatus: number) => {
+    const newStatus = currentStatus === 1 ? 0 : 1;
+
     // Optimistic update
-    setWishlistItems((prev) => ({ ...prev, [id]: !current }));
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === id ? { ...p, wishlist_is: newStatus } : p
+      )
+    );
 
     try {
-      await toggleFavorite(id, current); // API call
+      const res = await fetch(`https://elegant-project.onrender.com/api/add-wishlist`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ product_id: id }),
+      });
+
+      const data = await res.json();
+      if (!data.success) {
+        // revert if API fails
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === id ? { ...p, wishlist_is: currentStatus } : p
+          )
+        );
+      }
     } catch (error) {
-      // Revert if API fails
-      setWishlistItems((prev) => ({ ...prev, [id]: current }));
-      console.error("Failed to update wishlist", error);
+      console.error("Wishlist toggle failed:", error);
+      // revert on error
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === id ? { ...p, wishlist_is: currentStatus } : p
+        )
+      );
     }
   };
+
 
   return (
     <View style={styles.container}>
@@ -249,16 +246,17 @@ const FlashSale = ({ navigation }) => {
                   <TouchableOpacity
                     style={[
                       styles.wishlistBtn,
-                      { backgroundColor: wishlistItems[item.id] ?? item.wishlist_is ? "#ffffff" : "#000000ff" }
+                      { backgroundColor: item.wishlist_is ? "#ffffff" : "#000000ff" }
                     ]}
-                    onPress={() => handleToggleFavorite(item.id, wishlistItems[item.id] ?? item.wishlist_is)}
+                    onPress={() => handleToggleFavorite(item.id, item.wishlist_is)}
                   >
                     <Icon
-                      name={(wishlistItems[item.id] ?? item.wishlist_is) ? "heart" : "heart-outline"}
+                      name={item.wishlist_is ? "heart" : "heart-outline"}
                       size={22}
-                      color={(wishlistItems[item.id] ?? item.wishlist_is) ? "#000000" : "#ffffff"}
+                      color={item.wishlist_is ? "#000000" : "#ffffff"}
                     />
                   </TouchableOpacity>
+
                 </View>
                 <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
                   <Text style={styles.productName} numberOfLines={1}>
@@ -415,6 +413,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',  // optional
   },
   noProductsText: {
+    marginBottom:25,
     fontSize: 18,
     fontWeight: '500',
     color: '#704F38',

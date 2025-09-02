@@ -3,6 +3,7 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpa
 import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
 import Header from "../../components/Header";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 interface Product {
@@ -23,6 +24,7 @@ const DiscountProductScreen = ({ navigation }) => {
     const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({});
     const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+const insets = useSafeAreaInsets();
 
     const getProduct = async () => {
         try {
@@ -186,7 +188,7 @@ const DiscountProductScreen = ({ navigation }) => {
         ))} */}
             </ScrollView>
 
-            <View style={styles.productsGrid}>
+            <View style={[styles.productsGrid,{paddingBottom: insets.bottom}]}>
                 {products.map((item) => (
                     <View key={item.id} style={styles.productCard}>
 

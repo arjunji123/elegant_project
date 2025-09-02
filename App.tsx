@@ -5,7 +5,7 @@ import { AuthProvider } from './src/Context/AuthContext'; // import your AuthPro
 import { ToastProvider } from "./src/Context/ToastContext";
 import { FilterProvider } from "./src/Context/FilterContext";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-
+import { WishlistProvider } from './src/Context/WishlistContext';
 
 import type { RootStackParamList } from './src/types/types';
 
@@ -23,9 +23,9 @@ export default function App() {
     <ToastProvider>
        <FilterProvider>
       <AuthProvider>
-       
+       <WishlistProvider>
           <AppNavigator />
-       
+       </WishlistProvider>
       </AuthProvider>
        </FilterProvider>
     </ToastProvider>

@@ -1,6 +1,14 @@
 // FlashSale.tsx
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, TextInput, GestureResponderEvent } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  TextInput,
+} from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
 import { useIsFocused } from "@react-navigation/native";
@@ -13,25 +21,23 @@ interface Product {
   price: number;
   image: string;
   rating: number;
+  wishlist_is?: number;
+  images?: { url?: string }[] | string[];
 }
 
-
 const WishlistScreen: React.FC = ({ navigation }) => {
-  const { setProductId, token } = useAuth()
+  const { setProductId, token } = useAuth();
   const isFocused = useIsFocused();
   const [categories, setCategories] = useState<any[]>([]);
-
-  const [activeCategory, setActiveCategory] = useState("");
+  const [activeCategory, setActiveCategory] = useState("all");
   const [products, setProducts] = useState<Product[]>([]);
-  const [timeLeft, setTimeLeft] = useState({ h: 3, m: 38, s: 10 });
 
-useEffect(() => {
+  // ✅ Fetch wishlist products
   const fetchWishlistProducts = async () => {
     try {
-      let url = 'https://elegant-project.onrender.com/api/wishlist';
+      let url = "https://elegant-project.onrender.com/api/wishlist";
 
-      if (activeCategory) {
-        // Fetch products by activeCategory filtered wishlist items on client
+      if (activeCategory && activeCategory !== "all") {
         url = `https://elegant-project.onrender.com/api/product/category/${activeCategory}`;
       }
 
@@ -47,12 +53,13 @@ useEffect(() => {
       const data = JSON.parse(text);
 
       if (data.success) {
-        if (activeCategory) {
-          // Filter only wishlist items if category-based
-          const wishlisted = data.data.filter((item: any) => item.wishlist_is === 1);
+        if (activeCategory && activeCategory !== "all") {
+          const wishlisted = data.data.filter(
+            (item: any) => item.wishlist_is === 1
+          );
           setProducts(wishlisted);
         } else {
-          setProducts(data.products); // For wishlist endpoint
+          setProducts(data.products);
         }
       } else {
         setProducts([]);
@@ -63,44 +70,12 @@ useEffect(() => {
     }
   };
 
-  fetchWishlistProducts();
+  useEffect(() => {
+    fetchWishlistProducts();
+  }, [activeCategory, token, isFocused]);
 
-}, [activeCategory, token]);
-
-  // useEffect(() => {
-  //   const categoriesProduct = async () => {
-  //     try {
-  //       const res = await fetch(
-  //         `https://elegant-project.onrender.com/api/product/category/${activeCategory}`,
-  //         {
-  //           method: "GET",
-  //           headers: {
-  //             "Content-Type": "application/json",
-  //             Authorization: token ? `Bearer ${token}` : "",
-  //           },
-  //         }
-  //       );
-
-  //       const text = await res.text();
-  //       const data = JSON.parse(text);
-
-  //       if (data.success && data.data) {
-  //         const wishlisted = data.data.filter(
-  //           (item: any) => item.wishlist_is === 1
-  //         );
-  //         setProducts(wishlisted);
-  //       } else {
-  //         setProducts([]);
-  //       }
-  //     } catch (error) {
-  //       console.error("Server Error:", error);
-  //     }
-  //   }
-  //   categoriesProduct()
-  // }, [activeCategory])
-
+  // ✅ Fetch categories
   const fetchCategories = async () => {
-
     try {
       const res = await fetch(
         `https://elegant-project.onrender.com/api/categories`,
@@ -108,14 +83,17 @@ useEffect(() => {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            Authorization: token ? `Bearer ${token}` : "", // ✅ token added here
+            Authorization: token ? `Bearer ${token}` : "",
           },
         }
       );
+
       const text = await res.text();
       const data = JSON.parse(text);
+
       if (data.success && data.data) {
-        setCategories(data.data);
+        const updatedCategories = [{ id: "all", name: "All" }, ...data.data];
+        setCategories(updatedCategories);
       }
     } catch (error) {
       console.error("Categories fetch error:", error);
@@ -124,57 +102,50 @@ useEffect(() => {
 
   useEffect(() => {
     fetchCategories();
-  }, [])
+  }, []);
 
-  // useEffect(() => {
-  //  getWishlistProducts();
-  // },);
-  
+  // ✅ Toggle favorite + refresh
   const toggleFavorite = async (productId: string, currentStatus: number) => {
-    const newStatus = currentStatus === 1 ? 0 : 1;
-    console.log(productId, 'productIdproductId')
     try {
-      const res = await fetch(`https://elegant-project.onrender.com/api/add-wishlist`, {
-        method: "post", // or PATCH depending on backend
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`, // 👈 check token value
-        },
-        body: JSON.stringify({
-          product_id: productId,
-        }),
-      });
+      const res = await fetch(
+        `https://elegant-project.onrender.com/api/add-wishlist`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            product_id: productId,
+          }),
+        }
+      );
 
-      const text = await res.text(); // get raw text first
-      console.log("Raw response:", text);
-
+      const text = await res.text();
       let data;
       try {
-        data = JSON.parse(text); // parse only if JSON
+        data = JSON.parse(text);
       } catch (parseErr) {
-        console.error("JSON parse failed. Response was not JSON:", text);
+        console.error("JSON parse failed:", text);
         return;
       }
 
-      console.log("Product updated:", data);
-
       if (data.success) {
-        setProducts((prev) =>
-          prev.map((p) =>
-            p.id === productId ? { ...p, wishlist_is: newStatus } : p
-          )
-        );
+        // ✅ Refresh wishlist immediately
+        fetchWishlistProducts();
       }
     } catch (error) {
       console.error("Wishlist toggle failed:", error);
     }
   };
+
   const handleGoBack = () => navigation.goBack();
 
   return (
-    <ScrollView style={styles.scrollContainer}
-
-      contentContainerStyle={styles.scrollContent}    >
+    <ScrollView
+      style={styles.scrollContainer}
+      contentContainerStyle={styles.scrollContent}
+    >
       <Header text={"My Wishlist"} onPress={handleGoBack} />
 
       {/* Search Bar */}
@@ -185,37 +156,40 @@ useEffect(() => {
           activeOpacity={0.8}
         >
           <View style={styles.searchBar}>
-            <Icon
-              name="search"
-              size={18}
-              color="#838383"
-
-            />
+            <Icon name="search" size={18} color="#838383" />
             <TextInput
               placeholder="Search here"
-              // placeholderTextColor="#aaa"
-              // style={styles.searchInput}
               onPress={() => navigation.navigate("SearchProductScreen")}
             />
-
           </View>
         </TouchableOpacity>
       </View>
 
       <View style={styles.headerRow}>
         <Text style={styles.title}>Your List</Text>
-
       </View>
 
       {/* Categories */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ marginVertical: 10 }}
+      >
         {categories.map((cat) => (
           <TouchableOpacity
             key={cat.id}
-            style={[styles.categoryChip, activeCategory === cat.id && styles.activeCategory]}
+            style={[
+              styles.categoryChip,
+              activeCategory === cat.id && styles.activeCategory,
+            ]}
             onPress={() => setActiveCategory(cat.id)}
           >
-            <Text style={[styles.categoryText, activeCategory === cat.id && styles.activeCategoryText]}>
+            <Text
+              style={[
+                styles.categoryText,
+                activeCategory === cat.id && styles.activeCategoryText,
+              ]}
+            >
               {cat.name}
             </Text>
           </TouchableOpacity>
@@ -224,64 +198,93 @@ useEffect(() => {
 
       {/* Products */}
       <View style={styles.productsGrid}>
-        {products.map((item) => (item &&
-
-          (
-            <View key={item.id} style={styles.productCard}>
-              <View style={styles.imageContainer}>
-                <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
-
-                  <Image source={{ uri: item.images[0].url ? item.images[0].url : item.images[0] }} style={styles.productImage} />
-                </TouchableOpacity>
+        {products.map(
+          (item) =>
+            item && (
+              <View key={item.id} style={styles.productCard}>
+                <View style={styles.imageContainer}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      navigation.navigate("ProductDetailScreen"),
+                        setProductId(item.id);
+                    }}
+                  >
+                    <Image
+                      source={{
+                        uri:
+                          item.images && item.images[0]?.url
+                            ? item.images[0].url
+                            : (item.images?.[0] as string),
+                      }}
+                      style={styles.productImage}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.wishlistBtn, { backgroundColor: "#ffffff" }]}
+                    onPress={() =>
+                      toggleFavorite(item.id, item.wishlist_is ?? 1)
+                    }
+                  >
+                    <Icon
+                      name="heart"
+                      size={22}
+                      color={item.wishlist_is === 1 ? "red" : "#000"}
+                    />
+                  </TouchableOpacity>
+                </View>
                 <TouchableOpacity
-                  style={[
-                    styles.wishlistBtn,
-                    { backgroundColor: "#ffffff" }
-                  ]}
-                  onPress={() => toggleFavorite(item.id, item.wishlist_is)} >
-                  <Icon
-                    name='heart'
-                    size={22}
-                    color='#000000ff' />
+                  onPress={() => {
+                    navigation.navigate("ProductDetailScreen"),
+                      setProductId(item.id);
+                  }}
+                >
+                  <Text style={styles.productName} numberOfLines={1}>
+                    {item.name}
+                  </Text>
                 </TouchableOpacity>
-              </View>
-              <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
-                <Text style={styles.productName} numberOfLines={1}>
-                  {item.name}
-                </Text>
-              </TouchableOpacity>
-              <View style={styles.priceRatingRow}>
-                <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
-
-                  <Text style={styles.productPrice}>₹{item.price}</Text>
-                </TouchableOpacity>
-                <View style={styles.ratingRow}>
-                  <Icon name="star" size={14} color="gold" />
-                  <Text style={styles.ratingText}>{item.rating ?? "5"}</Text>
+                <View style={styles.priceRatingRow}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      navigation.navigate("ProductDetailScreen"),
+                        setProductId(item.id);
+                    }}
+                  >
+                    <Text style={styles.productPrice}>₹{item.price}</Text>
+                  </TouchableOpacity>
+                  <View style={styles.ratingRow}>
+                    <Icon name="star" size={14} color="gold" />
+                    <Text style={styles.ratingText}>
+                      {item.rating ?? "5"}
+                    </Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          )
-
-        ))}
-        {products.length == 0 &&
-          <><View style={{ flex: 1, justifyContent: "center", marginTop:50,alignItems: "center" }}>
+            )
+        )}
+        {products.length == 0 && (
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              marginTop: 50,
+              alignItems: "center",
+            }}
+          >
             <Text style={styles.header}>No Products</Text>
 
             <TouchableOpacity style={{ marginTop: 20 }}>
               <Button
                 text={"Products"}
-                onPress={() => navigation.navigate("FilteredProductsScreen")}
+                onPress={() => navigation.navigate("ProductScreen")}
                 bgColor={"#704F38"}
                 textColor={"#ffffff"}
               />
             </TouchableOpacity>
-          </View></>
-        }
+          </View>
+        )}
       </View>
     </ScrollView>
   );
-
 };
 
 export default WishlistScreen;
@@ -293,25 +296,22 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: 10,
     paddingHorizontal: 20,
-    paddingBottom: 100, // extra space at bottom
+    paddingBottom: 100,
   },
   header: {
     fontSize: 22,
-    fontWeight: '500',
+    fontWeight: "500",
     marginBottom: 15,
-    textAlign: 'center',
+    textAlign: "center",
   },
   searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F6F6F6',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F6F6F6",
     borderRadius: 10,
     paddingHorizontal: 12,
     height: 40,
     marginBottom: 8,
-  },
-  icon: {
-    marginRight: 8,
   },
   searchBar: {
     flexDirection: "row",
@@ -322,20 +322,14 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 44,
   },
-  input: {
-    flex: 1,
-    fontSize: 14,
-    color: "#000",
-  },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-   
   },
   priceRatingRow: {
     flexDirection: "row",
-    justifyContent: "space-between", // pushes price left, rating right
+    justifyContent: "space-between",
     alignItems: "center",
     marginTop: 4,
   },
@@ -344,9 +338,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "#010911",
-    fontFamily: "Poppins"
+    fontFamily: "Poppins",
   },
-
   categoryChip: {
     paddingHorizontal: 14,
     paddingVertical: 6,
@@ -362,7 +355,7 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 13,
     color: "#000",
-    fontWeight: 500
+    fontWeight: "500",
   },
   activeCategoryText: {
     color: "#fff",
@@ -374,7 +367,7 @@ const styles = StyleSheet.create({
   },
   productCard: {
     backgroundColor: "#fff",
-    width: "48%",   // 2 per row
+    width: "48%",
     marginBottom: 15,
     borderRadius: 8,
     overflow: "hidden",
@@ -384,7 +377,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: "hidden",
   },
-
   productImage: {
     width: 180,
     height: 200,

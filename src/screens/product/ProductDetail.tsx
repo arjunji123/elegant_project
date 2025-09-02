@@ -216,39 +216,7 @@ const ProductDetail = ({ navigation }) => {
 <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
 
 <View style={styles.container}>
-            <View style={styles.backheader}>
-                <TouchableOpacity style={styles.iconWrapper} onPress={handleGoBack}>
-                    <Icon name="chevron-back" size={22} color="#000" />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[
-                        styles.wishlistBtn,
-                        {
-                            backgroundColor:
-                                product?.wishlist_is && product.wishlist_is
-                                    ? "#ffffff"
-                                    : "#000000ff",
-                        },
-                    ]}
-                    onPress={() => toggleFavorite(product.id, product.wishlist_is)}
-                >
-                    <Icon
-                        name={
-                            product?.wishlist_is && product.wishlist_is
-                                ? "heart"
-                                : "heart-outline"
-                        }
-                        size={22}
-                        color={
-                            product?.wishlist_is && product.wishlist_is
-                                ? "#000000"
-                                : "#ffffff"
-                        }
-                    />
-                </TouchableOpacity>
-            </View>
-
+           
             <ScrollView showsVerticalScrollIndicator={false}  >
                 {/* 🔥 Image Slider */}
 
@@ -272,7 +240,32 @@ const ProductDetail = ({ navigation }) => {
                         });
                     }}
                     renderItem={({ item }) => (
-                        <Image source={{ uri: item }} style={styles.mainImage} />
+                         <><View style={styles.backheader}>
+                            <TouchableOpacity style={styles.iconWrapper} onPress={handleGoBack}>
+                                <Icon name="chevron-back" size={22} color="#000" />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[
+                                    styles.wishlistBtn,
+                                    {
+                                        backgroundColor: product?.wishlist_is && product.wishlist_is
+                                            ? "#ffffff"
+                                            : "#000000ff",
+                                    },
+                                ]}
+                                onPress={() => toggleFavorite(product.id, product.wishlist_is)}
+                            >
+                                <Icon
+                                    name={product?.wishlist_is && product.wishlist_is
+                                        ? "heart"
+                                        : "heart-outline"}
+                                    size={22}
+                                    color={product?.wishlist_is && product.wishlist_is
+                                        ? "#000000"
+                                        : "#ffffff"} />
+                            </TouchableOpacity>
+                        </View><Image source={{ uri: item }} style={styles.mainImage} /></>
                     )}
                 />
 
@@ -576,7 +569,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         marginRight: 10,
     },
-    sizeBoxActive: { backgroundColor: "#222", borderColor: "#222" },
+    sizeBoxActive: { backgroundColor: "#704F38", borderColor: "#222" },
     sizeText: { color: "#222" },
     sizeTextActive: { color: "#fff" },
     colorRow: {
@@ -596,7 +589,7 @@ const styles = StyleSheet.create({
 
     colorWrapperActive: {
         borderWidth: 2,
-        borderColor: "#5a3c2c", // dark brown outer border
+        borderColor: "#b37a5bff", // dark brown outer border
     },
 
     // Inner color circle

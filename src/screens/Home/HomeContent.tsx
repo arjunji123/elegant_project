@@ -25,7 +25,19 @@ const HomeContent = ({ navigation }) => {
   const isFocused = useIsFocused();
 
   const [profilePic, setProfilePic] = useState(null);
+    const [refreshKey, setRefreshKey] = useState(0); // 🔑 force re-render trigger
+
   const userId = user?.id || "123";
+
+    useEffect(() => {
+    const unsubscribe = navigation.addListener("tabPress", () => {
+      console.log("🏠 Home tab pressed → refreshing FlashSale");
+      setRefreshKey((prev) => prev + 1); // increment to trigger re-render
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
   useEffect(() => {
        if (isFocused) {
          let mounted = true;
@@ -139,7 +151,7 @@ const HomeContent = ({ navigation }) => {
         <Image style={styles.DiscoutImage} source={DiscoutImage} />
       </TouchableOpacity>
       <CategoriesHome navigation={navigation} />
-      <FlashSale navigation={navigation} />
+      <FlashSale navigation={navigation} refreshKey={refreshKey}/>
     </ScrollView>
   );
 };

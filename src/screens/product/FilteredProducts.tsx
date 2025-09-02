@@ -6,6 +6,7 @@ import { useFilter } from "../../Context/FilterContext";
 import { useAuth } from "../../Context/AuthContext";
 import Arrowleft from "../../assets/icons/Arrowleft.png";
 import Header from "../../components/Header";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const redDress = "https://res.cloudinary.com/dfhzted2d/image/upload/v1756059417/products/kqnhfrcvlcs9b3nxy5fg.png"
 
@@ -25,6 +26,7 @@ const FilteredProducts = ({ navigation }) => {
     const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const { token, setProductId } = useAuth()
+    const insets = useSafeAreaInsets();
     const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({});
     const getFilteredProducts = async () => {
         try {
@@ -221,7 +223,7 @@ console.log("Filter API URL:", url.toString());
                     })}
                 </ScrollView>
 
-                <View style={styles.productsGrid}>
+            <View style={[styles.productsGrid,{paddingBottom: insets.bottom}]}>
                     {products.length
                         ?
                         products.map((item) => (

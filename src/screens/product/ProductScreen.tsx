@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
-import Arrowleft from "../../assets/icons/Arrowleft.png";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from "../../components/Header";
 
 
@@ -24,6 +24,7 @@ const ProductScreen = ({ navigation }) => {
   const [timeLeft, setTimeLeft] = useState({ h: 3, m: 38, s: 10 });
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+const insets = useSafeAreaInsets();
 
 
   const getProduct = async () => {
@@ -201,7 +202,7 @@ const ProductScreen = ({ navigation }) => {
         ))}
       </ScrollView>
 
-      <View style={styles.productsGrid}>
+      <View style={[styles.productsGrid,{paddingBottom: insets.bottom + 10}]}>
         {products.length ?
 
           products.map((item) => (

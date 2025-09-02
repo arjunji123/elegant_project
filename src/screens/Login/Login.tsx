@@ -69,7 +69,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       });
 
       const data = await response.json();
-      console.log("Login response:", data);
+      console.log("Login response:", response);
 
 
       if (response.ok) {

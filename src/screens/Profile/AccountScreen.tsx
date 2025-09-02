@@ -2,7 +2,6 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, Pressable 
 import Icon from "react-native-vector-icons/Ionicons";
 import editIcon from "../../assets/icons/editIcon.png";
 import { useAuth } from "../../Context/AuthContext";
-import Arrowleft from '../../assets/icons/Arrowleft.png';
 import { AccountScreenProps } from "../../types/types";
 import Header from '../../components/Header';
 
@@ -21,7 +20,7 @@ const AccountScreen: React.FC<AccountScreenProps> = ({ navigation }) => {
   ];
 
   const handleGoBack = () => {
-    navigation.goBack();
+    navigation.navigate("HomePageScreen");
   };
 
   const editHandle = () => {
@@ -43,14 +42,14 @@ const AccountScreen: React.FC<AccountScreenProps> = ({ navigation }) => {
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
-      <Header text={"Account"} onPress={handleGoBack} />
+      {/* <Header text={"Account"} onPress={()=>navigation.navigate("HomePageScreen")} /> */}
 
-      {/* <View style={styles.header}>
-        <Pressable onPress={handleGoBack} style={styles.backButton}>
+      <View style={styles.header}>
+        {/* <Pressable onPress={handleGoBack} style={styles.backButton}>
           <Image source={Arrowleft} style={styles.backIcon} />
-        </Pressable>
+        </Pressable> */}
         <Text style={styles.title}>Account</Text>
-      </View> */}
+      </View>
 
       {/* Profile Header */}
       <View style={styles.profileHeader}>
@@ -142,6 +141,6 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontWeight: 'normal',
     fontFamily: 'Poppins',
-    marginRight: 40, // to offset the back button width for perfect center
+   
   },
 });

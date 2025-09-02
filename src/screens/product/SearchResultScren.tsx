@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
-import Arrowleft from "../../assets/icons/Arrowleft.png";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from "../../components/Header";
 
 
@@ -22,7 +22,7 @@ const SearchResultScren = ({ navigation }) => {
   //   const [activeCategory, setActiveCategory] = useState(categoriesId?categoriesId:  "all");
   const [products, setProducts] = useState<Product[]>([]);
   const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({});
-  const [loading, setLoading] = useState(true);
+const insets = useSafeAreaInsets();
 
 
   const getProducts = async () => {
@@ -167,7 +167,7 @@ const SearchResultScren = ({ navigation }) => {
       <View style={styles.productsGrid}>
         {products.length ?
           products.map((item) => (
-            <View key={item.id} style={styles.productCard}>
+      <View style={[styles.productsGrid,{paddingBottom: insets.bottom + 10}]}>
               <View style={styles.imageContainer}>
                 {/* Show image from API if exists, fallback to redDress */}
                 <Image
