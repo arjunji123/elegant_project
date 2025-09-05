@@ -209,6 +209,8 @@ exports.getProducts = async (req, res) => {
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN subcategories s ON p.subcategory_id = s.id
       LEFT JOIN wishlist w ON w.product_id = p.id AND w.user_id = ?
+         ORDER BY p.id ASC
+      LIMIT ? OFFSET ?
     `, [userId, limit, offset]);
 
     // Step 2: Get all product images in one query
@@ -237,6 +239,10 @@ exports.getProducts = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Products fetched successfully',
+      limit,
+      offset,
+            count: finalProducts.length,
+
       data: finalProducts
     });
 
