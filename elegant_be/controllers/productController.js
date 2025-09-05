@@ -190,6 +190,11 @@ exports.createProduct = async (req, res) => {
 exports.getProducts = async (req, res) => {
   const userId = req.user.id;
   try {
+        // frontend se limit & offset lenge
+    let { limit, offset } = req.query;
+    limit = parseInt(limit) || 10;   // default 10
+    offset = parseInt(offset) || 0;  // default 0
+    
     // Step 1: Get products with category, subcategory, wishlist
     const [products] = await db.query(`
       SELECT 
@@ -204,7 +209,7 @@ exports.getProducts = async (req, res) => {
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN subcategories s ON p.subcategory_id = s.id
       LEFT JOIN wishlist w ON w.product_id = p.id AND w.user_id = ?
-    `, [userId]);
+    `, [userId, limit, offset]);
 
     // Step 2: Get all product images in one query
     const productIds = products.map(p => p.id);
