@@ -6,7 +6,7 @@ exports.getFilteredProducts = async (req, res) => {
   const userId = req.user.id;
 
   try {
-    let { category_id, subcategory_id, min_price, max_price, sort } = req.query;
+    let { category_id, subcategory_id, min_price, max_price, sort, limit, offset } = req.query;
 
     // default values agar frontend na bheje
     category_id = category_id || null;
@@ -14,6 +14,8 @@ exports.getFilteredProducts = async (req, res) => {
     min_price = min_price || 0;
     max_price = max_price || 99999999;
     sort = sort || "";
+ limit = parseInt(limit) || 10;   // default 10
+    offset = parseInt(offset) || 0;  // default 0
 
     let query = `
       SELECT p.*, 
@@ -71,6 +73,12 @@ exports.getFilteredProducts = async (req, res) => {
       query += " ORDER BY p.id ASC"; // default case
     }
 
+
+    // add limit & offset
+    query += " LIMIT ? OFFSET ?";
+    params.push(limit, offset);
+
+
     // Step 1: Get filtered products
     const [products] = await db.query(query, params);
 
@@ -99,6 +107,8 @@ exports.getFilteredProducts = async (req, res) => {
     res.status(200).json({
       success: true,
       total_products: finalProducts.length,
+      limit,
+      offset,
       filters: {
         category_id,
         subcategory_id,
@@ -363,6 +373,8 @@ exports.getProductsByCategory = async (req, res) => {
   const userId = req.user.id;
   const categoryId = req.params.categoryId;
 
+    const limit = parseInt(req.query.limit) || 10;
+  const offset = parseInt(req.query.offset) || 0;
   try {
     // Step 1: Get products in category with wishlist info
     const [products] = await db.query(`
@@ -373,7 +385,8 @@ exports.getProductsByCategory = async (req, res) => {
       LEFT JOIN wishlist w 
         ON p.id = w.product_id AND w.user_id = ?
       WHERE p.category_id = ?
-    `, [userId, categoryId]);
+  LIMIT ? OFFSET ?
+    `, [userId, categoryId, limit, offset]);
 
     // Step 2: Get all images for these products
     const productIds = products.map(p => p.id);
@@ -401,6 +414,8 @@ exports.getProductsByCategory = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Products fetched successfully',
+       limit,
+      offset,
       data: finalProducts
     });
 
@@ -419,7 +434,8 @@ exports.getProductsBySubCategory = async (req, res) => {
   try {
     const userId = req.user.id;
     const subcategoryId = req.params.subcategoryId;
-
+ const limit = parseInt(req.query.limit) || 10;
+    const offset = parseInt(req.query.offset) || 0;
     // Step 1: Get products with wishlist info
     const [products] = await db.query(`
       SELECT p.*, 
@@ -428,7 +444,8 @@ exports.getProductsBySubCategory = async (req, res) => {
       LEFT JOIN wishlist w 
         ON p.id = w.product_id AND w.user_id = ?
       WHERE p.subcategory_id = ?
-    `, [userId, subcategoryId]);
+ LIMIT ? OFFSET ?
+    `, [userId, subcategoryId, limit, offset]);
 
     // Step 2: Get all images for these products
     const productIds = products.map(p => p.id);
@@ -456,6 +473,8 @@ exports.getProductsBySubCategory = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Products fetched successfully',
+      limit,
+      offset,
       data: finalProducts
     });
 
@@ -471,7 +490,8 @@ exports.getProductsBySubCategory = async (req, res) => {
 exports.getNewestProducts = async (req, res) => {
   try {
            const userId = req.user.id;
-
+ let limit = parseInt(req.query.limit) || 10;
+    let offset = parseInt(req.query.offset) || 0;
   let query = `
       SELECT p.*, 
         c.name AS category_name, 
@@ -482,12 +502,15 @@ exports.getNewestProducts = async (req, res) => {
       LEFT JOIN subcategories s ON p.subcategory_id = s.id
       LEFT JOIN wishlist w ON p.id = w.product_id AND w.user_id = ?
       ORDER BY p.created_at DESC
+      LIMIT ? OFFSET ?
     `;
-    const [rows] = await db.query(query, [userId]);
+    const [rows] = await db.query(query, [userId, limit, offset]);
 
    res.status(200).json({
       success: true,
       message: 'Products fetched successfully',
+       limit,
+      offset,
       data: rows
     });
   } catch (error) {
@@ -545,13 +568,17 @@ exports.getWishlist = async (req, res) => {
   const userId = req.user.id;
 
   try {
+     let limit = parseInt(req.query.limit) || 10;
+    let offset = parseInt(req.query.offset) || 0;
     // Step 1: Get wishlist products
     const [products] = await db.query(
       `SELECT p.id, p.name, p.price, p.category_id
        FROM wishlist w
        INNER JOIN products p ON w.product_id = p.id
-       WHERE w.user_id = ?`,
-      [userId]
+       WHERE w.user_id = ?
+        ORDER BY w.created_at DESC
+        LIMIT ? OFFSET ?`,
+      [userId, limit, offset]
     );
 
     // Step 2: Get all images for wishlist products
@@ -580,7 +607,9 @@ exports.getWishlist = async (req, res) => {
       images: imagesMap[p.id] || []
     }));
 
-    res.json({ success: true, products: finalProducts });
+    res.json({ success: true, limit,
+      offset,
+      count: finalProducts.length, products: finalProducts });
 
   } catch (error) {
     console.error(error);
@@ -615,7 +644,8 @@ exports.searchProducts = async (req, res) => {
   try {
     const userId = req.user.id;
     const { keyword } = req.query;
-
+ let limit = parseInt(req.query.limit) || 10;
+    let offset = parseInt(req.query.offset) || 0;
     if (!keyword || keyword.trim() === "") {
       return res.status(400).json({
         success: false,
@@ -647,10 +677,11 @@ exports.searchProducts = async (req, res) => {
          OR LOWER(c.name) LIKE ? 
          OR LOWER(s.name) LIKE ?
       ORDER BY relevance DESC, p.name ASC
+            LIMIT ? OFFSET ?
     `, [
       searchTerm, searchTerm, searchTerm, searchTerm,
       userId || null,
-      searchTerm, searchTerm, searchTerm, searchTerm
+      searchTerm, searchTerm, searchTerm, searchTerm, limit, offset
     ]);
 
     // Step 2: Get all images for searched products
@@ -678,6 +709,9 @@ exports.searchProducts = async (req, res) => {
     res.status(200).json({
       success: true,
       message: finalProducts.length > 0 ? "Products found" : "No products found",
+       limit,
+      offset,
+      count: finalProducts.length,
       data: finalProducts
     });
 
@@ -692,10 +726,12 @@ exports.searchProducts = async (req, res) => {
 
 
 
-////////////////////////////////////!SECTION
+////////////////////////////////////
 
 exports.getOfferProducts = async (req, res) => {
   const userId = req.user.id;
+   let limit = parseInt(req.query.limit) || 10;
+    let offset = parseInt(req.query.offset) || 0;
   try {
     // Step 1: Get products with category, subcategory, wishlist (only where offer = 50)
     const [products] = await db.query(`
@@ -712,8 +748,9 @@ exports.getOfferProducts = async (req, res) => {
       LEFT JOIN subcategories s ON p.subcategory_id = s.id
       LEFT JOIN wishlist w ON w.product_id = p.id AND w.user_id = ?
       WHERE p.offer = 50
-    `, [userId]);
-
+            ORDER BY p.created_at DESC
+  LIMIT ? OFFSET ?
+    `, [userId, limit, offset]);
     // Step 2: Get all product images in one query
     const productIds = products.map(p => p.id);
     let imagesMap = {};
@@ -740,6 +777,9 @@ exports.getOfferProducts = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Offer products (50%) fetched successfully',
+          limit,
+      offset,
+      count: finalProducts.length,
       data: finalProducts
     });
 
