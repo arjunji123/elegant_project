@@ -21,7 +21,7 @@ app.use('/api', addressRoutes);
 app.use('/api', categoryRoutes); 
 app.use('/api', subcategoryRoutes); 
 app.use('/api', productRoutes); 
-app.user('/api', cartRoutes )
+app.use('/api', cartRoutes )
 app.use("/uploads", express.static("uploads"));
 
 
