@@ -2,25 +2,46 @@
 const db = require('../config/db');
 
 
-// Add to Cart
+// Add to Cart (merge same product+color+size)
 exports.addToCart = async (req, res) => {
   const userId = req.user.id;
   const { productId, size, color } = req.body;
 
   try {
-    // Default quantity = 1
-    const quantity = 1;
-
-    // Insert new row (no merging, even if same product but diff size/color)
-    await db.query(
-      `INSERT INTO cart (user_id, product_id, size, color, quantity) 
-       VALUES (?, ?, ?, ?, ?)`,
-      [userId, productId, size, color, quantity]
+    // Step 1: Check if product with same size & color already in cart
+    const [existing] = await db.query(
+      `SELECT id, quantity FROM cart 
+       WHERE user_id = ? AND product_id = ? AND size = ? AND color = ?`,
+      [userId, productId, size, color]
     );
 
-    res.json({ success: true, message: "Product added to cart" });
+    if (existing.length > 0) {
+      // Step 2: Already exists → Increase quantity
+      const cartId = existing[0].id;
+      await db.query(
+        `UPDATE cart SET quantity = quantity + 1 WHERE id = ?`,
+        [cartId]
+      );
+
+      return res.json({
+        success: true,
+        message: "Product quantity increased in cart"
+      });
+    } else {
+      // Step 3: Insert new row if not exists
+      await db.query(
+        `INSERT INTO cart (user_id, product_id, size, color, quantity) 
+         VALUES (?, ?, ?, ?, ?)`,
+        [userId, productId, size, color, 1]
+      );
+
+      return res.json({
+        success: true,
+        message: "Product added to cart"
+      });
+    }
   } catch (error) {
-    console.error(error);
+    console.error("Error adding to cart:", error);
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
