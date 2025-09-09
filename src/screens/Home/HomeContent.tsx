@@ -8,17 +8,19 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  ImageBackground,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
 import avtar from "../../assets/images/avatar.png";
-import DiscoutImage from "../../assets/images/DiscoutImage.png";
+import DiscoutImage from "../../assets/images/coupon.png";
 import CategoriesHome from "../categories/CategoriesHome";
 import FlashSale from "../product/FlashSale";
 import { useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useIsFocused } from "@react-navigation/native";
-
+import { Dimensions } from "react-native";
+const { width } = Dimensions.get("window");
 const HomeContent = ({ navigation }) => {
 
   const { user, token } = useAuth();
@@ -26,6 +28,7 @@ const HomeContent = ({ navigation }) => {
 
   const [profilePic, setProfilePic] = useState(null);
     const [refreshKey, setRefreshKey] = useState(0); // 🔑 force re-render trigger
+  const [name, setName] = useState<string | null>(null);
 
   const userId = user?.id || "123";
 
@@ -56,7 +59,7 @@ const HomeContent = ({ navigation }) => {
         const text = await res.text();
         const data = JSON.parse(text);
         if (data.success && data.data && mounted) {
-
+setName(data.data.name)
           setProfilePic(data.data.profile_pic);
         }
       } catch (error) {
@@ -96,7 +99,7 @@ const HomeContent = ({ navigation }) => {
           </TouchableOpacity>
           <View>
             <Text style={styles.greeting}>Have a nice day!</Text>
-            <Text style={styles.userName}>{user?.name}</Text>
+            <Text style={styles.userName}>{name}</Text>
           </View>
         </View>
 
@@ -148,7 +151,23 @@ const HomeContent = ({ navigation }) => {
         </TouchableOpacity>
       </View>
       <TouchableOpacity onPress={() => navigation.navigate('DiscountProductScreen')}>
-        <Image style={styles.DiscoutImage} source={DiscoutImage} />
+          <View style={styles.cardContainer}>
+      <ImageBackground
+        source={DiscoutImage} // Replace with the actual path to your image
+        style={styles.backgroundImage}
+        imageStyle={styles.imageStyle}
+      >
+        <View style={styles.overlay}>
+          <Text style={styles.discountText}>50% Off</Text>
+          <Text style={styles.descriptionText}>On everything today</Text>
+          <Text style={styles.codeText}>With code:FSCREATION</Text>
+          <TouchableOpacity style={styles.button}>
+            <Text style={styles.buttonText}>Get Now</Text>
+          </TouchableOpacity>
+        </View>
+      </ImageBackground>
+    </View>
+        {/* <Image style={styles.DiscoutImage} source={DiscoutImage} /> */}
       </TouchableOpacity>
       <CategoriesHome navigation={navigation} />
       <FlashSale navigation={navigation} refreshKey={refreshKey}/>
@@ -164,14 +183,15 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 10,
-    paddingHorizontal: 10,
+    margin:10,
+    // paddingHorizontal: 10,
     paddingBottom: 100, // extra space at bottom
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 20,
+    marginTop: 8,
     marginBottom: 15,
   },
   leftContainer: {
@@ -280,11 +300,65 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
 DiscoutImage: {
-  width: '100%',
+  width: "100%",
   resizeMode: 'cover',
   borderRadius: 8,
   marginTop: 20,
   alignSelf: "center",
-}
+},
+cardContainer: {
+  width: width - 20, // Full width minus the desired horizontal padding (10 + 10)
+  height: 200, // Adjust height as needed
+  borderRadius: 20,
+  overflow: 'hidden',
+  shadowColor: '#000',
+  shadowOpacity: 0.1,
+  shadowRadius: 8,
+  elevation: 5,
+  marginTop: 20,
+  alignSelf: 'center', // Center the card within the ScrollView content
+  marginBottom: 20,
+  },
+  backgroundImage: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
 
+  },
+  imageStyle: {
+    borderRadius: 20, // Apply border radius to the image itself
+  },
+  overlay: {
+    marginTop:40,
+    marginBottom:40,
+    margin:15
+  },
+  discountText: {
+    fontSize: 25,
+    fontWeight: 700,
+    color: '#000', // Black for contrast
+    marginBottom: 3,
+  },
+  descriptionText: {
+    fontSize: 18,
+    color: '#000', // Black for contrast
+    marginBottom: 8,
+  },
+  codeText: {
+    fontSize: 14,
+    color: '#666666', // A slightly lighter black for the code
+    marginBottom: 8,
+  },
+  button: {
+    width:70,
+    backgroundColor: '#704F38', // A brown color similar to the image
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 25,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
 });

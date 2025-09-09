@@ -45,7 +45,7 @@ const HomePage = () => {
                 ? require("../../assets/images/activehome.png")
                 : require("../../assets/images/home.png");
               break;
-            case "Profile":
+            case "account":
               iconSource = focused
                 ? require("../../assets/images/activeProfile.png")
                 : require("../../assets/images/profile.png");
@@ -69,7 +69,7 @@ const HomePage = () => {
       <Tab.Screen name="Home" component={HomeContent} />
       <Tab.Screen name="Wishlist" component={WishlistScreen} />
       <Tab.Screen name="Categories" component={SubCategoryScreen} />
-      <Tab.Screen name="Profile" component={AccountScreen} />
+      <Tab.Screen name="account" component={AccountScreen} />
     </Tab.Navigator>
   );
 };

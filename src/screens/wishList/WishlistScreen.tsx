@@ -31,7 +31,6 @@ const WishlistScreen: React.FC = ({ navigation }) => {
   const [categories, setCategories] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState("all");
   const [products, setProducts] = useState<Product[]>([]);
-
   // ✅ Fetch wishlist products
   const fetchWishlistProducts = async () => {
     try {
@@ -228,7 +227,7 @@ const WishlistScreen: React.FC = ({ navigation }) => {
                     <Icon
                       name="heart"
                       size={22}
-                      color={item.wishlist_is === 1 ? "red" : "#000"}
+                      color="#000"
                     />
                   </TouchableOpacity>
                 </View>

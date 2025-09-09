@@ -2,6 +2,10 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
+// project.ext.react = [
+//     enableHermes: true  // or false if you don’t need it
+// ]
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -79,13 +83,20 @@ android {
 packagingOptions {
      doNotStrip "*/*/libreact_codegen_rnworklets.so"
 }
-    namespace "com.myapp"
+
+aaptOptions {
+    cruncherEnabled = false
+}
+namespace "com.myapp"
     defaultConfig {
         applicationId "com.myapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        // ndk {
+        //     abiFilters "arm64-v8a" // 👈 Only build for 64-bit ARM (fastest, most common)
+        // }
     }
     signingConfigs {
         debug {

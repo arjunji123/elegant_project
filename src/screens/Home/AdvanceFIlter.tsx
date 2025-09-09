@@ -48,7 +48,7 @@ const CustomMarker = () => (
 const AdvanceFilter = ({ navigation }) => {
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [selectedRating, setSelectedRating] = useState('All');
-    const [sortOption, setSortOption] = useState('Price: High to Low');
+    const [sortOption, setSortOption] = useState("");
     const [range, setRange] = useState([0, 10000]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -61,16 +61,18 @@ const AdvanceFilter = ({ navigation }) => {
         const loadFilters = async () => {
             try {
                 const savedFilter = await AsyncStorage.getItem("userFilters");
+
                 if (savedFilter) {
                     const parsed = JSON.parse(savedFilter);
-                    setSelectedCategories(parsed.category_ids || []);
+                    setSelectedCategories(parsed.category_id || []);
                     setRange([parsed.min_price || 0, parsed.max_price || 10000]);
                     setSelectedRating(parsed.rating || "All");
-                    setSortOption(parsed.sort || "price_high_low");
+                    setSortOption(parsed.sort || " ");
                 }
             } catch (error) {
                 console.error("Error loading filters:", error);
             }
+            
         };
 
         loadFilters();
@@ -101,29 +103,32 @@ const AdvanceFilter = ({ navigation }) => {
 
     }, [])
 
-    const toggleCategory = (catId: string) => {
-        setSelectedCategories(prev =>
-            prev.includes(catId)
-                ? prev.filter(id => id !== catId) // remove
-                : [...prev, catId]                // add
-        );
-    }
+  const toggleCategory = (catId: string) => {
+    setSelectedCategories(prev => {
+        // Use `prev || []` to ensure `prev` is always an array.
+        const currentCategories = prev || []; 
+        
+        return currentCategories.includes(catId)
+            ? currentCategories.filter(id => id !== catId) // remove
+            : [...currentCategories, catId]; // add
+    });
+};
 
 
     const resetFilter = async () => {
         const defaultFilter = {
-            category_id: null,
+            category_id: [],
             subcategory_id: null,
             min_price: 0,
             max_price: 10000,
-            sort: "price_high_low",
+            sort: " ",
             rating: "All",
         };
 
-        setSelectedCategories(null);
+        setSelectedCategories([]); 
         setRange([0, 10000]);
         setSelectedRating("All");
-        setSortOption("price_high_low");
+        setSortOption("");
         setFilter(defaultFilter);
         await AsyncStorage.setItem("userFilters", JSON.stringify(defaultFilter));
     };
@@ -185,8 +190,8 @@ const AdvanceFilter = ({ navigation }) => {
         }
     };
 
-
     const handleGoBack = () => navigation.goBack();
+                console.log(selectedCategories,"savedFilter")
 
     return (
         <><ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 150 }}>

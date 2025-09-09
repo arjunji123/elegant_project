@@ -4,9 +4,13 @@ import editIcon from "../../assets/icons/editIcon.png";
 import { useAuth } from "../../Context/AuthContext";
 import { AccountScreenProps } from "../../types/types";
 import Header from '../../components/Header';
+import { useEffect, useState } from 'react';
 
 const AccountScreen: React.FC<AccountScreenProps> = ({ navigation }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
+  const [profilePic, setProfilePic] = useState<string | null>(null);
+  const [name, setName] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
 
   const menuItems = [
     { icon: 'person-outline', label: 'My Profile', screen: 'ProfileScreen' },
@@ -19,8 +23,33 @@ const AccountScreen: React.FC<AccountScreenProps> = ({ navigation }) => {
     { icon: 'settings-outline', label: 'Setting', screen: 'SettingsScreen' },
   ];
 
+  useEffect(() => {
+    const testAuth = async () => {
+      try {
+
+        const res = await fetch(`https://elegant-project.onrender.com/api/user`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const text = await res.text();
+        const data = JSON.parse(text);
+        if (data.success && data.data) {
+          setProfilePic(data.data.profile_pic || "")
+          setName(data.data.name)
+          setEmail(data.data.email)
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
+    };
+    testAuth()
+  })
   const handleGoBack = () => {
-    navigation.navigate("HomePageScreen");
+    navigation.navigate("HomePageScreen")
   };
 
   const editHandle = () => {
@@ -38,27 +67,22 @@ const AccountScreen: React.FC<AccountScreenProps> = ({ navigation }) => {
       console.error("Logout failed:", err);
     }
   };
-  console.log(user, 'useruser')
+  console.log(profilePic, "profilePic")
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
-      {/* <Header text={"Account"} onPress={()=>navigation.navigate("HomePageScreen")} /> */}
-
-      <View style={styles.header}>
-        {/* <Pressable onPress={handleGoBack} style={styles.backButton}>
-          <Image source={Arrowleft} style={styles.backIcon} />
-        </Pressable> */}
-        <Text style={styles.title}>Account</Text>
-      </View>
+      <Header text={"Account"} onPress={handleGoBack} />
 
       {/* Profile Header */}
       <View style={styles.profileHeader}>
         {/* <image/> */}
-        <Icon name="person-circle-outline" size={60} color="#555" style={styles.avatar} />
-
+        {profilePic ?
+          <Image source={{ uri: profilePic }} style={styles.prfile} /> :
+          <Icon name="person-circle-outline" size={60} color="#555" style={styles.avatar} />}
         <View style={styles.userInfo}>
-          <Text style={styles.name}>{user?.name}</Text>
-          <Text style={styles.email}>{user?.email}</Text>
+          <Text style={styles.name}>{name}</Text>
+          <Text style={styles.userEmail} numberOfLines={1}
+            ellipsizeMode="tail">{email}</Text>
         </View>
 
         <TouchableOpacity onPress={editHandle} style={styles.editButton}>
@@ -95,6 +119,12 @@ const styles = StyleSheet.create({
   avatar: { marginRight: 15 },
   name: { fontSize: 18, fontWeight: 'bold' },
   email: { color: '#888' },
+  userEmail: {
+    fontSize: 14,
+    color: "#888",
+    textAlign: "center",
+    maxWidth: 220, // ✅ prevents it from going full width
+  },
   editIcon: { marginLeft: 100 },
   profileHeader: {
     flexDirection: 'row',
@@ -110,17 +140,16 @@ const styles = StyleSheet.create({
   avatar: {
     marginRight: 15,
   },
-
+  prfile: {
+    marginRight: 15,
+    height: 50,
+    width: 50,
+    borderRadius: 32
+  }
+  ,
   userInfo: {
     flex: 1,
   },
-  editIcon: {
-    width: 24,
-    height: 24,
-    resizeMode: 'contain',
-  },
-
-
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -141,6 +170,6 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontWeight: 'normal',
     fontFamily: 'Poppins',
-   
+
   },
 });

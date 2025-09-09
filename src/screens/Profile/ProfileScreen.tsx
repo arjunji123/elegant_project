@@ -6,11 +6,9 @@
     TextInput,
     StyleSheet,
     TouchableOpacity,
-    Pressable,
     ScrollView
   } from "react-native";
   import Button from "../../components/Button";
-
   import { ProfileScreenProps } from "../../types/types";
   import { useAuth } from "../../Context/AuthContext";
   import { useToast } from "../../Context/ToastContext";
@@ -28,7 +26,7 @@
 
     const userId = user?.id || "123"; // fallback id for testing
     const handleGoBack = () => {
-      navigation.goBack();
+      navigation.navigate('AccountScreen')
     };
     const tokens = { token };
 
@@ -168,7 +166,7 @@
 
               {/* Email */}
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Email</Text>
+                <Text style={styles.label} >Email</Text>
                 <TextInput
                   placeholder="Enter your Email"
                   style={styles.input}

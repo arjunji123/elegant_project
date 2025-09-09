@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,64 +21,72 @@ const ProductScreen = ({ navigation }) => {
 
   const [activeCategory, setActiveCategory] = useState(categoriesId ? categoriesId : "all");
   const [products, setProducts] = useState<Product[]>([]);
-  const [timeLeft, setTimeLeft] = useState({ h: 3, m: 38, s: 10 });
   const [categories, setCategories] = useState<any[]>([]);
+  const [limit] = useState(6);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
-const insets = useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
 
 
   const getProduct = async () => {
     try {
       let url = "";
+      setLoading(true);
 
       switch (activeCategory) {
         case "all":
-          url = "https://elegant-project.onrender.com/api/getallProducts";
+          url = `https://elegant-project.onrender.com/api/getallProducts?limit=${limit}&offset=${offset}`;
           break;
 
         case "newest":
-          url = "https://elegant-project.onrender.com/api/getallProducts";
+          url = `https://elegant-project.onrender.com/api/getallProducts?limit=${limit}&offset=${offset}`;
           break;
 
         default:
           // For category id from backend
-          url = `https://elegant-project.onrender.com/api/product/category/${activeCategory}`;
+          url = `https://elegant-project.onrender.com/api/product/category/${activeCategory}?limit=${limit}&offset=${offset}`;
           break;
       }
-
-      console.log("Fetching:", url);
-
-      const res = await fetch(url.toString(), {
+      const res = await fetch(url, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`, // 👈 add token here
+          "Authorization": `Bearer ${token}`,
         },
       });
 
-      const contentType = res.headers.get("content-type");
-      console.log("Response content-type:", contentType);
-
       if (!res.ok) {
-        const text = await res.text();
-        console.error("Server Error:", res.status, text);
+        console.error("Server Error:", res.status);
         return;
       }
 
       const data = await res.json();
-      console.log("Fetched products:", data);
+      let newData = data.data || [];
 
+      // Sort if "newest"
       if (activeCategory === "newest") {
-        const sorted = [...data.data].sort(
-          (a: any, b: any) =>
-            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        newData = [...newData].sort(
+          (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
         );
-        setProducts(sorted);
-      } else {
-        setProducts(data.data);
+      }
+
+      // Append only unique products
+      setProducts(prev => {
+        if (offset === 0) return newData;
+        const unique = newData.filter(
+          item => !prev.some(p => p.id === item.id)
+        );
+        return [...prev, ...unique];
+      });
+
+      if (newData.length < limit) {
+        setHasMore(false);
       }
     } catch (error) {
       console.error("Error fetching products:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -107,10 +115,19 @@ const insets = useSafeAreaInsets();
   }, []);
 
   // Load products every time activeCategory changes
-  useEffect(() => {
+useEffect(() => {
+  if (hasMore) {
     getProduct();
-    setLoading(false)
-  }, [activeCategory]);
+  }
+}, [offset]);
+
+
+useEffect(() => {
+  setProducts([]);
+  setOffset(0);
+  setHasMore(true);
+}, [activeCategory]);
+
 
   const toggleFavorite = async (productId: string, currentStatus: number) => {
     const newStatus = currentStatus === 1 ? 0 : 1;
@@ -151,13 +168,24 @@ const insets = useSafeAreaInsets();
       console.error("Wishlist toggle failed:", error);
     }
   };
-
+  console.log(loading, "products.length")
   const handleGoBack = () => navigation.goBack();
   return (
     <ScrollView
       style={styles.scrollContainer}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
+       scrollEventThrottle={16}
+       onScroll={({ nativeEvent }) => {
+    const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+    const isEndReached =
+      layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+
+    if (isEndReached && !loading && hasMore) {
+      setOffset(prev => prev + limit);
+    }
+  }}
+
     >
       <Header text={"Product Listing"} onPress={handleGoBack} />
 
@@ -175,9 +203,6 @@ const insets = useSafeAreaInsets();
               style={{ marginHorizontal: 8 }}
             />
             <TextInput
-              // placeholder="Search here"
-              // placeholderTextColor="#aaa"
-              // style={styles.searchInput}
               onPress={() => navigation.navigate("SearchProductScreen")}
             />
 
@@ -202,7 +227,7 @@ const insets = useSafeAreaInsets();
         ))}
       </ScrollView>
 
-      <View style={[styles.productsGrid,{paddingBottom: insets.bottom + 10}]}>
+      <View style={[styles.productsGrid, { paddingBottom: insets.bottom + 10 }]}>
         {products.length ?
 
           products.map((item) => (
@@ -245,13 +270,20 @@ const insets = useSafeAreaInsets();
                   <Text style={styles.ratingText}>{item.rating ?? "5"}</Text>
                 </View>
               </View>
-
             </View>
+
           )) :
           <View style={styles.noProductsContainer}>
             <Text style={styles.noProductsText}>No Products</Text>
           </View>
         }
+        {loading && products.length > 0 && (
+    <View style={styles.bottomLoader}>
+      <ActivityIndicator size="large" color="#8B5E3C" />
+    </View>
+  )}
+
+
       </View>
 
 
@@ -416,4 +448,10 @@ const styles = StyleSheet.create({
     color: '#704F38',
     textAlign: 'center',
   },
+  bottomLoader: {
+  width: "100%",
+  paddingVertical: 20,
+  justifyContent: "center",
+  alignItems: "center",
+},
 })

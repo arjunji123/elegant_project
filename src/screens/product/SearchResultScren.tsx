@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,39 +22,68 @@ const SearchResultScren = ({ navigation }) => {
   //   const [activeCategory, setActiveCategory] = useState(categoriesId?categoriesId:  "all");
   const [products, setProducts] = useState<Product[]>([]);
   const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({});
-const insets = useSafeAreaInsets();
+  const [limit] = useState(6);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const insets = useSafeAreaInsets();
 
 
-  const getProducts = async () => {
-    try {
-      const res = await fetch(
-        `https://elegant-project.onrender.com/api/products/search?keyword=${query}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-        }
-      );
-
-      const text = await res.text();
-      const data = JSON.parse(text);
-
-      if (data.success && data.data) {
-        setProducts(data.data);
-      } else {
-        setProducts([]);
+const getProducts = async () => {
+  try {
+    setLoading(true);
+    const res = await fetch(
+      `https://elegant-project.onrender.com/api/products/search?keyword=${query}&limit=${limit}&offset=${offset}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
       }
-    } catch (error) {
-      console.error("Server Error:", error);
+    );
+
+    const text = await res.text();
+    const data = JSON.parse(text);
+
+    if (data.success && data.data) {
+      setProducts((prev) => {
+        if (offset === 0) return data.data; // fresh search
+        const unique = data.data.filter(
+          (item) => !prev.some((p) => p.id === item.id)
+        );
+        return [...prev, ...unique];
+      });
+
+      if (data.data.length < limit) {
+        setHasMore(false); // no more data
+      }
+    } else {
+      if (offset === 0) setProducts([]);
+      setHasMore(false);
     }
-  };
+  } catch (error) {
+    console.error("Server Error:", error);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  useEffect(() => {
+
+// Run when offset changes (pagination)
+useEffect(() => {
+  if (offset > 0 && hasMore) {
     getProducts();
-  }, []);
+  }
+}, [offset]);
 
+
+useEffect(() => {
+  setProducts([]);
+  setOffset(0);
+  setHasMore(true);
+  getProducts();   // fetch immediately for new query
+}, [query]);
 
   const toggleFavorite = async (productId: string, currentStatus: number) => {
     const newStatus = currentStatus === 1 ? 0 : 1;
@@ -113,15 +142,20 @@ const insets = useSafeAreaInsets();
     <ScrollView
       style={styles.scrollContainer}
       contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}>
+      showsVerticalScrollIndicator={false}
+      scrollEventThrottle={16}
+      onScroll={({ nativeEvent }) => {
+        const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+        const isEndReached =
+          layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+
+        if (isEndReached && !loading && hasMore) {
+          setOffset(prev => prev + limit);
+        }
+      }}
+    >
       <Header text={"Product Listing"} onPress={handleGoBack} />
 
-      {/* <View style={styles.header}>
-  <Pressable onPress={handleGoBack} style={styles.backButton}>
-                    <Image source={Arrowleft} style={styles.backIcon} />
-                </Pressable>
-        <Text style={styles.title}>Product Listing</Text>
-      </View> */}
       <View style={styles.searchContainer}>
         <TouchableOpacity
           style={{ flex: 1 }}
@@ -136,7 +170,7 @@ const insets = useSafeAreaInsets();
               style={{ marginHorizontal: 8 }}
             />
             <TextInput
-            value={query}
+              value={query}
               // placeholder="Search here"
               // placeholderTextColor="#aaa"
               // style={styles.searchInput}
@@ -164,10 +198,10 @@ const insets = useSafeAreaInsets();
         ))} */}
       </ScrollView>
 
-      <View style={styles.productsGrid}>
+      <View style={[styles.productsGrid, { paddingBottom: insets.bottom + 10 }]}>
         {products.length ?
           products.map((item) => (
-      <View style={[styles.productsGrid,{paddingBottom: insets.bottom + 10}]}>
+            <View key={item.id} style={styles.productCard} >
               <View style={styles.imageContainer}>
                 {/* Show image from API if exists, fallback to redDress */}
                 <Image
@@ -212,6 +246,12 @@ const insets = useSafeAreaInsets();
             <Text style={styles.noProductsText}>No Products</Text>
           </View>
         }
+        {loading && products.length > 0 && (
+            <View style={styles.bottomLoader}>
+              <ActivityIndicator size="large" color="#8B5E3C" />
+            </View>
+          )}
+        
       </View>
 
 
@@ -362,6 +402,12 @@ const styles = StyleSheet.create({
     marginLeft: 2,
     color: "#555",
   },
+    bottomLoader: {
+  width: "100%",
+  paddingVertical: 20,
+  justifyContent: "center",
+  alignItems: "center",
+},
   noProductsContainer: {
     minHeight: 400,
     flexGrow: 1,             // ensures ScrollView content takes full height

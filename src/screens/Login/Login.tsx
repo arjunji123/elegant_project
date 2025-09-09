@@ -107,13 +107,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       <View style={styles.container}>
         {/* Header */}
          <Header text={"Log In"} onPress={handleGoBack}/>
-        {/* <View style={styles.header}>
-          <Pressable onPress={handleGoBack}>
-            <Image source={Arrowleft} style={styles.backIcon} />
-          </Pressable>
-
-          <Text style={styles.title}>Log In</Text>
-        </View> */}
 
         {/* Mobile Number Input */}
         <View style={styles.inputFieldContainer}>
@@ -163,7 +156,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     />
     <TouchableOpacity onPress={handlePasswordVisibility}>
        <Icon name={rightIcon} size={20} color="gray" />
-      {/* <Text style={styles.eyeIcon}>{showPassword ? "🙈" : "👁️"}</Text> */}
     </TouchableOpacity>
   </View>
 </View>

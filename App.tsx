@@ -16,7 +16,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   useEffect(() => {
-    Appearance.setColorScheme('light'); // Force light mode
+    Appearance.setColorScheme('light'); 
   }, []);
   return (
     <SafeAreaProvider>

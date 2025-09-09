@@ -17,8 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
-const redDress =
-    "https://res.cloudinary.com/dfhzted2d/image/upload/v1756059417/products/kqnhfrcvlcs9b3nxy5fg.png";
+
 
 const imageUpdate = [
     "https://res.cloudinary.com/dfhzted2d/image/upload/v1756059366/products/plq88fklqrfax81qodjl.png",
@@ -26,28 +25,25 @@ const imageUpdate = [
     "https://res.cloudinary.com/dfhzted2d/image/upload/v1756059366/products/xk5ggguxapefdivmhqqc.jpg",
 ];
 
-const ProductDetail = ({ navigation }) => {
+const ProductDetail = ({ route, navigation }) => {
     const [selectedSize, setSelectedSize] = useState("M");
     const [product, setProduct] = useState<any>(null);
     const [recommeded, setrecommeded] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [fav, setIsFav] = useState(false);
-
-    const [showFull, setShowFull] = useState(false);
+    const [categoriesId, setCategoriesId] = useState()
+    const [showFull, setShowFull] = useState();
     const wordLimit = 20;
     const description = product?.description || "";
     const words = description.split(" ");
     const truncated = words.slice(0, wordLimit).join(" ");
     const isLong = words.length > wordLimit;
-    const [selectedColor, setSelectedColor] = useState(
-        product?.colors?.[0].color_code || null
-    );
-    const { productId, token } = useAuth();
-
+    const [selectedColor, setSelectedColor] = useState<string | null>(null);
+    const { productId, token, setProductId } = useAuth();
     // 🔥 slider states
     const [selectedIndex, setSelectedIndex] = useState(0);
     const sliderRef = useRef<FlatList<any>>(null);
     const thumbRef = useRef<FlatList<any>>(null);
+
 
     const toggleFavorite = async (productId: string, currentStatus: number) => {
         const newStatus = currentStatus === 1 ? 0 : 1;
@@ -86,43 +82,7 @@ const ProductDetail = ({ navigation }) => {
             console.error("Wishlist toggle failed:", error);
         }
     };
-    const toggleFavoriteRecommed = async (productId: string, currentStatus: number) => {
-        const newStatus = currentStatus === 1 ? 0 : 1;
 
-        try {
-            const res = await fetch(
-                `https://elegant-project.onrender.com/api/add-wishlist`,
-                {
-                    method: "post",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({
-                        product_id: productId,
-                    }),
-                }
-            );
-
-            const text = await res.text();
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch {
-                console.error("Wishlist parse error:", text);
-                return;
-            }
-
-            if (data.success) {
-                setProduct((prev: any) => ({
-                    ...prev,
-                    wishlist_is: newStatus,
-                }));
-            }
-        } catch (error) {
-            console.error("Wishlist toggle failed:", error);
-        }
-    };
     useEffect(() => {
         const getProductDetail = async () => {
             try {
@@ -141,42 +101,49 @@ const ProductDetail = ({ navigation }) => {
                 const data = JSON.parse(text);
                 if (data.success && data.data) {
                     setProduct(data.data);
+                    setCategoriesId(data.data.category_id)
                     setLoading(false);
+                    if (data.data.colors && data.data.colors.length > 0) {
+                        setSelectedColor(data.data.colors[0].color_code);
+                    }
+
                 }
             } catch (error) {
                 console.error("Server Error:", error);
             }
         };
 
-        const getRecommedProduct = async () => {
-            try {
-                if (!product) return;
-                setLoading(true);
-                const res = await fetch(
-                    `https://elegant-project.onrender.com/api/product/category/${product.category_id}`,
-                    {
-                        method: "GET",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
-                const text = await res.text();
-                const data = JSON.parse(text);
-                if (data.success && data.data) {
-                    setrecommeded(data.data);
-                    setLoading(false);
-                }
-            } catch (error) {
-                console.error("Categories fetch error:", error);
-            }
-        };
 
         getProductDetail();
-        getRecommedProduct();
+
     }, [productId]);
 
+    const getRecommedProduct = async (categoriesId) => {
+        try {
+            const res = await fetch(
+                `https://elegant-project.onrender.com/api/product/category/${categoriesId}`,
+                {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            const text = await res.text();
+            const data = JSON.parse(text);
+            if (data.success && data.data) {
+                setrecommeded(data.data);
+                setLoading(false);
+            }
+        } catch (error) {
+            console.error("Categories fetch error:", error);
+        }
+    };
+
+    useEffect(() => {
+        getRecommedProduct(categoriesId);
+    }, [categoriesId])
     const handleGoBack = () => navigation.goBack();
 
     const onSelectImage = (index: number) => {
@@ -188,8 +155,49 @@ const ProductDetail = ({ navigation }) => {
             viewPosition: 0.5,
         });
     };
-
     const images = product?.images && product.images.length > 0 ? product.images : imageUpdate;
+    console.log(productId, "product?.colors?")
+    // 🔥 New toggle function for recommended product
+    const toggleRecommendedFavorite = async (itemId: string, currentStatus: number) => {
+        const newStatus = currentStatus === 1 ? 0 : 1;
+
+        try {
+            const res = await fetch(
+                `https://elegant-project.onrender.com/api/add-wishlist`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        product_id: itemId,
+                    }),
+                }
+            );
+
+            const text = await res.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch {
+                console.error("Wishlist parse error:", text);
+                return;
+            }
+
+            if (data.success) {
+                // update only the clicked product
+                setrecommeded((prev: any) =>
+                    prev.map((p: any) =>
+                        p.id === itemId ? { ...p, wishlist_is: newStatus } : p
+                    )
+                );
+            }
+        } catch (error) {
+            console.error("Wishlist toggle failed:", error);
+        }
+    };
+
     if (loading) {
         return (
             <>
@@ -211,244 +219,246 @@ const ProductDetail = ({ navigation }) => {
             </>
         );
     }
-    console.log(recommeded, "product?.colors?.[0]")
     return (
-<SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
 
-<View style={styles.container}>
-           
-            <ScrollView showsVerticalScrollIndicator={false}  >
-                {/* 🔥 Image Slider */}
+            <View style={styles.container}>
+
+                <ScrollView showsVerticalScrollIndicator={false}  >
+                    <View style={styles.backheader}>
+                        <TouchableOpacity style={styles.iconWrapper} onPress={handleGoBack}>
+                            <Icon name="chevron-back" size={22} color="#000" />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[
+                                styles.wishlistBtn,
+                                {
+                                    backgroundColor: product?.wishlist_is && product.wishlist_is
+                                        ? "#ffffff"
+                                        : "#000000ff",
+                                },
+                            ]}
+                            onPress={() => toggleFavorite(product.id, product.wishlist_is)}
+                        >
+                            <Icon
+                                name={product?.wishlist_is && product.wishlist_is
+                                    ? "heart"
+                                    : "heart-outline"}
+                                size={22}
+                                color={product?.wishlist_is && product.wishlist_is
+                                    ? "#000000"
+                                    : "#ffffff"} />
+                        </TouchableOpacity>
+                    </View>
 
 
-                <FlatList
-                    ref={sliderRef}
-                    data={images}
-                    keyExtractor={(item, index) => index.toString()}
-                    horizontal
-                    pagingEnabled
-                    showsHorizontalScrollIndicator={false}
-                    onMomentumScrollEnd={(event) => {
-                        const index = Math.round(
-                            event.nativeEvent.contentOffset.x / width
-                        );
-                        setSelectedIndex(index);
-                        thumbRef.current?.scrollToIndex({
-                            index,
-                            animated: true,
-                            viewPosition: 0.5,
-                        });
-                    }}
-                    renderItem={({ item }) => (
-                         <><View style={styles.backheader}>
-                            <TouchableOpacity style={styles.iconWrapper} onPress={handleGoBack}>
-                                <Icon name="chevron-back" size={22} color="#000" />
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={[
-                                    styles.wishlistBtn,
-                                    {
-                                        backgroundColor: product?.wishlist_is && product.wishlist_is
-                                            ? "#ffffff"
-                                            : "#000000ff",
-                                    },
-                                ]}
-                                onPress={() => toggleFavorite(product.id, product.wishlist_is)}
-                            >
-                                <Icon
-                                    name={product?.wishlist_is && product.wishlist_is
-                                        ? "heart"
-                                        : "heart-outline"}
-                                    size={22}
-                                    color={product?.wishlist_is && product.wishlist_is
-                                        ? "#000000"
-                                        : "#ffffff"} />
-                            </TouchableOpacity>
-                        </View><Image source={{ uri: item }} style={styles.mainImage} /></>
-                    )}
-                />
-
-                {/* 🔥 Thumbnails */}
-                <View style={styles.imagealign}>
                     <FlatList
-                        ref={thumbRef}
+                        ref={sliderRef}
                         data={images}
                         keyExtractor={(item, index) => index.toString()}
                         horizontal
+                        pagingEnabled
                         showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.thumbnailList}
-                        renderItem={({ item, index }) => {
-                            const isSelected = index === selectedIndex;
-                            return (
-                                <TouchableOpacity onPress={() => onSelectImage(index)}>
-                                    <Image
-                                        source={{ uri: item }}
-                                        style={[
-                                            styles.thumbnail,
-                                            isSelected && styles.activeThumbnail,
-                                        ]}
-                                    />
-                                </TouchableOpacity>
+                        onMomentumScrollEnd={(event) => {
+                            const index = Math.round(
+                                event.nativeEvent.contentOffset.x / width
                             );
+                            setSelectedIndex(index);
+                            thumbRef.current?.scrollToIndex({
+                                index,
+                                animated: true,
+                                viewPosition: 0.5,
+                            });
                         }}
-                    />
-                </View>
-
-                <View style={styles.mainContainer}>
-
-                    <View >
-                        <View style={styles.categoryRatingRow}>
-                            <Text style={styles.categoriesName}>
-                                {product?.category_name}
-                            </Text>
-                            <View style={styles.ratingRow}>
-                                <Icon name="star" size={16} color="gold" />
-                                <Text style={styles.ratingText}>4.0</Text>
-                            </View>
-                        </View>
-                        <Text style={styles.productTitle}>{product?.name}</Text>
-                    </View>
-                    <Text style={styles.sectionTitle}>Description</Text>
-                    <Text style={styles.description}>
-                        {showFull ? description : truncated + (isLong ? "..." : "")}
-                        {isLong && (
-                            <Text
-                                style={styles.seeMoreText}
-                                onPress={() => setShowFull(!showFull)}
-                            >
-                                {showFull ? " See Less" : " Read More"}
-                            </Text>
+                        renderItem={({ item }) => (
+                            <>
+                                <Image source={{ uri: item }} style={styles.mainImage} /></>
                         )}
-                    </Text>
-                    <Text style={styles.sectionTitle}>Select Size</Text>
-                    <View style={styles.sizeRow}>
-                        {product &&
-                            product.sizes.map((size) => (
-                                <TouchableOpacity
-                                    key={size}
-                                    style={[
-                                        styles.sizeBox,
-                                        selectedSize === size && styles.sizeBoxActive,
-                                    ]}
-                                    onPress={() => setSelectedSize(size)}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.sizeText,
-                                            selectedSize === size && styles.sizeTextActive,
-                                        ]}
-                                    >
-                                        {size}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                    </View>
-                    <Text style={styles.sectionTitle}>Choose Color</Text>
-                    <View style={styles.colorRow}>
-                        {product &&
-                            product.colors.map((color) => (
-                                <TouchableOpacity
-                                    key={color.color_name}
-                                    style={[
-                                        styles.colorWrapper,
-                                        selectedColor === color && styles.colorWrapperActive,
-                                    ]}
-                                    onPress={() => setSelectedColor(color)}
-                                >
-                                    <View
-                                        style={[
-                                            styles.colorCircle,
-                                            { backgroundColor: color.color_code },
-                                        ]}
-                                    />
-                                </TouchableOpacity>
-                            ))}
-                    </View>
-                    {recommeded && recommeded.length > 0 ? (
-                        <><Text style={styles.sectionTitle}>Recommendation</Text><FlatList
-                            data={recommeded}
+                    />
+
+                    {/* 🔥 Thumbnails */}
+                    <View style={styles.imagealign}>
+                        <FlatList
+                            ref={thumbRef}
+                            data={images}
+                            snapToInterval={width}
+                            decelerationRate="fast"
+                            keyExtractor={(item, index) => index.toString()}
                             horizontal
                             showsHorizontalScrollIndicator={false}
-                            keyExtractor={(item) => item.id.toString()}
-                            renderItem={({ item }) => (
-                                <View style={styles.recommendCard}>
-                                    <Image
-                                        source={{
-                                            uri: item.images
-                                                ? item.images[0]
-                                                : "https://via.placeholder.com/150",
-                                        }}
-                                        style={styles.recommendImage} />
-
-                                    {/* Wishlist Button */}
-                                    <TouchableOpacity
-                                        style={[
-                                            styles.wishlistBtnRecommeder,
-                                            {
-                                                backgroundColor: fav
-                                                    ? "#ffffff"
-                                                    : "#000000ff",
-                                            },
-                                        ]}
-                                        onPress={() => setIsFav(fav == true ? false : true)}
-                                    >
-                                        <Icon
-                                            name={fav ? "heart" : "heart-outline"}
-                                            size={22}
-                                            color={fav ? "#000000" : "#ffffff"} />
+                            contentContainerStyle={styles.thumbnailList}
+                            renderItem={({ item, index }) => {
+                                const isSelected = index === selectedIndex;
+                                return (
+                                    <TouchableOpacity onPress={() => onSelectImage(index)}>
+                                        <Image
+                                            source={{ uri: item }}
+                                            style={[
+                                                styles.thumbnail,
+                                                isSelected && styles.activeThumbnail,
+                                            ]}
+                                        />
                                     </TouchableOpacity>
+                                );
+                            }}
+                        />
+                    </View>
 
-                                    <Text style={styles.recommendName}>{item.name}</Text>
-                                    <Text style={styles.recommendPrice}>
-                                        {item.unit}
-                                        {item.price}
-                                    </Text>
+                    <View style={styles.mainContainer}>
+
+                        <View >
+                            <View style={styles.categoryRatingRow}>
+                                <Text style={styles.categoriesName}>
+                                    {product?.category_name}
+                                </Text>
+                                <View style={styles.ratingRow}>
+                                    <Icon name="star" size={16} color="gold" />
+                                    <Text style={styles.ratingText}>4.0</Text>
                                 </View>
-                            )} /></>
-                    ) : (
-                        <Text style={styles.productHeader}>
-                            No recommended products found
+                            </View>
+                            <Text style={styles.productTitle}>{product?.name}</Text>
+                        </View>
+                        <Text style={styles.sectionTitle}>Description</Text>
+                        <Text style={styles.description}>
+                            {showFull ? description : truncated + (isLong ? "..." : "")}
+                            {isLong && (
+                                <Text
+                                    style={styles.seeMoreText}
+                                    onPress={() => setShowFull(!showFull)}
+                                >
+                                    {showFull ? " See Less" : " Read More"}
+                                </Text>
+                            )}
                         </Text>
-                    )}
+                        <Text style={styles.sectionTitle}>Select Size</Text>
+                        <View style={styles.sizeRow}>
+                            {product &&
+                                product.sizes.map((size) => (
+                                    <TouchableOpacity
+                                        key={size}
+                                        style={[
+                                            styles.sizeBox,
+                                            selectedSize === size && styles.sizeBoxActive,
+                                        ]}
+                                        onPress={() => setSelectedSize(size)}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.sizeText,
+                                                selectedSize === size && styles.sizeTextActive,
+                                            ]}
+                                        >
+                                            {size}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                        </View>
+                        <Text style={styles.sectionTitle}>Choose Color</Text>
+                        <View style={styles.colorRow}>
+                            {product &&
+                                product.colors.map((color) => (
+                                    <TouchableOpacity
+                                        key={color.color_name}
+                                        style={[
+                                            styles.colorWrapper,
+                                            selectedColor === color.color_code && styles.colorWrapperActive,
+                                        ]}
+                                        onPress={() => setSelectedColor(color.color_code)}
+                                    >
+                                        <View
+                                            style={[
+                                                styles.colorCircle,
+                                                { backgroundColor: color.color_code },
+                                            ]}
+                                        />
+                                    </TouchableOpacity>
+                                ))}
+                        </View>
+                        {recommeded && recommeded.length > 0 ? (
+                            <><Text style={styles.sectionTitle}>Recommendation</Text>
+                                <FlatList
+                                    data={recommeded}
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    keyExtractor={(item) => item.id.toString()}
+                                    renderItem={({ item }) => (
+                                        <View style={styles.recommendCard}>
+                                            <TouchableOpacity
+                                                onPress={() => setProductId(item.id)}                                            >
+                                                <Image
+                                                    source={{
+                                                        uri: item.images
+                                                            ? item.images[0]
+                                                            : "https://via.placeholder.com/150",
+                                                    }}
+                                                    style={styles.recommendImage} />
+                                            </TouchableOpacity>
+                                            {/* Wishlist Button */}
+                                            <TouchableOpacity
+                                                style={[
+                                                    styles.wishlistBtnRecommeder,
+                                                    {
+                                                        backgroundColor: item.wishlist_is && item.wishlist_is === 1
+                                                            ? "#ffffff"
+                                                            : "#000000ff",
+                                                    },
+                                                ]}
+                                                onPress={() => toggleRecommendedFavorite(item.id, item.wishlist_is)}
+                                            >
+                                                <Icon
+                                                    name={item.wishlist_is && item.wishlist_is === 1 ? "heart" : "heart-outline"}
+                                                    size={22}
+                                                    color={item.wishlist_is && item.wishlist_is === 1 ? "#000000" : "#ffffff"}
+                                                />
+                                            </TouchableOpacity>
+                                            🔥 What Changed
+
+                                            <Text style={styles.recommendName}>{item.name}</Text>
+                                            <Text style={styles.recommendPrice}>
+                                                {item.unit}
+                                                {item.price}
+                                            </Text>
+                                        </View>
+                                    )} /></>
+                        ) : (
+                            <><Text style={styles.sectionTitle}>Recommendation</Text><Text style={styles.productHeader}>
+                                No recommended products found
+                            </Text></>
+                        )}
 
 
-                </View>
-                {/* Rest of product detail UI */}
+                    </View>
+
+                    <View style={styles.bottomBar} >
+                        <View>
+                            <Text style={styles.totalPrice}>Total Price</Text>
+                            <Text style={styles.price}>
+                                {product?.unit}
+                                {product?.price}
+                            </Text>
+                        </View>
+
+                        <TouchableOpacity style={styles.addToCartBtn}>
+                            <Text style={styles.addToCartText}>Add to Cart</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                </ScrollView>
 
 
 
-
-
-  <View style={styles.bottomBar} >
-                <View>
-                    <Text style={styles.totalPrice}>Total Price</Text>
-                    <Text style={styles.price}>
-                        {product?.unit}
-                        {product?.price}
-                    </Text>
-                </View>
-
-                <TouchableOpacity style={styles.addToCartBtn}>
-                    <Text style={styles.addToCartText}>Add to Cart</Text>
-                </TouchableOpacity>
             </View>
-
-            </ScrollView>
-
-          
-
-        </View>
         </SafeAreaView>
-        
+
     );
 };
 
 export default ProductDetail;
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#fff",},
-    mainImage: { width: 428, height: 425, resizeMode: "cover" },
+    container: { flex: 1, backgroundColor: "#fff", },
+    mainImage: { width: width, height: 425, resizeMode: "cover" },
     imagealign: { alignItems: "center" },
     thumbnailList: {
         marginTop: 25,
@@ -470,17 +480,17 @@ const styles = StyleSheet.create({
     backheader: {
         position: "absolute",
         top: 40,
-        left: 20,
-        right: 25,
+        left: 0,
+        right: 0,
         flexDirection: "row",
         justifyContent: "space-between",
-        gap: 24,
+        alignItems: "center",
+        paddingHorizontal: 15, // keep spacing inside
         zIndex: 10,
     },
     iconWrapper: {
         width: 45,
         height: 45,
-        marginLeft: 15,
         borderRadius: 25,
         backgroundColor: "#fff",
         justifyContent: "center",
@@ -490,20 +500,29 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
         elevation: 3,
     },
+
     wishlistBtn: {
-        right: 10,
-        marginRight: 10,
-        borderRadius: 25,
         width: 45,
         height: 45,
+        borderRadius: 25,
         justifyContent: "center",
         alignItems: "center",
     },
-        productHeader: {
+
+    // wishlistBtn: {
+    //     right: 10,
+    //     marginRight: 15,
+    //     borderRadius: 25,
+    //     width: 45,
+    //     height: 45,
+    //     justifyContent: "center",
+    //     alignItems: "center",
+    // },
+    productHeader: {
         flexDirection: "row",
         justifyContent: "space-between",
-        marginTop: 5,
-        paddingLeft: 16,
+        // marginTop: 5,
+        paddingLeft: 10,
         alignItems: "center",
     },
     wishlistBtnRecommeder: {
@@ -547,14 +566,12 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: "600",
         marginTop: 16,
-
         color: "#222",
     },
     sectionTitle: {
         fontSize: 16,
         fontWeight: "600",
         marginTop: 16,
-
         color: "#222",
     },
     description: { marginTop: 6, color: "#838383" },
@@ -574,8 +591,11 @@ const styles = StyleSheet.create({
     sizeTextActive: { color: "#fff" },
     colorRow: {
         flexDirection: "row",
-        margin: 16,
-        gap: 12
+        flexWrap: "wrap",       // allow wrapping to new line
+        alignItems: "center",   // vertical center alignment
+        gap: 6,
+        marginHorizontal: 5,
+        marginTop: 10,
     },
 
     // Outer wrapper for border

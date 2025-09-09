@@ -1,288 +1,364 @@
-
 import { useEffect, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
+} from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useFilter } from "../../Context/FilterContext";
 import { useAuth } from "../../Context/AuthContext";
-import Arrowleft from "../../assets/icons/Arrowleft.png";
 import Header from "../../components/Header";
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const redDress = "https://res.cloudinary.com/dfhzted2d/image/upload/v1756059417/products/kqnhfrcvlcs9b3nxy5fg.png"
+const redDress =
+  "https://res.cloudinary.com/dfhzted2d/image/upload/v1756059417/products/kqnhfrcvlcs9b3nxy5fg.png";
 
 interface Product {
-    id: string;
-    name: string;
-    price: number;
-    image: string;
-    rating: number;
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  rating: number;
 }
-
 
 const FilteredProducts = ({ navigation }) => {
-    const { filter } = useFilter()
-    const [selectedCategories, setSelectedCategories] = useState<number[]>(filter.category_id);
-    const [products, setProducts] = useState<Product[]>([]);
-    const [categories, setCategories] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const { token, setProductId } = useAuth()
-    const insets = useSafeAreaInsets();
-    const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({});
-    const getFilteredProducts = async () => {
-        try {
-            setLoading(true);
+  const { filter } = useFilter();
+  const [selectedCategories, setSelectedCategories] = useState<number[]>(
+    filter.category_id || []
+  );
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [limit] = useState(6);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const { token, setProductId } = useAuth();
+  const insets = useSafeAreaInsets();
+  const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>(
+    {}
+  );
 
-            // Always start with filters API
-            const url = new URL("https://elegant-project.onrender.com/api/filters");
+  // ✅ Fetch products with pagination
+  const getFilteredProducts = async () => {
+    try {
+      setLoading(true);
+      const url = new URL(
+        `https://elegant-project.onrender.com/api/filters?limit=${limit}&offset=${offset}`
+      );
 
-            // Append only if values exist
-            if (filter.category_id) {
-                url.searchParams.append("category_id", selectedCategories.join(","));
-            }
-            if (filter.category_id) {
-                url.searchParams.append("subcategory_id", filter.category_id);
-            }
-            if (filter.min_price) {
-                url.searchParams.append("min_price", filter.min_price.toString());
-            }
-            if (filter.max_price) {
-                url.searchParams.append("max_price", filter.max_price.toString());
-            }
-            if (filter.sort) {
-                url.searchParams.append("sort", filter.sort);
-            }
-console.log("Filter API URL:", url.toString());
-            const res = await fetch(url.toString(), {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+      if (selectedCategories.length) {
+        url.searchParams.append("category_id", selectedCategories.join(","));
+      }
+      if (filter.subcategory_id) {
+        url.searchParams.append("subcategory_id", filter.subcategory_id);
+      }
+      if (filter.min_price) {
+        url.searchParams.append("min_price", filter.min_price.toString());
+      }
+      if (filter.max_price) {
+        url.searchParams.append("max_price", filter.max_price.toString());
+      }
+      if (filter.sort) {
+        url.searchParams.append("sort", filter.sort);
+      }
 
-            const data = await res.json();
+      const res = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-            if (data.success && data.data) {
-                setProducts(data.data);
-            } else {
-                setProducts([]);
-            }
-        } catch (error) {
-            console.error("Products fetch error:", error);
-        } finally {
-            setLoading(false);
+      const data = await res.json();
+
+      if (data.success && data.data) {
+        setProducts((prev) => {
+          if (offset === 0) return data.data; // fresh load
+          const unique = data.data.filter(
+            (item) => !prev.some((p) => p.id === item.id)
+          );
+          return [...prev, ...unique];
+        });
+
+        if (data.data.length < limit) {
+          setHasMore(false);
         }
-    };
-    const toggleCategory = (id: number) => {
-        setSelectedCategories((prev) =>
-            prev.includes(id) ? prev.filter((catId) => catId !== id) : [...prev, id]
-        );
-    };
-    console.log(products, 'selectedCategories')
-
-    // Fetch categories
-    const fetchCategories = async () => {
-        try {
-            setLoading(true);
-            const res = await fetch("https://elegant-project.onrender.com/api/categories", {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": token ? `Bearer ${token}` : "",
-                },
-            });
-
-            const data = await res.json();
-
-            if (data.success && data.data) {
-                setCategories(data.data);
-            }
-        } catch (error) {
-            console.error("Categories fetch error:", error);
-        }
-    };
-
-    useEffect(() => {
-        fetchCategories();
-
-    }, []);
-
-    // Load products every time activeCategory changes
-    useEffect(() => {
-        getFilteredProducts();
-        console.log("updateupdatedd")
-    }, [selectedCategories, filter]);
-
-    const toggleFavorite = async (productId: string, currentStatus: number) => {
-        const newStatus = currentStatus === 1 ? 0 : 1;
-
-        try {
-            const res = await fetch(`https://elegant-project.onrender.com/api/add-wishlist`, {
-                method: "post", // or PATCH depending on backend
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`, // 👈 check token value
-                },
-                body: JSON.stringify({
-                    product_id: productId,
-                }),
-            });
-
-            const text = await res.text(); // get raw text first
-            console.log("Raw response:", text);
-
-            let data;
-            try {
-                data = JSON.parse(text); // parse only if JSON
-            } catch (parseErr) {
-                console.error("JSON parse failed. Response was not JSON:", text);
-                return;
-            }
-
-            console.log("Product updated:", data);
-
-            if (data.success) {
-                setProducts((prev) =>
-                    prev.map((p) =>
-                        p.id === productId ? { ...p, wishlist_is: newStatus } : p
-                    )
-                );
-            }
-        } catch (error) {
-            console.error("Wishlist toggle failed:", error);
-        }
-    };
-
-    const handleToggleFavorite = async (id: number, current: boolean) => {
-        // Optimistic update
-        setWishlistItems((prev) => ({ ...prev, [id]: !current }));
-
-        try {
-            await toggleFavorite(id, current); // API call
-        } catch (error) {
-            // Revert if API fails
-            setWishlistItems((prev) => ({ ...prev, [id]: current }));
-            console.error("Failed to update wishlist", error);
-        }
-    };
-    const handleGoBack = () =>{
-        navigation.navigate("HomeScreen")
+      } else {
+        if (offset === 0) setProducts([]);
+        setHasMore(false);
+      }
+    } 
+    
+    catch (error) {
+      console.error("Products fetch error:", error);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    return (
-        <View style={{ flex: 1 }}>
-            <ScrollView
-                style={styles.scrollContainer}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-            >
-                <Header text={"Product Listing"} onPress={handleGoBack} />
-                <View style={styles.searchContainer}>
-                    <TouchableOpacity
-                        style={{ flex: 1 }}
-                        onPress={() => navigation.navigate("SearchProductScreen")}
-                        activeOpacity={0.8}>
-                        <View style={styles.searchBar}>
-                            <Icon
-                                name="search"
-                                size={18}
-                                color="#aaa"
-                                style={{ marginHorizontal: 8 }} />
-                            <TextInput
-                                // placeholder="Search here"
-                                // placeholderTextColor="#aaa"
-                                // style={styles.searchInput}
-                                onPress={() => navigation.navigate("SearchProductScreen")}
-                            />
+  // ✅ Reset pagination when filter/category changes
+  useEffect(() => {
+    setOffset(0);
+    setHasMore(true);
+    setProducts([]);
+    getFilteredProducts();
+  }, [selectedCategories, filter]);
 
-                        </View>
-                    </TouchableOpacity>
+  // ✅ Load more when offset increases
+  useEffect(() => {
+    if (offset > 0 && hasMore) {
+      getFilteredProducts();
+    }
+  }, [offset]);
 
-                    <TouchableOpacity style={styles.filterButton} onPress={() => navigation.navigate("AdvanceFilterScreen")}>
-                        <Icon name="options-outline" size={20} color="#000000ff" />
-                    </TouchableOpacity>
-                </View>
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={{ marginVertical: 10 }}
-                >
-                    {categories.map((cat) => {
-                        const isSelected = selectedCategories.includes(cat.id);
-                        return (
-                            <TouchableOpacity
-                                key={cat.id}
-                                style={[styles.categoryChip, isSelected && styles.activeCategory]}
-                                onPress={() => toggleCategory(cat.id)}
-                            >
-                                <Text style={[styles.categoryText, isSelected && styles.activeCategoryText]}>
-                                    {cat.name}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </ScrollView>
+  // Fetch categories once
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch(
+        "https://elegant-project.onrender.com/api/categories",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        }
+      );
 
-            <View style={[styles.productsGrid,{paddingBottom: insets.bottom}]}>
-                    {products.length
-                        ?
-                        products.map((item) => (
-                            <View key={item.id} style={styles.productCard}>
-                                <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
+      const data = await res.json();
+      if (data.success && data.data) {
+        setCategories(data.data);
+      }
+    } catch (error) {
+      console.error("Categories fetch error:", error);
+    }
+  };
 
-                                    <View style={styles.imageContainer}>
-                                        <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
-                                            <Image
-                                                source={item.images ? { uri: item.images[0] } : redDress}
-                                                style={styles.productImage} />
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={[
-                                                styles.wishlistBtn,
-                                                { backgroundColor: wishlistItems[item.id] ?? item.wishlist_is ? "#ffffff" : "#000000ff" }
-                                            ]}
-                                            onPress={() => handleToggleFavorite(item.id, wishlistItems[item.id] ?? item.wishlist_is)}
-                                        >
-                                            <Icon
-                                                name={(wishlistItems[item.id] ?? item.wishlist_is) ? "heart" : "heart-outline"}
-                                                size={22}
-                                                color={(wishlistItems[item.id] ?? item.wishlist_is) ? "#000000" : "#ffffff"}
-                                            />
-                                        </TouchableOpacity>
+  // ✅ Wishlist toggle
+  const toggleFavorite = async (productId: string, currentStatus: number) => {
+    const newStatus = currentStatus === 1 ? 0 : 1;
 
-                                    </View>
-                                    <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
-                                        <Text style={styles.productName} numberOfLines={1}>
-                                            {item.name}
-                                        </Text>
-                                    </TouchableOpacity>
+    try {
+      const res = await fetch(
+        `https://elegant-project.onrender.com/api/add-wishlist`,
+        {
+          method: "post",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ product_id: productId }),
+        }
+      );
 
-                                    <View style={styles.priceRatingRow}>
-                                        <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
-                                            <Text style={styles.productPrice}>₹{item.price}</Text>
-                                        </TouchableOpacity>
-                                        <View style={styles.ratingRow}>
-                                            <Icon name="star" size={14} color="gold" />
-                                            <Text style={styles.ratingText}>{item.rating ?? "5"}</Text>
-                                        </View>
-                                    </View>
-                                </TouchableOpacity>
-                            </View>
-                        )) : <>
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.error("Wishlist API response not JSON:", text);
+        return;
+      }
 
-                            <View style={styles.noProductsContainer}>
-                                <Text style={styles.noProductsText}>No Products</Text>
-                            </View>                </>}
-                </View>
+      if (data.success) {
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === productId ? { ...p, wishlist_is: newStatus } : p
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Wishlist toggle failed:", error);
+    }
+  };
 
+  const handleToggleFavorite = async (id: number, current: boolean) => {
+    setWishlistItems((prev) => ({ ...prev, [id]: !current }));
+    try {
+      await toggleFavorite(id, current ? 1 : 0);
+    } catch {
+      setWishlistItems((prev) => ({ ...prev, [id]: current }));
+    }
+  };
 
-            </ScrollView>
+  const handleGoBack = () => {
+    navigation.navigate("HomeScreen");
+  };
+    console.log(categories, 'getProductgetProduct')
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={({ nativeEvent }) => {
+          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+          const isEndReached =
+            layoutMeasurement.height + contentOffset.y >=
+            contentSize.height - 20;
+
+          if (isEndReached && !loading && hasMore) {
+            setOffset((prev) => prev + limit);
+          }
+        }}
+      >
+        <Header text={"Product Listing"} onPress={handleGoBack} />
+
+        {/* 🔎 Search + Filter */}
+        <View style={styles.searchContainer}>
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            onPress={() => navigation.navigate("SearchProductScreen")}
+            activeOpacity={0.8}
+          >
+            <View style={styles.searchBar}>
+              <Icon
+                name="search"
+                size={18}
+                color="#aaa"
+                style={{ marginHorizontal: 8 }}
+              />
+              <TextInput onPressIn={() => navigation.navigate("SearchProductScreen")} />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => navigation.navigate("AdvanceFilterScreen")}
+          >
+            <Icon name="options-outline" size={20} color="#000000ff" />
+          </TouchableOpacity>
         </View>
-    )
-}
 
-export default FilteredProducts
+        {/* 🏷 Categories */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
+          {categories.map((cat) => {
+            const isSelected = selectedCategories.includes(cat.id);
+            return (
+              <TouchableOpacity
+                key={cat.id}
+                style={[styles.categoryChip, isSelected && styles.activeCategory]}
+                onPress={() =>
+                  setSelectedCategories((prev) =>
+                    prev.includes(cat.id)
+                      ? prev.filter((c) => c !== cat.id)
+                      : [...prev, cat.id]
+                  )
+                }
+              >
+                <Text
+                  style={[
+                    styles.categoryText,
+                    isSelected && styles.activeCategoryText,
+                  ]}
+                >
+                  {cat.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* 🛒 Product Grid */}
+        <View style={[styles.productsGrid, { paddingBottom: insets.bottom }]}>
+          {products.length ? (
+            products.map((item) => (
+              <View key={item.id} style={styles.productCard}>
+                <TouchableOpacity
+                  onPress={() => {
+                    navigation.navigate("ProductDetailScreen");
+                    setProductId(item.id);
+                  }}
+                >
+                  <View style={styles.imageContainer}>
+                    <Image
+                      source={item.images ? { uri: item.images[0] } : { uri: redDress }}
+                      style={styles.productImage}
+                    />
+                    <TouchableOpacity
+                      style={[
+                        styles.wishlistBtn,
+                        {
+                          backgroundColor:
+                            wishlistItems[item.id] ?? item.wishlist_is
+                              ? "#ffffff"
+                              : "#000000ff",
+                        },
+                      ]}
+                      onPress={() =>
+                        handleToggleFavorite(
+                          item.id,
+                          wishlistItems[item.id] ?? item.wishlist_is
+                        )
+                      }
+                    >
+                      <Icon
+                        name={
+                          wishlistItems[item.id] ?? item.wishlist_is
+                            ? "heart"
+                            : "heart-outline"
+                        }
+                        size={22}
+                        color={
+                          wishlistItems[item.id] ?? item.wishlist_is
+                            ? "#000000"
+                            : "#ffffff"
+                        }
+                      />
+                    </TouchableOpacity>
+                  </View>
+
+                  <Text style={styles.productName} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <View style={styles.priceRatingRow}>
+                    <Text style={styles.productPrice}>₹{item.price}</Text>
+                    <View style={styles.ratingRow}>
+                      <Icon name="star" size={14} color="gold" />
+                      <Text style={styles.ratingText}>
+                        {item.rating ?? "5"}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            ))
+          ) : (
+            !loading && (
+              <View style={styles.noProductsContainer}>
+                <Text style={styles.noProductsText}>No Products</Text>
+              </View>
+            )
+          )}
+        </View>
+
+        {/* 🔄 Loader at bottom */}
+        {loading && (
+          <ActivityIndicator
+            size="large"
+            color="#8B5E3C"
+            style={{ marginVertical: 20 }}
+          />
+        )}
+      </ScrollView>
+    </View>
+  );
+};
+
+export default FilteredProducts;
+
 
 const styles = StyleSheet.create({
     scrollContainer: {

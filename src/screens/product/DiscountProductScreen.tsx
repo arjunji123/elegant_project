@@ -23,39 +23,51 @@ const DiscountProductScreen = ({ navigation }) => {
     const [products, setProducts] = useState<Product[]>([]);
     const [wishlistItems, setWishlistItems] = useState<{ [key: number]: boolean }>({});
     const [categories, setCategories] = useState<any[]>([]);
+    const [limit] = useState(6);
+    const [offset, setOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
     const [loading, setLoading] = useState(true);
-const insets = useSafeAreaInsets();
+    const insets = useSafeAreaInsets();
 
-    const getProduct = async () => {
-        try {
-            const res = await fetch(`https://elegant-project.onrender.com/api/productsOnOffer`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: token ? `Bearer ${token}` : "", // ✅ add token
-                },
-            });
+  const getProduct = async () => {
+  try {
+    setLoading(true);
+    const res = await fetch(
+      `https://elegant-project.onrender.com/api/productsOnOffer?limit=${limit}&offset=${offset}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      }
+    );
 
-            const text = await res.text();
-            console.log("Raw response:", text);
+    const text = await res.text();
+    let data = JSON.parse(text);
 
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch (parseErr) {
-                console.error("JSON parse failed. Response was not JSON:", text);
-                return;
-            }
+    if (data.success && data.data) {
+      setProducts((prev) => {
+        if (offset === 0) return data.data;
+        const unique = data.data.filter(
+          (item) => !prev.some((p) => p.id === item.id)
+        );
+        return [...prev, ...unique];
+      });
 
-            if (data.success && data.data) {
-                setProducts(data.data); // ✅ Save products
-            } else {
-                setProducts([]); // fallback to empty
-            }
-        } catch (error) {
-            console.error("Products fetch failed:", error);
-        }
-    };
+      if (data.data.length < limit) {
+        setHasMore(false);
+      }
+    } else {
+      if (offset === 0) setProducts([]);
+      setHasMore(false);
+    }
+  } catch (error) {
+    console.error("Products fetch failed:", error);
+  } finally {
+    setLoading(false);
+  }
+};
 
     // Fetch categories
     const fetchCategories = async () => {
@@ -77,14 +89,20 @@ const insets = useSafeAreaInsets();
 
     useEffect(() => {
         fetchCategories();
-
     }, []);
 
     // Load products every time activeCategory changes
-    useEffect(() => {
-        getProduct();
-        setLoading(false)
-    }, [activeCategory]);
+useEffect(() => {
+  setProducts([]);
+  setOffset(0);
+  setHasMore(true);
+  getProduct(); 
+}, []);
+useEffect(() => {
+  if (offset > 0 && hasMore) {
+    getProduct();
+  }
+}, [offset]);
 
     const toggleFavorite = async (productId: string, currentStatus: number) => {
         const newStatus = currentStatus === 1 ? 0 : 1;
@@ -138,13 +156,23 @@ const insets = useSafeAreaInsets();
         }
     };
     const handleGoBack = () => navigation.goBack();
-    console.log(products, 'getProductgetProduct')
     return (
-        <ScrollView
-            style={styles.scrollContainer}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-        >
+       <ScrollView
+  style={styles.scrollContainer}
+  contentContainerStyle={styles.scrollContent}
+  showsVerticalScrollIndicator={false}
+  scrollEventThrottle={16}
+  onScroll={({ nativeEvent }) => {
+    const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+    const isEndReached =
+      layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+
+    if (isEndReached && !loading && hasMore) {
+      setOffset((prev) => prev + limit);
+    }
+  }}
+>
+
             <Header text={"Product Listing"} onPress={handleGoBack} />
 
             <View style={styles.searchContainer}>
@@ -188,7 +216,7 @@ const insets = useSafeAreaInsets();
         ))} */}
             </ScrollView>
 
-            <View style={[styles.productsGrid,{paddingBottom: insets.bottom}]}>
+            <View style={[styles.productsGrid, { paddingBottom: insets.bottom }]}>
                 {products.map((item) => (
                     <View key={item.id} style={styles.productCard}>
 

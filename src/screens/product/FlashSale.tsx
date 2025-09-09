@@ -1,11 +1,10 @@
 // FlashSale.tsx
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator, Button } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, GestureResponderEvent, } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
 import Loader from "../../components/AnimatedLoader";
 import AnimatedLoader from "../../components/AnimatedLoader";
-
 const redDress = "https://res.cloudinary.com/dfhzted2d/image/upload/v1756059417/products/kqnhfrcvlcs9b3nxy5fg.png"
 
 interface Product {
@@ -23,15 +22,16 @@ const FlashSale = ({ navigation, refreshKey }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [timeLeft, setTimeLeft] = useState({ h: 3, m: 38, s: 10 });
   const [categories, setCategories] = useState<any[]>([]);
+  const [visibleProducts, setVisibleProducts] = useState<Product[]>([]); // shown items
   const [loading, setLoading] = useState(false);
-  const [wishlistItems, setWishlistItems] = useState(0)
-
-  const { setProductId, token, setCategoriesId } = useAuth()
+  const [page, setPage] = useState(1);
+   const pageSize = 4;
+  const { setProductId, token } = useAuth()
   useEffect(() => {
     const getProduct = async () => {
       try {
         let url = "";
-
+setLoading(true)
         switch (activeCategory) {
           case "all":
             url = "https://elegant-project.onrender.com/api/getallProducts";
@@ -64,16 +64,20 @@ const FlashSale = ({ navigation, refreshKey }) => {
               new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
           );
           setProducts(sorted);
+          setVisibleProducts(sorted.slice(0, pageSize));
         } else {
           setProducts(data.data);
+          setVisibleProducts(data.data.slice(0, pageSize));
         }
       } catch (error) {
         console.error("Error fetching products:", error);
+      }finally{
+        setLoading(false)
       }
     };
 
     getProduct();
-  }, [activeCategory, refreshKey, wishlistItems]);
+  }, [activeCategory, refreshKey]);
 
 
 
@@ -111,46 +115,6 @@ const FlashSale = ({ navigation, refreshKey }) => {
   }, [activeCategory]);
 
 
-  const toggleFavorite = async (productId: string, currentStatus: number) => {
-    const newStatus = currentStatus === 1 ? 0 : 1;
-
-
-    try {
-      const res = await fetch(`https://elegant-project.onrender.com/api/add-wishlist`, {
-        method: "post", // or PATCH depending on backend
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`, // 👈 check token value
-        },
-        body: JSON.stringify({
-          product_id: productId,
-        }),
-      });
-
-      const text = await res.text(); // get raw text first
-      console.log("Raw response:", text);
-
-      let data;
-      try {
-        data = JSON.parse(text); // parse only if JSON
-      } catch (parseErr) {
-        console.error("JSON parse failed. Response was not JSON:", text);
-        return;
-      }
-
-      console.log("Product updated:", data);
-
-      if (data.success) {
-        setProducts((prev) =>
-          prev.map((p) =>
-            p.id === productId ? { ...p, wishlist_is: newStatus } : p
-          )
-        );
-      }
-    } catch (error) {
-      console.error("Wishlist toggle failed:", error);
-    }
-  };
   console.log(activeCategory, 'activeCategoryactiveCategory')
   if (loading) {
     return (
@@ -197,21 +161,27 @@ const FlashSale = ({ navigation, refreshKey }) => {
     }
   };
 
-
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>Flash sale</Text>
-        <View style={styles.timer}>
-          <Text style={styles.timerText}>{String(timeLeft.h).padStart(2, "0")}</Text>
-          <Text style={styles.colon}>:</Text>
-          <Text style={styles.timerText}>{String(timeLeft.m).padStart(2, "0")}</Text>
-          <Text style={styles.colon}>:</Text>
-          <Text style={styles.timerText}>{String(timeLeft.s).padStart(2, "0")}</Text>
-        </View>
-      </View>
+     <View style={styles.headerRow}>
+  {/* Left side: Title + Timer */}
+  <View style={{ flexDirection: "row", alignItems: "center" }}>
+    <Text style={styles.title}>Flash sale</Text>
+    <View style={styles.timer}>
+      <Text style={styles.timerText}>{String(timeLeft.h).padStart(2, "0")}</Text>
+      <Text style={styles.colon}>:</Text>
+      <Text style={styles.timerText}>{String(timeLeft.m).padStart(2, "0")}</Text>
+      <Text style={styles.colon}>:</Text>
+      <Text style={styles.timerText}>{String(timeLeft.s).padStart(2, "0")}</Text>
+    </View>
+  </View>
 
+  {/* Right side: See All */}
+  <TouchableOpacity onPress={()=>navigation.navigate('ProductScreen')}>
+    <Text style={styles.seeAll}>See All</Text>
+  </TouchableOpacity>
+</View>
       {/* Categories */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
         {categories.map((cat) => (
@@ -231,17 +201,17 @@ const FlashSale = ({ navigation, refreshKey }) => {
       {/* Products */}
       {loading ? <Loader /> :
         <View style={styles.productsGrid}>
-          {products.length ?
+          {visibleProducts && visibleProducts.length ?
 
-            products.slice(0, 4)?.map((item) => (
-              <View key={item.id} style={styles.productCard}>
+            visibleProducts.map((item) => (
+                    
+              <View key={item.id} style={styles.productCard} item={item}>
                 <View style={styles.imageContainer}>
-                  <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
+                  <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id); } }>
 
                     <Image
                       source={item.images ? { uri: item.images[0] } : redDress}
-                      style={styles.productImage}
-                    />
+                      style={styles.productImage} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
@@ -253,25 +223,26 @@ const FlashSale = ({ navigation, refreshKey }) => {
                     <Icon
                       name={item.wishlist_is ? "heart" : "heart-outline"}
                       size={22}
-                      color={item.wishlist_is ? "#000000" : "#ffffff"}
-                    />
+                      color={item.wishlist_is ? "#000000" : "#ffffff"} />
                   </TouchableOpacity>
 
                 </View>
-                <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
+                <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id); } }>
                   <Text style={styles.productName} numberOfLines={1}>
                     {item.name}
                   </Text>
                 </TouchableOpacity>
 
                 <View style={styles.priceRatingRow}>
-                  <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id) }}>
+                  <TouchableOpacity onPress={() => { navigation.navigate("ProductDetailScreen"), setProductId(item.id); } }>
                     <Text style={styles.productPrice}>₹{item.price}</Text>
                   </TouchableOpacity>
                   <View style={styles.ratingRow}>
                     <Icon name="star" size={14} color="gold" />
                     <Text style={styles.ratingText}>{item.rating ?? "5"}</Text>
                   </View>
+
+
                 </View>
               </View>
             )) : <View style={styles.noProductsContainer}>
@@ -280,10 +251,11 @@ const FlashSale = ({ navigation, refreshKey }) => {
 
 
         </View>}
-      {products.length &&
-        <TouchableOpacity onPress={() => { setCategoriesId(activeCategory), navigation.navigate('ProductScreen') }}>
-          <Text style={styles.noProductsText}>View All</Text>
-        </TouchableOpacity>
+      {products && products.length &&
+      <View style={{margin:25}}>
+      {/* <Button text={"View All"} onPress={() => { setCategoriesId(activeCategory), navigation.navigate('ProductScreen') }}
+       bgColor={"#704F38"} textColor={"#ffffffff"} /> */}
+       </View>
       }
     </View>
   );
@@ -298,37 +270,46 @@ const styles = StyleSheet.create({
   },
   loader: { flex: 1, justifyContent: "center", alignItems: "center" },
 
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-    // marginTop:10
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#010911",
-    // fontFamily: "Poppins"
-  },
-  timer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  timerText: {
-    backgroundColor: "#ED3939",
-    color: "#fff",
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: 20,
-    fontWeight: "bold",
-    fontSize: 12,
-  },
-  colon: {
-    marginHorizontal: 6,
-    fontWeight: "bold",
-    fontSize: 14,
-  },
+headerRow: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: 20,
+},
+
+title: {
+  fontSize: 18,
+  fontWeight: "600",
+  color: "#010911",
+  marginRight: 10, // spacing before timer
+},
+
+timer: {
+  flexDirection: "row",
+  alignItems: "center",
+},
+
+timerText: {
+  backgroundColor: "#ED3939",
+  color: "#fff",
+  paddingHorizontal: 6,
+  paddingVertical: 4,
+  borderRadius: 20,
+  fontWeight: "bold",
+  fontSize: 12,
+},
+
+colon: {
+  marginHorizontal: 4,
+  fontWeight: "bold",
+  fontSize: 14,
+},
+
+seeAll: {
+  fontSize: 14,
+  fontWeight: "400",
+  color: "#704F38", // brownish like in your screenshot
+},
   categoryChip: {
     paddingHorizontal: 14,
     paddingVertical: 6,

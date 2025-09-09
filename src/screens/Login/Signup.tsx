@@ -7,7 +7,8 @@ import {
 
   ScrollView,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  TouchableOpacity
 } from 'react-native';
 import Button from '../../components/Button';
 import SocialLoginOptions from '../../components/SocialLoginOptions';
@@ -15,6 +16,7 @@ import { SignUpScreenProps } from '../../types/types';
 import { useAuth } from '../../Context/AuthContext';
 import { useToast } from '../../Context/ToastContext';
 import Header from '../../components/Header';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
   const [name, setName] = useState('');
@@ -24,6 +26,12 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const { setSignupemail, setStorePassword } = useAuth();
+  const [rightIcon, setRightIcon] = useState('eye'); 
+    const [rightConIcon, setRightConIcon] = useState('eye'); // Initial icon
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConPassword, setShowConPassword] = useState(false);
+
   const [passwordErrors, setPasswordErrors] = useState({
     length: false,
     uppercase: false,
@@ -108,6 +116,14 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
     }
   };
 
+  const handlePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+    setRightIcon(showPassword ? 'eye' : 'eye-off'); // Toggle icon based on new state
+  };
+    const handleConPasswordVisibility = () => {
+    setShowConPassword(!showConPassword);
+    setRightConIcon(showConPassword ? 'eye' : 'eye-off'); // Toggle icon based on new state
+  };
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: '#fff' }}
@@ -120,7 +136,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <Header text={"Sign up"} onPress={handleGoBack}/>
+        <Header text={"Sign up"} onPress={handleGoBack} />
         {/* <View style={styles.header}>
           <Pressable onPress={handleGoBack}>
             <Image source={Arrowleft} style={styles.backIcon} />
@@ -168,53 +184,63 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
         </View>
 
         {/* Password */}
-        <View style={styles.inputFieldContainer}>
+        <View style={styles.passwordContainer}>
           <Text style={styles.label}>Password</Text>
-          <TextInput
-            placeholder="Enter your password"
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              validatePassword(text);
-            }}
-            secureTextEntry
-            style={styles.input}
-            returnKeyType="next"
+          <View style={styles.inputWrapper}>
+            <TextInput
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text);
+                validatePassword(text);
+              }}
+              secureTextEntry={!showPassword}
+              style={styles.passwordInput}
+              returnKeyType="next" />
+            <TouchableOpacity onPress={handlePasswordVisibility}>
+              <Icon name={rightIcon} size={20} color="gray" />
+            </TouchableOpacity>
+          </View>
 
-          />
         </View>
-         <View style={{ marginBottom: 12 }}>
-        {!passwordErrors.length && (
-          <Text style={styles.errorText}>• 8–64 characters</Text>
-        )}
-        {!passwordErrors.uppercase && (
-          <Text style={styles.errorText}>• At least one uppercase letter</Text>
-        )}
-        {!passwordErrors.lowercase && (
-          <Text style={styles.errorText}>• At least one lowercase letter</Text>
-        )}
-        {!passwordErrors.number && (
-          <Text style={styles.errorText}>• At least one number</Text>
-        )}
-        {!passwordErrors.specialChar && (
-          <Text style={styles.errorText}>• At least one special character</Text>
-        )}
-        {!passwordErrors.noSpaces && (
-          <Text style={styles.errorText}>• No spaces allowed</Text>
-        )}
-      </View>
+        <View style={{ marginBottom: 12 }}>
+          {!passwordErrors.length && (
+            <Text style={styles.errorText}>• 8–64 characters</Text>
+          )}
+          {!passwordErrors.uppercase && (
+            <Text style={styles.errorText}>• At least one uppercase letter</Text>
+          )}
+          {!passwordErrors.lowercase && (
+            <Text style={styles.errorText}>• At least one lowercase letter</Text>
+          )}
+          {!passwordErrors.number && (
+            <Text style={styles.errorText}>• At least one number</Text>
+          )}
+          {!passwordErrors.specialChar && (
+            <Text style={styles.errorText}>• At least one special character</Text>
+          )}
+          {!passwordErrors.noSpaces && (
+            <Text style={styles.errorText}>• No spaces allowed</Text>
+          )}
+        </View>
 
         {/* Confirm Password */}
-        <View style={styles.inputFieldContainer}>
+        <View style={styles.passwordContainer}>
           <Text style={styles.label}>Confirm password</Text>
-          <TextInput
-            placeholder="Enter your password again"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            style={styles.input}
-            returnKeyType="done"
-          />
+          <View style={styles.inputWrapper}>
+            <TextInput
+              placeholder="Enter your password again"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showConPassword}
+
+              style={styles.passwordInput}
+              returnKeyType="done"
+            />
+            <TouchableOpacity onPress={handleConPasswordVisibility}>
+              <Icon name={rightConIcon} size={20} color="gray" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Invite Code */}
@@ -304,6 +330,26 @@ export const styles = StyleSheet.create({
   },
   inputFieldContainer: {
     paddingVertical: 2,
+  },
+  passwordContainer: {
+    marginBottom: 12,
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#e5e5e5",
+    borderRadius: 25,
+    paddingHorizontal: 12,
+  },
+  eyeIcon: {
+    fontSize: 18,
+    marginLeft: 10,
+  },
+  passwordInput: {
+    flex: 1, // take up remaining space
+    paddingVertical: 12,
+    fontSize: 15,
   },
   label: {
     marginBottom: 6,
