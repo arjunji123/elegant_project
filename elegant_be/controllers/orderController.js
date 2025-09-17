@@ -247,9 +247,8 @@ exports.verifyPayment = async (req, res) => {
       `UPDATE orders
        SET payment_status='success',
            razorpay_payment_id=?,
-           razorpay_signature=?,
-           status='processing'
-       WHERE razorpay_order_id=? AND user_id=?`,
+           razorpay_signature=?
+                  WHERE razorpay_order_id=? AND user_id=?`,
       [razorpay_payment_id, razorpay_signature, razorpay_order_id, userId]
     );
 
