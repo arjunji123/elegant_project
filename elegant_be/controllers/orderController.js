@@ -291,3 +291,76 @@ exports.getOrders = async (req, res) => {
     res.status(500).json({ success:false, message:"Server Error" });
   }
 };
+
+/**
+ * ✅ Get User Orders with Product Details
+ */
+exports.getUserOrders = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const [orders] = await db.query(
+      `SELECT 
+          o.id AS order_id,
+          o.order_number,
+          o.total_amount,
+          o.payment_status,
+          o.created_at
+       FROM orders o
+       WHERE o.user_id = ? AND o.payment_status = 'paid'
+       ORDER BY o.created_at DESC`,
+      [userId]
+    );
+
+    if (!orders.length) {
+      return res.json({ success: true, orders: [] });
+    }
+
+    // ✅ Get all order IDs
+    const orderIds = orders.map(o => o.order_id);
+
+    // ✅ Fetch all products for these orders
+    const [items] = await db.query(
+      `SELECT 
+          oi.order_id,
+          p.id AS product_id,
+          p.name AS product_name,
+          p.image AS product_image,
+          oi.size,
+          oi.color,
+          oi.quantity,
+          oi.price
+       FROM order_items oi
+       INNER JOIN products p ON p.id = oi.product_id
+       WHERE oi.order_id IN (?)
+       ORDER BY oi.order_id DESC`,
+      [orderIds]
+    );
+
+    // ✅ Map products into their respective orders
+    const orderMap = {};
+    orders.forEach(order => {
+      orderMap[order.order_id] = { ...order, products: [] };
+    });
+
+    items.forEach(item => {
+      orderMap[item.order_id].products.push({
+        product_id: item.product_id,
+        name: item.product_name,
+        image: item.product_image,
+        size: item.size,
+        color: item.color,
+        quantity: item.quantity,
+        price: item.price
+      });
+    });
+
+    // ✅ Convert to Array
+    const finalOrders = Object.values(orderMap);
+
+    res.json({ success: true, orders: finalOrders });
+  } catch (error) {
+    console.error("Get User Orders Error:", error);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
+};

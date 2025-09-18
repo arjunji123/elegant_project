@@ -12,4 +12,6 @@ router.get('/user/coupons', authMiddleware, couponController.getUserCoupons);   
 router.post('/apply-coupon', authMiddleware, couponController.applyCoupon);     // Apply coupon to cart
 router.get('/cart/summary', authMiddleware, couponController.getCartSummary);   // Get subtotal + discount + delivery + total
 
+router.get('/coupons/search', authMiddleware, couponController.searchCoupons);   // Get subtotal + discount + delivery + total
+
 module.exports = router;

@@ -4,13 +4,13 @@ const db = require('../config/db');
  * ✅ Admin - Create Coupon
  */
 exports.createCoupon = async (req, res) => {
-  const { title, description, discount_type, discount_value, condition_type, condition_value } = req.body;
+  const { title, description, discount_type, discount_value, condition_type, condition_value, start_date, end_date} = req.body;
 
   try {
     await db.query(
-      `INSERT INTO coupons (title, description, discount_type, discount_value, condition_type, condition_value) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [title, description, discount_type, discount_value, condition_type, condition_value || null]
+      `INSERT INTO coupons (title, description, discount_type, discount_value, condition_type, condition_value, start_date, end_date) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [title, description, discount_type, discount_value, condition_type, condition_value || null, start_date, end_date]
     );
 
     res.json({ success: true, message: 'Coupon created successfully' });
@@ -42,8 +42,16 @@ exports.getUserCoupons = async (req, res) => {
   const userId = req.user.id;
 
   try {
-    const [coupons] = await db.query(`SELECT * FROM coupons WHERE is_active = 1`);
-    const [applied] = await db.query(
+  const [coupons] = await db.query(`
+      SELECT id, title, description, discount_type, discount_value,
+             condition_type, condition_value,
+             start_date
+      FROM coupons
+      WHERE is_active = 1
+        AND start_date <= NOW()
+        AND (end_date IS NULL OR end_date >= NOW())
+    `);
+        const [applied] = await db.query(
       `SELECT coupon_id, status FROM applied_coupons WHERE user_id = ?`,
       [userId]
     );
@@ -74,7 +82,15 @@ exports.applyCoupon = async (req, res) => {
 
   try {
     // ✅ Check Coupon
-    const [[coupon]] = await db.query(`SELECT * FROM coupons WHERE id = ? AND is_active = 1`, [couponId]);
+  const [[coupon]] = await db.query(`
+      SELECT *
+      FROM coupons
+      WHERE id = ?
+        AND is_active = 1
+        AND start_date <= NOW()
+        AND (end_date IS NULL OR end_date >= NOW())
+    `, [couponId]);
+    
     if (!coupon) return res.status(404).json({ success: false, message: 'Invalid coupon' });
 
     // ✅ Calculate Cart Subtotal
@@ -180,5 +196,38 @@ exports.getCartSummary = async (req, res) => {
   } catch (error) {
     console.error('Cart Summary Error:', error);
     res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+
+
+/**
+ * 🔍 Search Coupons by Any Keyword
+ */
+exports.searchCoupons = async (req, res) => {
+  const { keyword } = req.query; // ?keyword=summer
+  if (!keyword || keyword.trim() === "") {
+    return res.status(400).json({ success: false, message: "Keyword is required" });
+  }
+
+  try {
+    const searchTerm = `%${keyword}%`; // partial match ke liye
+    const [coupons] = await db.query(
+      `SELECT * FROM coupons 
+       WHERE 
+         is_active = 1 AND (
+           name LIKE ? OR
+           discount_type LIKE ? OR
+           CAST(discount_value AS CHAR) LIKE ? OR
+           CAST(condition_value AS CHAR) LIKE ?
+         )
+       ORDER BY start_date DESC`,
+      [searchTerm, searchTerm, searchTerm, searchTerm]
+    );
+
+    res.json({ success: true, coupons });
+  } catch (error) {
+    console.error("Search Coupons Error:", error);
+    res.status(500).json({ success: false, message: "Server Error" });
   }
 };
