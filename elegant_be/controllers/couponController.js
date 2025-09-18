@@ -205,24 +205,30 @@ exports.getCartSummary = async (req, res) => {
  * 🔍 Search Coupons by Any Keyword
  */
 exports.searchCoupons = async (req, res) => {
-  const { keyword } = req.query; // ?keyword=summer
+  const { keyword } = req.query; // e.g. ?keyword=summer
   if (!keyword || keyword.trim() === "") {
     return res.status(400).json({ success: false, message: "Keyword is required" });
   }
 
   try {
-    const searchTerm = `%${keyword}%`; // partial match ke liye
+    const searchTerm = `%${keyword}%`; // partial match
     const [coupons] = await db.query(
-      `SELECT * FROM coupons 
+      `SELECT id, title, description, discount_type, discount_value,
+              condition_type, condition_value, start_date, end_date
+       FROM coupons 
        WHERE 
-         is_active = 1 AND (
-           name LIKE ? OR
+         is_active = 1
+         AND start_date <= NOW()
+         AND (end_date IS NULL OR end_date >= NOW())
+         AND (
+           title LIKE ? OR
+           description LIKE ? OR
            discount_type LIKE ? OR
            CAST(discount_value AS CHAR) LIKE ? OR
            CAST(condition_value AS CHAR) LIKE ?
          )
        ORDER BY start_date DESC`,
-      [searchTerm, searchTerm, searchTerm, searchTerm]
+      [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]
     );
 
     res.json({ success: true, coupons });

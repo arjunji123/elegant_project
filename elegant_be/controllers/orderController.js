@@ -313,7 +313,7 @@ exports.getUserOrders = async (req, res) => {
           o.address_snapshot,
           o.created_at
        FROM orders o
-       WHERE o.user_id = ? AND o.payment_status = 'paid'
+       WHERE o.user_id = ? AND o.payment_status = 'success'
        ORDER BY o.created_at DESC`,
       [userId]
     );
