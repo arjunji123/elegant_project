@@ -299,12 +299,18 @@ exports.getUserOrders = async (req, res) => {
   const userId = req.user.id;
 
   try {
+    // ✅ Fetch all paid orders of the user
     const [orders] = await db.query(
       `SELECT 
           o.id AS order_id,
-          o.order_number,
+          o.subtotal,
+          o.coupon_id,
+          o.coupon_discount,
+          o.delivery_fee,
           o.total_amount,
           o.payment_status,
+          o.razorpay_order_id,
+          o.address_snapshot,
           o.created_at
        FROM orders o
        WHERE o.user_id = ? AND o.payment_status = 'paid'
@@ -319,13 +325,13 @@ exports.getUserOrders = async (req, res) => {
     // ✅ Get all order IDs
     const orderIds = orders.map(o => o.order_id);
 
-    // ✅ Fetch all products for these orders
+    // ✅ Fetch order items with product name
     const [items] = await db.query(
       `SELECT 
           oi.order_id,
-          p.id AS product_id,
+          oi.product_id,
           p.name AS product_name,
-          p.image AS product_image,
+          oi.image_url,
           oi.size,
           oi.color,
           oi.quantity,
@@ -337,17 +343,22 @@ exports.getUserOrders = async (req, res) => {
       [orderIds]
     );
 
-    // ✅ Map products into their respective orders
+    // ✅ Map products to orders
     const orderMap = {};
     orders.forEach(order => {
-      orderMap[order.order_id] = { ...order, products: [] };
+      orderMap[order.order_id] = {
+        ...order,
+        address: JSON.parse(order.address_snapshot || "{}"), // parse snapshot
+        products: []
+      };
+      delete orderMap[order.order_id].address_snapshot; // remove raw snapshot
     });
 
     items.forEach(item => {
       orderMap[item.order_id].products.push({
         product_id: item.product_id,
         name: item.product_name,
-        image: item.product_image,
+        image: item.image_url, // ✅ snapshot image
         size: item.size,
         color: item.color,
         quantity: item.quantity,
@@ -355,7 +366,6 @@ exports.getUserOrders = async (req, res) => {
       });
     });
 
-    // ✅ Convert to Array
     const finalOrders = Object.values(orderMap);
 
     res.json({ success: true, orders: finalOrders });
