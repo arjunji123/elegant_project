@@ -126,11 +126,16 @@ exports.applyCoupon = async (req, res) => {
       discountAmount = coupon.discount_value;
     }
 
-    // ✅ Insert or Update Applied Coupon
+    // ✅ Remove previous applied coupons for this user
     await db.query(
-      `INSERT INTO applied_coupons (user_id, coupon_id, status)
-       VALUES (?, ?, 'applied')
-       ON DUPLICATE KEY UPDATE status='applied', applied_at=CURRENT_TIMESTAMP`,
+      `DELETE FROM applied_coupons WHERE user_id = ?`,
+      [userId]
+    );
+
+    // ✅ Insert New Applied Coupon
+    await db.query(
+      `INSERT INTO applied_coupons (user_id, coupon_id, status, applied_at)
+       VALUES (?, ?, 'applied', CURRENT_TIMESTAMP)`,
       [userId, couponId]
     );
 
