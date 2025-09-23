@@ -3,6 +3,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const generateToken = require('../utils/generateToken');
 const sendMail = require('../utils/sendMail');
+const twilio = require('twilio');
+const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
 
 exports.register = async (req, res) => {
   const { name, email, phone, password } = req.body;
@@ -46,8 +49,6 @@ exports.register = async (req, res) => {
   }
 };
 
-
-
 exports.verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
 
@@ -80,8 +81,6 @@ exports.verifyOtp = async (req, res) => {
     res.status(500).json({ message: 'Something went wrong during OTP verification.' });
   }
 };
-
-
 
 exports.resendOtp = async (req, res) => {
   try {
@@ -144,56 +143,143 @@ exports.resendOtp = async (req, res) => {
   }
 };
 
+// exports.login = async (req, res) => {
+//   const { email, password } = req.body;
+//   try {
+//     const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+//     const user = rows[0];
+//     if (!user) {
+//       return res.status(400).json({ success: false, message: 'Invalid email or password' });
+//     }
 
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch) {
+//       return res.status(400).json({ success: false, message: 'Invalid email or password' });
+//     }
+
+//     // ✅ If not verified, block login
+//     if (!user.is_verified) {
+//       return res.status(403).json({
+//         success: false,
+//         message: 'User not verified. Please verify OTP before logging in.',
+//         email: user.email
+//       });
+//     }
+
+//     const token = generateToken(user.id);
+//     await db.query(
+//       'INSERT INTO auth_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))',
+//       [user.id, token]
+//     );
+
+//     res.status(200).json({
+//       success: true,
+//       isActive: true,
+//       token,
+//       user: {
+//         id: user.id,
+//         name: user.name,
+//         email: user.email,
+//         phone: user.phone
+//       }
+//     });
+//   } catch (err) {
+//     console.error('Login error:', err);
+//     res.status(500).json({ success: false, message: 'Login failed' });
+//   }
+// };
 
 
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, phone } = req.body;
+
   try {
-    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-    const user = rows[0];
-    if (!user) {
-      return res.status(400).json({ success: false, message: 'Invalid email or password' });
-    }
+    // ✅ CASE 1: Email + Password Login
+    if (email && password) {
+      const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+      const user = rows[0];
+      if (!user) return res.status(400).json({ success: false, message: 'Invalid email or password' });
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ success: false, message: 'Invalid email or password' });
-    }
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) return res.status(400).json({ success: false, message: 'Invalid email or password' });
 
-    // ✅ If not verified, block login
-    if (!user.is_verified) {
-      return res.status(403).json({
-        success: false,
-        message: 'User not verified. Please verify OTP before logging in.',
-        email: user.email
+      if (!user.is_verified) {
+        return res.status(403).json({
+          success: false,
+          message: 'User not verified. Please verify OTP first.',
+          email: user.email
+        });
+      }
+
+      const token = generateToken(user.id);
+      await db.query(
+        'INSERT INTO auth_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))',
+        [user.id, token]
+      );
+
+      return res.json({
+        success: true,
+        mode: 'email_login',
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone
+        }
       });
     }
 
-    const token = generateToken(user.id);
-    await db.query(
-      'INSERT INTO auth_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))',
-      [user.id, token]
-    );
+    // ✅ CASE 2: Mobile Only Login (OTP)
+    if (phone) {
+      // Check if user already exists
+      const [rows] = await db.query('SELECT * FROM users WHERE phone = ?', [phone]);
+      let user = rows[0];
 
-    res.status(200).json({
-      success: true,
-      isActive: true,
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone
+      // Auto register if not exists
+      if (!user) {
+        const [insert] = await db.query(
+          `INSERT INTO users (name, email, phone, password, is_verified)
+           VALUES (NULL, NULL, ?, NULL, false)`,
+          [phone]
+        );
+        const [[newUser]] = await db.query('SELECT * FROM users WHERE id = ?', [insert.insertId]);
+        user = newUser;
       }
-    });
+
+      // Generate OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min
+
+      await db.query(
+        `INSERT INTO user_otps (user_id, otp, expires_at)
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE otp = VALUES(otp), expires_at = VALUES(expires_at)`,
+        [user.id, otp, expiresAt]
+      );
+
+      // Send OTP via Twilio
+      await client.messages.create({
+        body: `Your login OTP is ${otp}`,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to: `+91${phone}`
+      });
+
+      return res.json({
+        success: true,
+        mode: 'mobile_otp',
+        message: 'OTP sent to mobile',
+        phone
+      });
+    }
+
+    return res.status(400).json({ success: false, message: 'Provide email+password OR phone' });
+
   } catch (err) {
     console.error('Login error:', err);
-    res.status(500).json({ success: false, message: 'Login failed' });
+    res.status(500).json({ success: false, message: 'Login failed', error: err.message });
   }
 };
-
-
 
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
@@ -254,8 +340,6 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
-
-
 exports.verifyForgotOtp = async (req, res) => {
   const { email, otp } = req.body;
 
@@ -298,9 +382,6 @@ exports.verifyForgotOtp = async (req, res) => {
   }
 };
 
-
-
-
 exports.resetPassword = async (req, res) => {
   const { email, newPassword } = req.body;
 
@@ -326,5 +407,50 @@ exports.resetPassword = async (req, res) => {
   } catch (error) {
     console.error('Error in resetPassword:', error);
     return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+
+
+
+
+exports.verifyMobileOtp = async (req, res) => {
+  const { phone, otp } = req.body;
+  try {
+    const [[user]] = await db.query('SELECT * FROM users WHERE phone=?', [phone]);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const [[row]] = await db.query(
+      'SELECT otp, expires_at FROM user_otps WHERE user_id=?',
+      [user.id]
+    );
+    if (!row) return res.status(400).json({ message: 'OTP not found' });
+    if (row.otp !== otp) return res.status(400).json({ message: 'Invalid OTP' });
+    if (new Date(row.expires_at) < new Date()) return res.status(400).json({ message: 'OTP expired' });
+
+    await db.query('UPDATE users SET is_verified=? WHERE id=?', [true, user.id]);
+    await db.query('DELETE FROM user_otps WHERE user_id=?', [user.id]);
+
+    const token = generateToken(user.id);
+    await db.query(
+      'INSERT INTO auth_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))',
+      [user.id, token]
+    );
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        phone: user.phone,
+        name: user.name,
+        email: user.email
+      }
+    });
+  } catch (err) {
+    console.error('OTP verify error:', err);
+    res.status(500).json({ message: 'Verification failed' });
   }
 };
