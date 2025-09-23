@@ -421,17 +421,29 @@ exports.verifyMobileOtp = async (req, res) => {
     const [[user]] = await db.query('SELECT * FROM users WHERE phone=?', [phone]);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const [[row]] = await db.query(
-      'SELECT otp, expires_at FROM user_otps WHERE user_id=?',
+    // Latest OTP fetch karo aur expired ones ko delete karo
+    const [otps] = await db.query(
+      'SELECT otp, expires_at FROM user_otps WHERE user_id=? ORDER BY created_at DESC',
       [user.id]
     );
-    if (!row) return res.status(400).json({ message: 'OTP not found' });
-    if (row.otp !== otp) return res.status(400).json({ message: 'Invalid OTP' });
-    if (new Date(row.expires_at) < new Date()) return res.status(400).json({ message: 'OTP expired' });
 
+    if (!otps.length) return res.status(400).json({ message: 'OTP not found' });
+
+    const latestOtp = otps[0];
+
+    // Purane OTP clear kar do (optional, cleanup)
+    await db.query('DELETE FROM user_otps WHERE user_id=? AND id != ?', [user.id, latestOtp.id]);
+
+    if (latestOtp.otp !== otp) return res.status(400).json({ message: 'Invalid OTP' });
+    if (new Date(latestOtp.expires_at) < new Date()) return res.status(400).json({ message: 'OTP expired' });
+
+    // OTP verify ho gaya, user ko verified mark karo
     await db.query('UPDATE users SET is_verified=? WHERE id=?', [true, user.id]);
+
+    // OTP table se remove kar do
     await db.query('DELETE FROM user_otps WHERE user_id=?', [user.id]);
 
+    // Token generate
     const token = generateToken(user.id);
     await db.query(
       'INSERT INTO auth_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))',
