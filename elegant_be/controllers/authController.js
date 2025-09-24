@@ -12,15 +12,11 @@ exports.register = async (req, res) => {
   try {
     // Check if email already exists
     const [emailCheck] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (emailCheck.length) {
-      return res.status(400).json({ message: 'Email already registered' });
-    }
+    if (emailCheck.length) return res.status(400).json({ message: 'Email already registered' });
 
     // Check if phone already exists
     const [phoneCheck] = await db.query('SELECT * FROM users WHERE phone = ?', [phone]);
-    if (phoneCheck.length) {
-      return res.status(400).json({ message: 'Mobile already registered' });
-    }
+    if (phoneCheck.length) return res.status(400).json({ message: 'Mobile already registered' });
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -30,22 +26,51 @@ exports.register = async (req, res) => {
       'INSERT INTO users (name, email, phone, password, is_verified) VALUES (?, ?, ?, ?, ?)',
       [name, email, phone, hashedPassword, false]
     );
-
     const userId = insert.insertId;
 
-    // Insert default OTP
-    const otp = '123456';
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
+    // === Mobile OTP (like login) ===
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min
 
     await db.query(
-      'INSERT INTO user_otps (user_id, otp, expires_at) VALUES (?, ?, ?)',
+      `INSERT INTO user_otps (user_id, otp, expires_at)
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE otp = VALUES(otp), expires_at = VALUES(expires_at)`,
       [userId, otp, expiresAt]
     );
 
-    res.status(201).json({ message: 'User registered. Use OTP 123456 to verify.' });
+    // Send OTP via Twilio (or any SMS provider)
+    await client.messages.create({
+      body: `Your registration OTP is ${otp}`,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: `+91${phone}`
+    });
+
+    // === Email verification ===
+    const emailToken = crypto.randomBytes(32).toString('hex'); // unique token
+    const emailExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    await db.query(
+      'INSERT INTO email_verifications (user_id, token, expires_at) VALUES (?, ?, ?)',
+      [userId, emailToken, emailExpires]
+    );
+ 
+    const verifyLink = `${process.env.FRONTEND_URL}/verify-email?token=${emailToken}`;
+      await sendMail(
+      email,
+      'Verify your email',
+      `Hi ${name},\n\nClick the link below to verify your email:\n${verifyLink}`
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'User registered. OTP sent to mobile and verification email sent.',
+      phone,
+      email
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Registration failed' });
+    console.error('Registration error:', err);
+    res.status(500).json({ message: 'Registration failed', error: err.message });
   }
 };
 
@@ -82,66 +107,66 @@ exports.verifyOtp = async (req, res) => {
   }
 };
 
-exports.resendOtp = async (req, res) => {
-  try {
-    const { email } = req.body;
+// exports.resendOtp = async (req, res) => {
+//   try {
+//     const { email } = req.body;
 
-    if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
-    }
+//     if (!email) {
+//       return res.status(400).json({ message: 'Email is required' });
+//     }
 
-    const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+//     const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
 
-    if (!users.length) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+//     if (!users.length) {
+//       return res.status(404).json({ message: 'User not found' });
+//     }
 
-    const user = users[0];
+//     const user = users[0];
 
-    // ✅ If already verified, return 200 with message & full user info
-    if (user.is_verified) {
-      return res.status(200).json({
-        message: 'User already verified.',
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          is_verified: true,
-          created_at: user.created_at,
-          updated_at: user.updated_at
-        }
-      });
-    }
+//     // ✅ If already verified, return 200 with message & full user info
+//     if (user.is_verified) {
+//       return res.status(200).json({
+//         message: 'User already verified.',
+//         user: {
+//           id: user.id,
+//           name: user.name,
+//           email: user.email,
+//           phone: user.phone,
+//           is_verified: true,
+//           created_at: user.created_at,
+//           updated_at: user.updated_at
+//         }
+//       });
+//     }
 
-    // Generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+//     // Generate OTP
+//     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+//     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-    await db.query(
-      'INSERT INTO user_otps (user_id, otp, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE otp = VALUES(otp), expires_at = VALUES(expires_at)',
-      [user.id, otp, expiresAt]
-    );
+//     await db.query(
+//       'INSERT INTO user_otps (user_id, otp, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE otp = VALUES(otp), expires_at = VALUES(expires_at)',
+//       [user.id, otp, expiresAt]
+//     );
 
-    await sendMail(email, 'Verify your email', `Your OTP is ${otp}`);
+//     await sendMail(email, 'Verify your email', `Your OTP is ${otp}`);
 
-    res.status(200).json({
-      message: 'OTP resent successfully',
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        is_verified: false,
-        created_at: user.created_at,
-        updated_at: user.updated_at
-      }
-    });
-  } catch (error) {
-    console.error('Error in resendOtp:', error);
-    res.status(500).json({ message: 'Something went wrong while resending OTP' });
-  }
-};
+//     res.status(200).json({
+//       message: 'OTP resent successfully',
+//       user: {
+//         id: user.id,
+//         name: user.name,
+//         email: user.email,
+//         phone: user.phone,
+//         is_verified: false,
+//         created_at: user.created_at,
+//         updated_at: user.updated_at
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Error in resendOtp:', error);
+//     res.status(500).json({ message: 'Something went wrong while resending OTP' });
+//   }
+// };
 
 // exports.login = async (req, res) => {
 //   const { email, password } = req.body;
@@ -464,5 +489,46 @@ exports.verifyMobileOtp = async (req, res) => {
   } catch (err) {
     console.error('OTP verify error:', err);
     res.status(500).json({ message: 'Verification failed' });
+  }
+};
+
+
+exports.resendMobileOtp = async (req, res) => {
+  const { phone } = req.body;
+  try {
+    // ✅ 1. Check if user exists
+    const [[user]] = await db.query('SELECT * FROM users WHERE phone=?', [phone]);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // ✅ 2. Delete old OTPs (cleanup)
+    await db.query('DELETE FROM user_otps WHERE user_id=?', [user.id]);
+
+    // ✅ 3. Generate new OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min expiry
+
+    await db.query(
+      'INSERT INTO user_otps (user_id, otp, expires_at) VALUES (?, ?, ?)',
+      [user.id, otp, expiresAt]
+    );
+
+    // ✅ 4. Send OTP via Twilio
+    await client.messages.create({
+      body: `Your new OTP is ${otp}`,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: `+91${phone}`
+    });
+
+    // ✅ 5. Response
+    res.json({
+      success: true,
+      message: 'OTP resent successfully to your mobile',
+      phone
+    });
+  } catch (err) {
+    console.error('Resend OTP error:', err);
+    res.status(500).json({ success: false, message: 'Failed to resend OTP' });
   }
 };
