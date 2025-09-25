@@ -5,7 +5,7 @@ const generateToken = require('../utils/generateToken');
 const sendMail = require('../utils/sendMail');
 const twilio = require('twilio');
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-
+const crypto = require('crypto')
 
 exports.register = async (req, res) => {
   const { name, email, phone, password } = req.body;
