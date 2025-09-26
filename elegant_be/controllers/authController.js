@@ -47,20 +47,19 @@ exports.register = async (req, res) => {
     });
 
     // === Email verification ===
-    // const emailToken = crypto.randomBytes(32).toString('hex'); // unique token
-    // const emailExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-    // await db.query(
-    //   'INSERT INTO email_verifications (user_id, token, expires_at) VALUES (?, ?, ?)',
-    //   [userId, emailToken, emailExpires]
-    // );
+    const emailToken = crypto.randomBytes(32).toString('hex'); // unique token
+    const emailExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    await db.query(
+      'INSERT INTO email_verifications (user_id, token, expires_at) VALUES (?, ?, ?)',
+      [userId, emailToken, emailExpires]
+    );
  
-    // const verifyLink = `${process.env.FRONTEND_URL}/verify-email?token=${emailToken}`;
-    //   await sendMail(
-    //   email,
-    //   'Verify your email',
-    //   `Hi ${name},\n\nClick the link below to verify your email:\n${verifyLink}`
-    // );
-
+    const verifyLink = `${process.env.FRONTEND_URL}/verify-email?token=${emailToken}`;
+  await sendMail(
+  email,
+  'Verify your email',
+  `<p>Hi ${name},</p><p>Click below to verify:</p><a href="${verifyLink}">${verifyLink}</a>`
+);
     res.status(201).json({
       success: true,
       message: 'User registered. OTP sent to mobile and verification email sent.',
