@@ -5,6 +5,10 @@ const sendResponse = (res, status, success, message, data = null) => {
     return res.status(status).json({ success, message, data });
 };
 
+const buildFullAddress = ({ flat_no, street, city, state, pincode }) => {
+    return `${flat_no ? flat_no + ', ' : ''}${street ? street + ', ' : ''}${city ? city + ', ' : ''}${state ? state + ', ' : ''}${pincode || ''}`.trim();
+};
+
 
 exports.getAddressesByUserId = async (req, res) => {
     try {
@@ -39,33 +43,29 @@ exports.getAddressesByUserId = async (req, res) => {
 // Add Address
 exports.addAddress = async (req, res) => {
     try {
-        const { title, address, is_default } = req.body;
+        const { title, street, flat_no, pincode, city, state, mobile_no, is_default } = req.body;
         const userId = req.user.id;
 
-        if (!title || !address) {
-            return sendResponse(res, 400, false, "Title and address are required");
+        if (!title || !street || !city || !state || !pincode || !mobile_no) {
+            return sendResponse(res, 400, false, "All required fields must be filled");
         }
 
-        // Convert to 1/0
         const defaultFlag = Number(is_default) === 1 ? 1 : 0;
 
-        // If defaultFlag = 1, remove old default
         if (defaultFlag === 1) {
-            await db.query(
-                "UPDATE addresses SET is_default = 0 WHERE user_id = ?",
-                [userId]
-            );
+            await db.query("UPDATE addresses SET is_default = 0 WHERE user_id = ?", [userId]);
         }
 
+        const full_address = buildFullAddress({ flat_no, street, city, state, pincode });
+
         const [result] = await db.query(
-            "INSERT INTO addresses (user_id, title, address, is_default) VALUES (?, ?, ?, ?)",
-            [userId, title, address, defaultFlag]
+            `INSERT INTO addresses 
+            (user_id, title, street, flat_no, pincode, city, state, mobile_no, full_address, is_default) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [userId, title, street, flat_no, pincode, city, state, mobile_no, full_address, defaultFlag]
         );
 
-        const [newAddress] = await db.query(
-            "SELECT * FROM addresses WHERE id = ?",
-            [result.insertId]
-        );
+        const [newAddress] = await db.query("SELECT * FROM addresses WHERE id = ?", [result.insertId]);
 
         return sendResponse(res, 201, true, "Address added successfully", newAddress[0]);
     } catch (error) {
@@ -95,41 +95,47 @@ exports.getAddresses = async (req, res) => {
 exports.updateAddress = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, address, is_default } = req.body;
+        const { title, street, flat_no, pincode, city, state, mobile_no, is_default } = req.body;
         const userId = req.user.id;
 
-        const [existing] = await db.query(
-            "SELECT * FROM addresses WHERE id = ? AND user_id = ?",
-            [id, userId]
-        );
+        const [existing] = await db.query("SELECT * FROM addresses WHERE id = ? AND user_id = ?", [id, userId]);
         if (existing.length === 0) {
             return sendResponse(res, 404, false, "Address not found");
         }
 
         const defaultFlag = Number(is_default) === 1 ? 1 : 0;
-
         if (defaultFlag === 1) {
-            await db.query(
-                "UPDATE addresses SET is_default = 0 WHERE user_id = ?",
-                [userId]
-            );
+            await db.query("UPDATE addresses SET is_default = 0 WHERE user_id = ?", [userId]);
         }
 
+        const full_address = buildFullAddress({
+            flat_no: flat_no || existing[0].flat_no,
+            street: street || existing[0].street,
+            city: city || existing[0].city,
+            state: state || existing[0].state,
+            pincode: pincode || existing[0].pincode
+        });
+
         await db.query(
-            "UPDATE addresses SET title = ?, address = ?, is_default = ? WHERE id = ? AND user_id = ?",
+            `UPDATE addresses 
+             SET title = ?, street = ?, flat_no = ?, pincode = ?, city = ?, state = ?, mobile_no = ?, full_address = ?, is_default = ? 
+             WHERE id = ? AND user_id = ?`,
             [
                 title || existing[0].title,
-                address || existing[0].address,
+                street || existing[0].street,
+                flat_no || existing[0].flat_no,
+                pincode || existing[0].pincode,
+                city || existing[0].city,
+                state || existing[0].state,
+                mobile_no || existing[0].mobile_no,
+                full_address,
                 defaultFlag,
                 id,
                 userId
             ]
         );
 
-        const [updated] = await db.query(
-            "SELECT * FROM addresses WHERE id = ?",
-            [id]
-        );
+        const [updated] = await db.query("SELECT * FROM addresses WHERE id = ?", [id]);
 
         return sendResponse(res, 200, true, "Address updated successfully", updated[0]);
     } catch (error) {
@@ -137,6 +143,7 @@ exports.updateAddress = async (req, res) => {
         return sendResponse(res, 500, false, "Server error");
     }
 };
+
 
 // Delete Address
 exports.deleteAddress = async (req, res) => {
