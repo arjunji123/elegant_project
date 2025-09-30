@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middlewares/authMiddleware');
-const { createOrder, verifyPayment, getOrders, getUserOrders } = require('../controllers/orderController');
+const { createOrder, verifyPayment, getOrders, getUserOrders, searchUserOrders } = require('../controllers/orderController');
 
 
 // ✅ Create a new order with full details
