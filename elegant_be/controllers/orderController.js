@@ -271,3 +271,97 @@ exports.getUserOrders = async (req, res) => {
     res.status(500).json({ success: false, message: "Server Error" });
   }
 };
+
+exports.searchUserOrders = async (req, res) => {
+  const userId = req.user.id;
+  const { keyword } = req.query; // keyword from query string
+
+  try {
+    if (!keyword || keyword.trim() === "") {
+      return res.status(400).json({ success: false, message: "Keyword is required" });
+    }
+
+    // ✅ Fetch orders matching the keyword
+    const [orders] = await db.query(
+      `SELECT DISTINCT 
+          o.id AS order_id,
+          o.subtotal,
+          o.coupon_id,
+          o.coupon_discount,
+          o.delivery_fee,
+          o.total_amount,
+          o.payment_status,
+          o.razorpay_order_id,
+          o.address_snapshot,
+          o.created_at
+       FROM orders o
+       INNER JOIN order_items oi ON oi.order_id = o.id
+       INNER JOIN products p ON p.id = oi.product_id
+       WHERE o.user_id = ? 
+         AND o.payment_status = 'success'
+         AND (
+              p.name LIKE ? OR
+              oi.size LIKE ? OR
+              oi.color LIKE ? OR
+              o.id LIKE ?
+         )
+       ORDER BY o.created_at DESC`,
+      [userId, `%${keyword}%`, `%${keyword}%`, `%${keyword}%`, `%${keyword}%`]
+    );
+
+    if (!orders.length) {
+      return res.json({ success: true, orders: [] });
+    }
+
+    // ✅ Get all order IDs
+    const orderIds = orders.map(o => o.order_id);
+
+    // ✅ Fetch related items
+    const [items] = await db.query(
+      `SELECT 
+          oi.order_id,
+          oi.product_id,
+          p.name AS product_name,
+          oi.image_url,
+          oi.size,
+          oi.color,
+          oi.quantity,
+          oi.price
+       FROM order_items oi
+       INNER JOIN products p ON p.id = oi.product_id
+       WHERE oi.order_id IN (?)
+       ORDER BY oi.order_id DESC`,
+      [orderIds]
+    );
+
+    // ✅ Map products to orders
+    const orderMap = {};
+    orders.forEach(order => {
+      orderMap[order.order_id] = {
+        ...order,
+        address: JSON.parse(order.address_snapshot || "{}"),
+        products: []
+      };
+      delete orderMap[order.order_id].address_snapshot;
+    });
+
+    items.forEach(item => {
+      orderMap[item.order_id].products.push({
+        product_id: item.product_id,
+        name: item.product_name,
+        image: item.image_url,
+        size: item.size,
+        color: item.color,
+        quantity: item.quantity,
+        price: item.price
+      });
+    });
+
+    const finalOrders = Object.values(orderMap);
+
+    res.json({ success: true, orders: finalOrders });
+  } catch (error) {
+    console.error("Search User Orders Error:", error);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
+};

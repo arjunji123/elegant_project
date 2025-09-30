@@ -15,4 +15,9 @@ router.get("/orders/:id", authMiddleware, getOrders);
 
 router.get("/activeOrders", authMiddleware, getUserOrders);
 
+// 🔍 Search orders by keyword
+router.get("/searchOrders", authMiddleware, searchUserOrders);
+
+
+
 module.exports = router;
