@@ -58,12 +58,15 @@ exports.register = async (req, res) => {
 
     // Send email in its own try-catch
     try {
-      await sendMail(
-        email,
-        'Verify your email',
-        `Hi ${name}, click this link to verify: ${verifyLink}`, // plain text
-        `<p>Hi ${name},</p><p>Click below to verify your email:</p><a href="${verifyLink}">${verifyLink}</a>`
-      );
+     await sendMail(
+  email,
+  'Verify your email',
+  '', 
+  `<p>Hi ${name},</p>
+   <p>Click below to verify your email:</p>
+   <p><a href="${verifyLink}" target="_blank" style="color:blue;">Verify Email</a></p>`
+);
+
       console.log('✅ Verification email sent');
     } catch (emailErr) {
       console.error('❌ Failed to send verification email:', emailErr.message);
@@ -448,10 +451,6 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-
-
-
-
 exports.verifyMobileOtp = async (req, res) => {
   const { phone, otp } = req.body;
   try {
@@ -504,7 +503,6 @@ exports.verifyMobileOtp = async (req, res) => {
   }
 };
 
-
 exports.resendMobileOtp = async (req, res) => {
   const { phone } = req.body;
   try {
@@ -542,5 +540,31 @@ exports.resendMobileOtp = async (req, res) => {
   } catch (err) {
     console.error('Resend OTP error:', err);
     res.status(500).json({ success: false, message: 'Failed to resend OTP' });
+  }
+};
+
+
+exports.contactUs = async (req, res) => {
+  const { email, message } = req.body;
+
+  if (!email || !message) {
+    return res.status(400).json({ message: 'Email and message are required' });
+  }
+
+  try {
+    // Yeh aapke admin email par jayega
+    await sendMail(
+      process.env.FROM_EMAIL,
+      'New Contact Us Message',
+      `Message from: ${email}\n\n${message}`,
+      `<p><strong>From:</strong> ${email}</p>
+       <p><strong>Message:</strong></p>
+       <p>${message}</p>`
+    );
+
+    res.status(200).json({ success: true, message: 'Message sent successfully!' });
+  } catch (err) {
+    console.error('Contact form error:', err);
+    res.status(500).json({ success: false, message: 'Failed to send message', error: err.message });
   }
 };
