@@ -6,6 +6,8 @@ const sendMail = require('../utils/sendMail');
 const twilio = require('twilio');
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const crypto = require('crypto')
+const sgMail = require('@sendgrid/mail');
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 exports.register = async (req, res) => {
   const { name, email, phone, password } = req.body;
@@ -553,14 +555,18 @@ exports.contactUs = async (req, res) => {
 
   try {
     // Yeh aapke admin email par jayega
-    await sendMail(
-      process.env.FROM_EMAIL,
-      'New Contact Us Message',
-      `Message from: ${email}\n\n${message}`,
-      `<p><strong>From:</strong> ${email}</p>
-       <p><strong>Message:</strong></p>
-       <p>${message}</p>`
-    );
+   const msg = {
+  to: "yourpersonal@gmail.com",   // apna personal email test ke liye
+  from: process.env.FROM_EMAIL,   // verified sender hona chahiye
+  subject: "Test Email",
+  text: "Hello, this is a test email from SendGrid.",
+  html: "<strong>Hello, this is a test email from SendGrid.</strong>",
+};
+
+sgMail
+  .send(msg)
+  .then(() => console.log("✅ Test email sent"))
+  .catch((err) => console.error("❌ Error:", err.response?.body || err.message));
 
     res.status(200).json({ success: true, message: 'Message sent successfully!' });
   } catch (err) {
