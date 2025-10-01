@@ -556,7 +556,7 @@ exports.contactUs = async (req, res) => {
   try {
     // Yeh aapke admin email par jayega
    const msg = {
-  to: "yourpersonal@gmail.com",   // apna personal email test ke liye
+  to: email,   // apna personal email test ke liye
   from: process.env.FROM_EMAIL,   // verified sender hona chahiye
   subject: "Test Email",
   text: "Hello, this is a test email from SendGrid.",
