@@ -379,18 +379,18 @@ exports.forgotPassword = async (req, res) => {
 };
 
 exports.verifyForgotOtp = async (req, res) => {
-  const { email, otp } = req.body;
+  const { phone, otp } = req.body;
 
   try {
-    // Step 1: Check if user exists
-    const [users] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+    // Check if user exists
+    const [users] = await db.query('SELECT id FROM users WHERE phone = ?', [phone]);
     if (users.length === 0) {
-      return res.status(404).json({ message: 'Invalid email' });
+      return res.status(404).json({ message: 'Invalid phone number' });
     }
 
     const userId = users[0].id;
 
-    // Step 2: Get latest OTP for this user
+    // Get latest OTP for this user
     const [rows] = await db.query(
       'SELECT otp, expires_at FROM user_otps WHERE user_id = ? ORDER BY created_at DESC LIMIT 1',
       [userId]
@@ -402,12 +402,12 @@ exports.verifyForgotOtp = async (req, res) => {
 
     const { otp: dbOtp, expires_at } = rows[0];
 
-    // Step 3: Compare OTP
+    // Compare OTP
     if (dbOtp !== otp) {
       return res.status(400).json({ message: 'Invalid OTP' });
     }
 
-    // Step 4: Check if OTP is expired
+    // Check if OTP is expired
     if (new Date() > new Date(expires_at)) {
       return res.status(400).json({ message: 'OTP expired' });
     }
@@ -421,25 +421,25 @@ exports.verifyForgotOtp = async (req, res) => {
 };
 
 exports.resetPassword = async (req, res) => {
-  const { email, newPassword } = req.body;
+  const { phone, newPassword } = req.body;
 
   try {
-    // 1. Check if the user exists
-    const [users] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+    // Check if user exists
+    const [users] = await db.query('SELECT id FROM users WHERE phone = ?', [phone]);
     if (users.length === 0) {
-      return res.status(404).json({ message: 'Invalid email address' });
+      return res.status(404).json({ message: 'Invalid phone number' });
     }
 
     const userId = users[0].id;
 
-    // 2. Hash new password and update user
+    // Hash new password and update
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await db.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId]);
 
     res.status(200).json({
       success: true,
       message: 'Password has been reset successfully.',
-      email: email,
+      phone: phone,
     });
 
   } catch (error) {
@@ -447,7 +447,6 @@ exports.resetPassword = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
-
 
 
 
