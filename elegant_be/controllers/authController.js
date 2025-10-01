@@ -316,16 +316,16 @@ exports.login = async (req, res) => {
 };
 
 exports.forgotPassword = async (req, res) => {
-  const { email } = req.body;
+  const { phone } = req.body;
 
   try {
-    // Check if user exists
-    const [users] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+    // Check if user exists by phone
+    const [users] = await db.query('SELECT id FROM users WHERE phone = ?', [phone]);
 
     if (users.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Email not registered',
+        message: 'Phone number not registered',
         data: null
       });
     }
@@ -334,9 +334,9 @@ exports.forgotPassword = async (req, res) => {
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // expires in 5 mins
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min expiry
 
-    // Store OTP - update if already exists
+    // Store OTP in DB
     await db.query(
       `
       INSERT INTO user_otps (user_id, otp, expires_at)
@@ -349,17 +349,21 @@ exports.forgotPassword = async (req, res) => {
       [userId, otp, expiresAt]
     );
 
-    // Send OTP to email
-    await sendMail(email, 'Reset Your Password', `Your OTP for password reset is ${otp}. This OTP will expire in 5 minutes.`);
+    // Send OTP via Twilio
+    await client.messages.create({
+      body: `Your password reset OTP is ${otp}. It will expire in 5 minutes.`,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: `+91${phone}`
+    });
 
     // Success response
     return res.status(200).json({
       success: true,
-      message: 'OTP sent successfully to your email.',
+      message: 'OTP sent successfully to your mobile number.',
       data: {
-        email,
+        phone,
         otpSent: true,
-        expiresIn: 300 // in seconds (5 mins)
+        expiresIn: 300 // 5 minutes
       }
     });
 
