@@ -557,7 +557,7 @@ exports.contactUs = async (req, res) => {
     // Ye message aapke admin/support email par jayega
     const msg = {
       to: process.env.FROM_EMAIL,  // ✅ admin/support email (verified in SendGrid)
-      from: process.env.FROM_EMAIL, // ✅ verified sender email (SendGrid me added)
+      from: process.env.ADMIN_EMAIL, // ✅ verified sender email (SendGrid me added)
       subject: "New Contact Us Message",
       text: `Message from: ${email}\n\n${message}`,
       html: `<p><strong>From:</strong> ${email}</p><p>${message}</p>`
