@@ -554,23 +554,20 @@ exports.contactUs = async (req, res) => {
   }
 
   try {
-    // Yeh aapke admin email par jayega
-   const msg = {
-  to: email,   // apna personal email test ke liye
-  from: process.env.FROM_EMAIL,   // verified sender hona chahiye
-  subject: "Test Email",
-  text: "Hello, this is a test email from SendGrid.",
-  html: "<strong>Hello, this is a test email from SendGrid.</strong>",
-};
+    // Ye message aapke admin/support email par jayega
+    const msg = {
+      to: process.env.FROM_EMAIL,  // ✅ admin/support email (verified in SendGrid)
+      from: process.env.FROM_EMAIL, // ✅ verified sender email (SendGrid me added)
+      subject: "New Contact Us Message",
+      text: `Message from: ${email}\n\n${message}`,
+      html: `<p><strong>From:</strong> ${email}</p><p>${message}</p>`
+    };
 
-sgMail
-  .send(msg)
-  .then(() => console.log("✅ Test email sent"))
-  .catch((err) => console.error("❌ Error:", err.response?.body || err.message));
+    await sgMail.send(msg);
 
     res.status(200).json({ success: true, message: 'Message sent successfully!' });
   } catch (err) {
-    console.error('Contact form error:', err);
+    console.error('❌ Contact form error:', err.response?.body || err.message);
     res.status(500).json({ success: false, message: 'Failed to send message', error: err.message });
   }
 };
