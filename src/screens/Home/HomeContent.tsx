@@ -103,7 +103,7 @@ setName(data.data.name)
           </View>
         </View>
 
-        <TouchableOpacity style={styles.notificationButton}>
+        <TouchableOpacity style={styles.notificationButton} onPress={()=>navigation.navigate('CartScreen')}>
           {/* <Image
       source={cart}
       style={styles.notificationIcon}
@@ -158,7 +158,9 @@ setName(data.data.name)
         imageStyle={styles.imageStyle}
       >
         <View style={styles.overlay}>
+          <TouchableOpacity onPress={() => navigation.navigate('DiscountProductScreen')}>
           <Text style={styles.discountText}>50% Off</Text>
+          </TouchableOpacity>
           <Text style={styles.descriptionText}>On everything today</Text>
           <Text style={styles.codeText}>With code:FSCREATION</Text>
           <TouchableOpacity style={styles.button}>
@@ -349,16 +351,25 @@ cardContainer: {
     color: '#666666', // A slightly lighter black for the code
     marginBottom: 8,
   },
-  button: {
-    width:70,
-    backgroundColor: '#704F38', // A brown color similar to the image
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 25,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
+//   overlay: {
+//   marginTop: 40,
+//   marginBottom: 40,
+//   marginHorizontal: 15,
+//   alignItems: 'center', // 🔹 Center all children horizontally
+// },
+button: {
+  width: 100, // optional: make it a bit wider if needed
+  backgroundColor: '#704F38',
+  paddingVertical: 8,
+  borderRadius: 25,
+  justifyContent: 'center',
+  alignItems: 'center', // 🔹 Ensure text is centered
+},
+buttonText: {
+  color: '#fff',
+  fontSize: 12, // slightly bigger
+  fontWeight: 'bold',
+  textAlign: 'center',
+},
+
 });

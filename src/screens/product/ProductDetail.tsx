@@ -14,6 +14,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
 import Skeleton, { SkeletonCard, SkeletonText } from "../../components/Skeleton";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useToast } from "../../Context/ToastContext";
 
 const { width } = Dimensions.get("window");
 
@@ -28,6 +29,8 @@ const imageUpdate = [
 const ProductDetail = ({ route, navigation }) => {
     const [selectedSize, setSelectedSize] = useState("M");
     const [product, setProduct] = useState<any>(null);
+const [cart, setCart] = useState<{ productId: string | null; size: string; color: string | null }[]>([]);
+
     const [recommeded, setrecommeded] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [categoriesId, setCategoriesId] = useState()
@@ -38,6 +41,9 @@ const ProductDetail = ({ route, navigation }) => {
     const truncated = words.slice(0, wordLimit).join(" ");
     const isLong = words.length > wordLimit;
     const [selectedColor, setSelectedColor] = useState<string | null>(null);
+    const [selectedCartColor, setSelectedCartColor] = useState<string | null>(null);
+  const { showToast } = useToast();
+
     const { productId, token, setProductId } = useAuth();
     // 🔥 slider states
     const [selectedIndex, setSelectedIndex] = useState(0);
@@ -105,6 +111,7 @@ const ProductDetail = ({ route, navigation }) => {
                     setLoading(false);
                     if (data.data.colors && data.data.colors.length > 0) {
                         setSelectedColor(data.data.colors[0].color_code);
+                        setSelectedCartColor(data.data.colors[0].color_name)
                     }
 
                 }
@@ -140,6 +147,83 @@ const ProductDetail = ({ route, navigation }) => {
             console.error("Categories fetch error:", error);
         }
     };
+    useEffect(() => {
+        return () => {
+            setCart([]);
+        };
+    }, []);
+    
+
+
+    console.log(cart, "isInCartisInCart")
+    const PushToCart = async () => {
+       
+        try {
+            const res = await fetch(
+                `https://elegant-project.onrender.com/api/cart/add`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        productId: productId,
+                        size: selectedSize,
+                        color: selectedCartColor
+                    }),
+                }
+
+
+            );
+
+            const text = await res.text();
+            let data = JSON.parse(text);
+            console.log(data, 'datadata')
+            if (data.success) {
+                // 👇 Make sure we push an object with productId, size, and color
+                setCart((prev) => [
+                    ...prev,
+                    {
+                        productId: productId,
+                        size: selectedSize,
+                        color: selectedCartColor,
+                    },
+                ]);
+            }
+        } catch (error) {
+            console.log('Error in Updating data', error)
+        }
+    }
+  const handleAddToCart = () => {
+    if (!selectedSize || !selectedColor) {
+      showToast("Please select size and color","error");
+      return;
+    }
+
+    setCart((prevCart) => {
+    const index = prevCart.findIndex(
+      (item) =>
+        item.productId === productId &&
+        item.size === selectedSize &&
+        item.color === selectedColor
+    );
+       if (index !== -1) {
+      // If already in cart, don't increase quantity here (just return same cart)
+      return prevCart;
+    }
+      return [...prevCart, { productId, size: selectedSize, color: selectedColor }];
+    });
+  };
+
+  const alreadyInCart = Array.isArray(cart) && cart.some(
+    (item) =>
+      item.productId === productId &&
+      item.size === selectedSize &&
+      item.color === selectedColor
+  );
+
+  const buttonText = alreadyInCart ? "Go to Cart" : "Add to Cart";
 
     useEffect(() => {
         getRecommedProduct(categoriesId);
@@ -156,7 +240,6 @@ const ProductDetail = ({ route, navigation }) => {
         });
     };
     const images = product?.images && product.images.length > 0 ? product.images : imageUpdate;
-    console.log(productId, "product?.colors?")
     // 🔥 New toggle function for recommended product
     const toggleRecommendedFavorite = async (itemId: string, currentStatus: number) => {
         const newStatus = currentStatus === 1 ? 0 : 1;
@@ -219,6 +302,15 @@ const ProductDetail = ({ route, navigation }) => {
             </>
         );
     }
+const CartManager = ()=>{
+    if (alreadyInCart) {
+        navigation.navigate("CartScreen"); // go to cart
+      } else {
+        handleAddToCart();
+      }
+    
+}
+
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
 
@@ -364,7 +456,7 @@ const ProductDetail = ({ route, navigation }) => {
                                             styles.colorWrapper,
                                             selectedColor === color.color_code && styles.colorWrapperActive,
                                         ]}
-                                        onPress={() => setSelectedColor(color.color_code)}
+                                        onPress={() => { setSelectedColor(color.color_code), setSelectedCartColor(color.color_name) }}
                                     >
                                         <View
                                             style={[
@@ -438,16 +530,16 @@ const ProductDetail = ({ route, navigation }) => {
                                 {product?.price}
                             </Text>
                         </View>
+{alreadyInCart ?  <TouchableOpacity style={styles.addToCartBtn} onPress={()=> navigation.navigate("CartScreen")}>
+                            <Text style={styles.addToCartText}> Go to Cart</Text>
+                        </TouchableOpacity>:
 
-                        <TouchableOpacity style={styles.addToCartBtn}>
-                            <Text style={styles.addToCartText}>Add to Cart</Text>
-                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.addToCartBtn} onPress={() => { PushToCart(), CartManager() }}>
+                            <Text style={styles.addToCartText}>Add to cart</Text>
+                        </TouchableOpacity>}
                     </View>
-
                 </ScrollView>
-
-
-
             </View>
         </SafeAreaView>
 

@@ -3,37 +3,29 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'rea
 import { useAuth } from "../../Context/AuthContext";
 
 const screenWidth = Dimensions.get('window').width;
-const itemSize = screenWidth / 5 - 10; // adjust for padding/margin
 
 const CategoriesHome = ({ navigation }) => {
-    const { user,setCategoriesName } = useAuth();
-  
+  const { setCategoriesName } = useAuth();
   const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     const getCategories = async () => {
       try {
-        const res = await fetch(`https://elegant-project.onrender.com/api/categories`, {
-          method: "GET",
-        });
-
-        const text = await res.text();
-
-        const data = JSON.parse(text);
-        console.log("Response text:", data);
-
-
-
+        const res = await fetch(`https://elegant-project.onrender.com/api/categories`, { method: "GET" });
+        const data = await res.json();
         if (data.success && data.data) {
-          setCategories(data.data)
+          setCategories(data.data.slice(0, 5)); // show max 5 categories
         }
       } catch (error) {
-        console.error("Error fetching user:", error);
+        console.error("Error fetching categories:", error);
       }
     };
-    getCategories()
+    getCategories();
+  }, []);
 
-  }, [])
+  // Calculate width so all items fit in one row
+  const itemWidth = screenWidth / (categories.length || 1) - 15; // 15 for padding/margin
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -44,22 +36,22 @@ const CategoriesHome = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Categories with wrapping */}
+      {/* Categories Row */}
       <View style={styles.categoriesRow}>
-        {categories && categories.slice(0,5).map((item) => (
+        {categories.map((item) => (
           <TouchableOpacity
             key={item.id}
-            onPress={() => {setCategoriesName(item.name),navigation.navigate("SubCategoriesScreen")}}
+            onPress={() => {
+              setCategoriesName(item.name);
+              navigation.navigate("SubCategoriesScreen");
+            }}
+            style={[styles.categoryContainer, { width: itemWidth }]}
           >
-            <View key={item.id} style={styles.categoryContainer}>
-              <View style={styles.iconWrapper}>
-                <Image source={{uri:item.icon}} style={styles.iconImage} resizeMode="contain" />
-              </View>
-              <TouchableOpacity >
-              <Text style={styles.categoryName}>{item.name}</Text>
-
-              </TouchableOpacity>
+            <View style={styles.iconWrapper}>
+              <Image source={{ uri: item.icon }} style={styles.iconImage} resizeMode="contain" />
             </View>
+            <Text style={styles.categoryName} numberOfLines={1} 
+  ellipsizeMode="tail">{item.name}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -74,16 +66,8 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   title: { fontSize: 18, fontWeight: '600', color: '#000' },
   seeAll: { fontSize: 14, color: '#6B4226' },
-  categoriesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around'
-  },
-  categoryContainer: {
-    alignItems: 'center',
-    marginVertical: 10,
-    width: itemSize
-  },
+  categoriesRow: { flexDirection: 'row' }, // one row
+  categoryContainer: { alignItems: 'center', marginVertical: 8 },
   iconWrapper: {
     backgroundColor: '#F7F2ED',
     padding: 12,
@@ -92,11 +76,8 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
-  iconImage: {
-    width: 28,
-    height: 28
-  },
-  categoryName: { fontSize: 12, color: '#6B4226', textAlign: 'center' },
+  iconImage: { width: 28, height: 28 },
+  categoryName: { fontSize: 11, color: '#6B4226', textAlign: 'center', fontWeight:500 },
 });

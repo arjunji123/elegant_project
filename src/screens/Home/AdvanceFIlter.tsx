@@ -23,11 +23,11 @@ const SORT_OPTIONS = [
         name: 'Price: Low to High'
     },
     {
-        id: "newest_old",
+        id: "newest",
         name: 'Newest to Old'
     },
     {
-        id: 'old_new',
+        id: 'oldest',
         name: 'Old to New'
     },
 ];
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
         alignItems: 'center',
         backgroundColor: '#fff',
-        margin: 5
+        margin: 2
     },
     ratingChipSelected: {
         backgroundColor: '#000000',

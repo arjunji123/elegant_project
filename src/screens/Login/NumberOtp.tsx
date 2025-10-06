@@ -1,47 +1,39 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
   TextInput,
-  StyleSheet
-} from 'react-native';
-import { OtpScreenProps } from '../../types/types';
-import Button from '../../components/Button';
-import { useAuth } from '../../Context/AuthContext';
-import { useToast } from '../../Context/ToastContext';
-import Header from '../../components/Header';
+  StyleSheet,
+} from "react-native";
+import Button from "../../components/Button";
+import { useAuth } from "../../Context/AuthContext";
+import { useToast } from "../../Context/ToastContext";
+import Header from "../../components/Header";
 
-const OTPScreen: React.FC<OtpScreenProps> = ({route, navigation }) => {
-    const { phone } = route.params; // comes from LoginScreen
-
+const Numberotp = ({ route, navigation }) => {
+  const { phone } = route.params; 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [timer, setTimer] = useState(57);
   const inputs = useRef<(TextInput | null)[]>([]);
-  const { signupemail,login  } = useAuth();
   const [resending, setResending] = useState(false);
-const { showToast } = useToast();
+  const [timer, setTimer] = useState(60); // 1 min
 
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const { showToast } = useToast();
+
+  // ⏱ Countdown timer
   useEffect(() => {
-    const countdown = setInterval(() => {
-      setTimer((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(countdown);
-  }, []);
-
-  const handleGoBack = () => {
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-    } else {
-      navigation.navigate('SignUpScreen');
+    if (timer > 0) {
+      const interval = setInterval(() => setTimer((t) => t - 1), 1000);
+      return () => clearInterval(interval);
     }
-  };
+  }, [timer]);
 
   const handleChange = (text: string, index: number) => {
     if (/^\d?$/.test(text)) {
       const newOtp = [...otp];
       newOtp[index] = text;
       setOtp(newOtp);
-      console.log(newOtp,otp,"sonal123");
       if (text && index < 5) {
         inputs.current[index + 1]?.focus();
       }
@@ -50,32 +42,45 @@ const { showToast } = useToast();
       }
     }
   };
+
   const updatedOtp = otp.join('');
 
-
-  const handleSubmit= async () => {
+  // ✅ Verify OTP API
+  const handleVerifyOtp = async () => {
+    if (!updatedOtp) {
+      showToast("Please enter OTP", "warning");
+      return;
+    }
+    setLoading(true);
     try {
-      const res = await fetch("https://elegant-project.onrender.com/api/verify-mobile-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({phone ,  otp: updatedOtp }),
-      });
-      const data = await res.json();
-      
-        if (data.success && data.user) {
-          login(data.user, data.token);
-          navigation.replace("HomePageScreen");
+      const response = await fetch(
+        "https://elegant-project.onrender.com/api/verify-mobile-otp",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone, otp: updatedOtp }),
         }
-        else {
-          showToast("Invalid OTP, Please try again.", "error")
-        }      
+      );
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        showToast("Login Successful", "success");
+        login(data.user, data.token);
+        navigation.replace("HomePageScreen");
+      } else {
+        showToast(data.message || "Invalid OTP", "error");
+      }
     } catch (error) {
-      showToast( "Something went wrong, please try again.","error")
-     
+      console.error("Verify OTP error:", error);
+      showToast("Something went wrong", "error");
+    } finally {
+      setLoading(false);
     }
   };
 
-   const handleResendOtp = async () => {
+  // ✅ Resend OTP – only if timer is 0
+  const handleResendOtp = async () => {
     if (timer > 0) return; // prevent clicking before 1 min
     try {
       setResending(true);
@@ -97,16 +102,21 @@ const { showToast } = useToast();
       setResending(false);
     }
   };
-console.log(phone,"phonephone")
+
+  const handleGoBack = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate('SignUpScreen');
+    }
+  };
+
   return (
     <View style={styles.container}>
-      {/* Header */}
-       <Header text={"Verify OTP"} onPress={handleGoBack}/>
+      <Header text={"Verify OTP"} onPress={handleGoBack} />
 
-    
-      {/* Description */}
       <Text style={styles.labelText}>
-        Enter your OTP which has been sent to your email and completely verify your account.
+        Enter the OTP sent to your phone to verify your account.
       </Text>
 
       {/* OTP Box */}
@@ -125,15 +135,21 @@ console.log(phone,"phonephone")
           ))}
         </View>
         <Text style={styles.codeInfo}>A code has been sent to your phone</Text>
-        <Text style={styles.resendText} onPress={handleResendOtp} >
-          Resend in <Text style={styles.timerText}>00:{timer < 10 ? `0${timer}` : timer}</Text>
-        </Text>
+
+        {timer > 0 ? (
+          <Text style={styles.resendText}>
+            Resend in <Text style={styles.timerText}>00:{timer < 10 ? `0${timer}` : timer}</Text>
+          </Text>
+        ) : (
+          <Text style={[styles.resendText, { color: "#007DFC" }]} onPress={handleResendOtp}>
+            Resend OTP
+          </Text>
+        )}
       </View>
 
-      {/* Confirm Button */}
       <Button
         text="Confirm"
-        onPress={handleSubmit}
+        onPress={handleVerifyOtp}
         bgColor="#704f38"
         textColor="#ffffff"
       />
@@ -141,34 +157,11 @@ console.log(phone,"phonephone")
   );
 };
 
-export default OTPScreen;
-
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
     backgroundColor: '#fff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  backButton: {
-    padding: 8,
-  },
-  backIcon: {
-    width: 24,
-    height: 24,
-    resizeMode: 'contain',
-  },
-  title: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#000',
-    marginRight: 32,
   },
   labelText: {
     fontSize: 14,
@@ -177,7 +170,6 @@ export const styles = StyleSheet.create({
     marginBottom: 30,
   },
   otpBox: {
-
     paddingVertical: 20,
     alignItems: 'center',
     marginBottom: 30,
@@ -190,26 +182,25 @@ export const styles = StyleSheet.create({
   },
   otpInput: {
     borderBottomWidth: 1,
-    borderColor:"#838383",
+    borderColor: "#838383",
     width: 50,
-    // color:"#838383",
-    // height: 50,
     textAlign: 'center',
     fontSize: 25,
   },
   codeInfo: {
     fontSize: 14,
     color: '#777',
-    marginTop:10,
+    marginTop: 10,
     marginBottom: 4,
   },
   resendText: {
     fontSize: 16,
-    marginTop:10,
-    color: '#007DFC',
+    marginTop: 10,
   },
   timerText: {
     color: '#007DFC',
     fontWeight: '500',
   },
 });
+
+export default Numberotp;

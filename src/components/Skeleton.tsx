@@ -69,7 +69,7 @@ export const SkeletonCircle = ({ size = 50, style = {} }) => (
 );
 
 // Text skeleton (long line)
-export const SkeletonText = ({ width = "80%", height=20, style = {} }) => (
+export const SkeletonText = ({ width = "90%", height=20, style = {} }) => (
   <Skeleton width={width} height={height} borderRadius={4} style={style} />
 );
 

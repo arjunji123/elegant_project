@@ -55,48 +55,65 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   }, []);
 
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      showToast("Please fill all required fields", "warning");
-      return;
-    }
-    setLoading(true);
-    try {
-      const response = await fetch("https://elegant-project.onrender.com/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+const handleLogin = async () => {
+  if (!email && !phone) {
+    showToast("Please enter email or mobile", "warning");
+    return;
+  }
+  if (email && !password) {
+    showToast("Please enter password for email login", "warning");
+    return;
+  }
+     setLoading(true);
+  try {
+    const response = await fetch("https://elegant-project.onrender.com/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(
+        email
+          ? { email, password } // email login
+          : { phone } // mobile login
+      ),
+    });
 
-      const data = await response.json();
-      console.log("Login response:", response);
+    const data = await response.json();
+    console.log("Login response:", data);
 
-
-      if (response.ok) {
-        // navigation.replace("HomePageScreen"); 
+    if (response.ok && data.success) {
+      if (data.mode === "email_login") {
+        // ✅ Direct login
         if (rememberMe) {
           await Keychain.setGenericPassword(email, password);
-
         } else {
-          await Keychain.resetGenericPassword(); // clears stored data
+          await Keychain.resetGenericPassword();
         }
         showToast("Login Successful", "success");
         login(data.user, data.token);
-      } else {
-        showToast(data.message || "Login Failed", "error");
+        navigation.replace("HomePageScreen");
+      } else if (data.mode === "mobile_otp") {
+        // ✅ OTP Flow
+        showToast(data.message, "success");
+        navigation.navigate("NumberotpScreen", { phone: data.phone });
       }
-    } catch (error) {
-      console.error("Login error:", error);
-      showToast("Login Failed", "error");
-    } finally {
-      setLoading(false);
+    } else {
+      showToast(data.message || "Login Failed", "error");
     }
-  };
+  } catch (error) {
+    console.error("Login error:", error);
+    showToast("Login Failed", "error");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handlePasswordVisibility = () => {
     setShowPassword(!showPassword);
     setRightIcon(showPassword ? 'eye' : 'eye-off'); // Toggle icon based on new state
   };
+  const clearEmailPassword = () => {
+  setEmail("");
+  setPassword("");
+};
   return (
 
     <KeyboardAwareScrollView
@@ -117,6 +134,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             style={styles.input}
             value={phone}
             onChangeText={setPhone}
+            onFocus={clearEmailPassword}
 
           />
         </View>

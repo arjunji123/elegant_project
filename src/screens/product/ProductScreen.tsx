@@ -4,6 +4,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../Context/AuthContext";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from "../../components/Header";
+import { SkeletonCard, SkeletonText } from "../../components/Skeleton";
 
 
 interface Product {
@@ -28,67 +29,58 @@ const ProductScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();
 
+const getProduct = async (reset = false) => {
+  try {
+    let url = "";
+    setLoading(true);
 
-  const getProduct = async () => {
-    try {
-      let url = "";
-      setLoading(true);
-
-      switch (activeCategory) {
-        case "all":
-          url = `https://elegant-project.onrender.com/api/getallProducts?limit=${limit}&offset=${offset}`;
-          break;
-
-        case "newest":
-          url = `https://elegant-project.onrender.com/api/getallProducts?limit=${limit}&offset=${offset}`;
-          break;
-
-        default:
-          // For category id from backend
-          url = `https://elegant-project.onrender.com/api/product/category/${activeCategory}?limit=${limit}&offset=${offset}`;
-          break;
-      }
-      const res = await fetch(url, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-
-      if (!res.ok) {
-        console.error("Server Error:", res.status);
-        return;
-      }
-
-      const data = await res.json();
-      let newData = data.data || [];
-
-      // Sort if "newest"
-      if (activeCategory === "newest") {
-        newData = [...newData].sort(
-          (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-        );
-      }
-
-      // Append only unique products
-      setProducts(prev => {
-        if (offset === 0) return newData;
-        const unique = newData.filter(
-          item => !prev.some(p => p.id === item.id)
-        );
-        return [...prev, ...unique];
-      });
-
-      if (newData.length < limit) {
-        setHasMore(false);
-      }
-    } catch (error) {
-      console.error("Error fetching products:", error);
-    } finally {
-      setLoading(false);
+    switch (activeCategory) {
+      case "all":
+      case "newest":
+        url = `https://elegant-project.onrender.com/api/getallProducts?limit=${limit}&offset=${offset}`;
+        break;
+      default:
+        url = `https://elegant-project.onrender.com/api/product/category/${activeCategory}?limit=${limit}&offset=${offset}`;
+        break;
     }
-  };
+
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      console.error("Server Error:", res.status);
+      return;
+    }
+
+    const data = await res.json();
+    let newData = data.data || [];
+
+    if (activeCategory === "newest") {
+      newData = [...newData].sort(
+        (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      );
+    }
+
+    setProducts(prev => {
+      if (reset || offset === 0) return newData; // replace old products
+      const unique = newData.filter(item => !prev.some(p => p.id === item.id));
+      return [...prev, ...unique];
+    });
+
+    if (newData.length < limit) {
+      setHasMore(false);
+    }
+  } catch (error) {
+    console.error("Error fetching products:", error);
+  } finally {
+    setLoading(false);
+  }
+};
 
 
   // Fetch categories
@@ -123,10 +115,17 @@ useEffect(() => {
 
 
 useEffect(() => {
-  setProducts([]);
   setOffset(0);
   setHasMore(true);
+  // Instead of clearing immediately, fetch first then replace
+  const fetchNewCategory = async () => {
+    setLoading(true);
+    await getProduct();  // get fresh data
+    setLoading(false);
+  };
+  fetchNewCategory();
 }, [activeCategory]);
+
 
 
   const toggleFavorite = async (productId: string, currentStatus: number) => {
@@ -168,8 +167,35 @@ useEffect(() => {
       console.error("Wishlist toggle failed:", error);
     }
   };
-  console.log(loading, "products.length")
+  console.log(activeCategory, "products.length")
   const handleGoBack = () => navigation.goBack();
+//     if (loading) {
+//         return (
+//             <>
+//             <View style={{padding:10}}>
+//                 <SkeletonText height={30} style={{ margin: 10 }} />
+//                 <SkeletonText height={30} style={{ margin: 10 }} />
+//                 <SkeletonText height={30} style={{ margin: 10 }} />
+//                 <SkeletonText height={30} style={{ margin: 10 }} />
+//                 <SkeletonText height={30} style={{ margin: 10 }} />
+//                 <SkeletonText height={30} style={{ margin: 10 }} />
+//                 <SkeletonText height={30} style={{ margin: 10 }} />
+//                 <SkeletonText height={30} style={{ margin: 10 }} />
+//                 <SkeletonText height={30} style={{ margin: 10 }} />
+//                 <SkeletonText height={30} style={{ margin: 10 }} />
+//                 <SkeletonText height={30} style={{ margin: 10 }} />
+//                 <SkeletonText height={30} style={{ margin: 10 }} />
+//                 <SkeletonText height={30} style={{ margin: 10 }} />
+//                 <SkeletonText height={30} style={{ margin: 10 }} />
+//                 <SkeletonText height={30} style={{ margin: 10 }} />
+//                 <SkeletonText height={30} style={{ margin: 10 }} />
+//                 <SkeletonText height={30} style={{ margin: 10 }} />
+
+// </View>
+//             </>
+//         );
+//     }
+
   return (
     <ScrollView
       style={styles.scrollContainer}

@@ -28,6 +28,8 @@ type AuthContextType = {
   setProductId: React.Dispatch<React.SetStateAction<string | null>>;
   query: string | null;
   setQuery: React.Dispatch<React.SetStateAction<string | null>>;
+  addressId: number | null;
+  setAddressId:React.Dispatch<React.SetStateAction<number | null>>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,6 +45,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [categoriesId, setCategoriesId] = useState<string | null>(null);
   const [query, setQuery] = useState<string | null>(null);
   const [productId, setProductId] = useState<string | null>(null);
+    const [addressId, setAddressId] = useState<number | null>(null);
+
 
   // Load stored user on app start
   useEffect(() => {
@@ -123,6 +127,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setProductId,
         query,
         setQuery,
+        addressId, setAddressId
       }}
     >
       {children}

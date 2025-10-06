@@ -17,10 +17,10 @@ const AccountScreen: React.FC<AccountScreenProps> = ({ navigation }) => {
     { icon: 'location-outline', label: 'My Addresses', screen: 'AddresListScreen' },
     { icon: 'cube-outline', label: 'My Orders', screen: 'OrdersScreen' },
     { icon: 'card-outline', label: 'Payment Method', screen: 'PaymentScreen' },
-    { icon: 'shield-checkmark-outline', label: 'Privacy Policy', screen: 'PrivacyPolicyScreen' },
+    { icon: 'shield-checkmark-outline', label: 'Privacy Policy', screen: 'PrivacyPageScreen' },
     { icon: 'person-add-outline', label: 'Invite Friend', screen: 'InviteFriendScreen' },
-    { icon: 'call-outline', label: 'Contact Us', screen: 'ContactScreen' },
-    { icon: 'settings-outline', label: 'Setting', screen: 'SettingsScreen' },
+    { icon: 'call-outline', label: 'Contact Us', screen: 'ContactUsScreen' },
+    { icon: 'settings-outline', label: 'Settings', screen: 'SettingsScreen' },
   ];
 
   useEffect(() => {
@@ -137,9 +137,9 @@ const styles = StyleSheet.create({
     padding: 5,
   },
 
-  avatar: {
-    marginRight: 15,
-  },
+  // avatar: {
+  //   marginRight: 15,
+  // },
   prfile: {
     marginRight: 15,
     height: 50,
@@ -147,9 +147,11 @@ const styles = StyleSheet.create({
     borderRadius: 32
   }
   ,
-  userInfo: {
-    flex: 1,
-  },
+userInfo: {
+  flex: 1,
+  flexDirection: 'column',
+  alignItems: 'flex-start',  // ✅ aligns name & email on the left
+},
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',

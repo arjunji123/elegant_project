@@ -14,13 +14,15 @@ import { useAuth } from '../../Context/AuthContext';
 import { useToast } from '../../Context/ToastContext';
 import Header from '../../components/Header';
 
-const ForgotPasswordOtp: React.FC<ForgotPasswordOtpProps> = ({ navigation }) => {
+const ForgotPasswordOtp: React.FC<ForgotPasswordOtpProps> = ({ route, navigation }) => {
+  const { phone } = route.params;
+
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(57);
   const inputs = useRef<(TextInput | null)[]>([]);
-  const { forgotPasswordMail  } = useAuth();
+  const { forgotPasswordMail } = useAuth();
   const [resending, setResending] = useState(false);
-const { showToast } = useToast();
+  const { showToast } = useToast();
 
   useEffect(() => {
     const countdown = setInterval(() => {
@@ -51,49 +53,46 @@ const { showToast } = useToast();
     }
   };
   const updatedOtp = otp.join('');
-  console.log(typeof(updatedOtp),updatedOtp,"updatedOtp",forgotPasswordMail)
+  console.log(typeof (updatedOtp), updatedOtp, "updatedOtp", forgotPasswordMail)
 
 
 
-  const handleSubmit= async () => {
+  const handleSubmit = async () => {
     try {
-      const res = await fetch("https://elegant-project.onrender.com/api/verify-otp", {
+      const res = await fetch("https://elegant-project.onrender.com/api/verify-mobile-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({email: forgotPasswordMail,  otp: updatedOtp }),
+        body: JSON.stringify({ phone: forgotPasswordMail, otp: updatedOtp }),
       });
-      
+
       const data = await res.json();
-      if(data.message = "OTP verified"){
+      if (data.message = "OTP verified") {
         navigation.navigate('ConfirmPasswordScreen');
       }
 
-      
-
     } catch (error) {
-      showToast("Something went wrong, please try again.","error")
+      showToast("Something went wrong, please try again.", "error")
 
     }
   };
-
   const handleResendOtp = async () => {
+    if (timer > 0) return; // prevent clicking before 1 min
     try {
       setResending(true);
       const res = await fetch("https://elegant-project.onrender.com/api/resend-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: forgotPasswordMail }),
+        body: JSON.stringify({ phone:forgotPasswordMail }),
       });
-
+      console.log(forgotPasswordMail, "phonephone")
       if (res.ok) {
-        showToast("A new OTP has been sent to your email.","success")
-        setTimer(57); // restart timer
+        showToast("A new OTP has been sent to your phone.", "success");
+        setTimer(60); // restart 1 min countdown
       } else {
-        showToast("Failed to resend OTP.","error")
+        showToast("Failed to resend OTP.", "error");
       }
     } catch (error) {
-      showToast("Something went wrong, please try again.","error")
-      
+      showToast("Something went wrong, please try again.", "error");
     } finally {
       setResending(false);
     }
@@ -102,7 +101,7 @@ const { showToast } = useToast();
   return (
     <View style={styles.container}>
       {/* Header */}
-       <Header text={"Verify OTP"} onPress={handleGoBack}/>
+      <Header text={"Verify OTP"} onPress={handleGoBack} />
 
       {/* <View style={styles.header}>
         <Pressable onPress={handleGoBack} style={styles.backButton}>
@@ -132,9 +131,15 @@ const { showToast } = useToast();
           ))}
         </View>
         <Text style={styles.codeInfo}>A code has been sent to your phone</Text>
-        <Text style={styles.resendText} onPress={handleResendOtp} >
-          Resend in <Text style={styles.timerText}>00:{timer < 10 ? `0${timer}` : timer}</Text>
-        </Text>
+        {timer > 0 ? (
+          <Text style={styles.resendText}>
+            Resend in <Text style={styles.timerText}>00:{timer < 10 ? `0${timer}` : timer}</Text>
+          </Text>
+        ) : (
+          <Text style={[styles.resendText, { color: "#007DFC" }]} onPress={handleResendOtp}>
+            Resend OTP
+          </Text>
+        )}
       </View>
 
       {/* Confirm Button */}
@@ -155,7 +160,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     marginTop: 20,
-    backgroundColor: '#fff',
+    // backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -198,7 +203,7 @@ export const styles = StyleSheet.create({
   },
   otpInput: {
     borderBottomWidth: 1,
-    borderColor:"#838383",
+    borderColor: "#838383",
     width: 50,
     // color:"#838383",
     // height: 50,
@@ -208,12 +213,12 @@ export const styles = StyleSheet.create({
   codeInfo: {
     fontSize: 14,
     color: '#777',
-    marginTop:10,
+    marginTop: 10,
     marginBottom: 4,
   },
   resendText: {
     fontSize: 16,
-    marginTop:10,
+    marginTop: 10,
     color: '#007DFC',
   },
   timerText: {

@@ -194,7 +194,7 @@ const FilteredProducts = ({ navigation }) => {
   const handleGoBack = () => {
     navigation.navigate("HomeScreen");
   };
-    console.log(categories, 'getProductgetProduct')
+    console.log(token, 'getProductgetProduct')
 
   return (
     <View style={{ flex: 1 }}>
