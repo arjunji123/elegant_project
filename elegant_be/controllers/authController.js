@@ -228,7 +228,6 @@ exports.verifyOtp = async (req, res) => {
 //   }
 // };
 
-
 exports.login = async (req, res) => {
   const { email, password, phone } = req.body;
 
@@ -544,7 +543,6 @@ exports.resendMobileOtp = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to resend OTP' });
   }
 };
-
 
 exports.contactUs = async (req, res) => {
   const { email, message } = req.body;
