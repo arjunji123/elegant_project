@@ -23,4 +23,4 @@ node_modules
 uploads/*
 
 #ignore uploads
-uploads/category_icons/*.tmp
+uploads/category_icons/*.tmp.env
