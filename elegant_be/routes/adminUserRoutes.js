@@ -8,7 +8,7 @@ const { body, param, query, validationResult } = require('express-validator');
 // List all users (search/filter)
 // req: query: { search, is_verified }
 // res: { success, data: [users] }
-const { admin } = require('../middlewares/authMiddleware');
+const  admin  = require('../middlewares/authMiddleware');
 
 router.get('/admin/users', authMiddleware, admin, [
   query('search').optional().isString(),

@@ -1,6 +1,6 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
-const { generateToken } = require('../utils/generateToken');
+const generateToken = require('../utils/generateToken');
 
 exports.adminLogin = async (req, res) => {
   const { email, password } = req.body;

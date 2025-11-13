@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const adminOrderController = require('../controllers/adminOrderController');
-const { admin, default: authMiddleware } = require('../middlewares/authMiddleware');
+const authMiddleware = require('../middlewares/authMiddleware');
+const admin = require('../middlewares/adminMiddleware');
 
 // List all orders
 router.get('/admin/orders', authMiddleware, admin, adminOrderController.listOrders);

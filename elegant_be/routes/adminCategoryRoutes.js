@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const adminCategoryController = require('../controllers/adminCategoryController');
-const { admin, default: authMiddleware } = require('../middlewares/authMiddleware');
+const authMiddleware = require('../middlewares/authMiddleware');
+const admin = require('../middlewares/adminMiddleware');
 
 // List all categories
 router.get('/admin/categories', authMiddleware, admin, adminCategoryController.listCategories);

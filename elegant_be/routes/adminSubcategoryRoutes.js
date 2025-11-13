@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const adminSubcategoryController = require('../controllers/adminSubcategoryController');
-const { admin, default: authMiddleware } = require('../middlewares/authMiddleware');
+const authMiddleware = require('../middlewares/authMiddleware');
+const admin = require('../middlewares/adminMiddleware');
 
 // List all subcategories
 router.get('/admin/subcategories', authMiddleware, admin, adminSubcategoryController.listSubcategories);
