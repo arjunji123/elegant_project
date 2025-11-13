@@ -1,3 +1,14 @@
+// Update user is_verified status (admin only)
+exports.updateUserStatus = async (req, res) => {
+  const { id } = req.params;
+  const { is_verified } = req.body;
+  try {
+    await db.query('UPDATE users SET is_verified=? WHERE id=?', [is_verified ? 1 : 0, id]);
+    res.json({ success: true, message: 'User status updated', user_id: id, is_verified });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
 const db = require("../config/db");
 const { body, validationResult, query, param } = require('express-validator');
 

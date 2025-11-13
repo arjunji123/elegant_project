@@ -16,6 +16,7 @@ const adminCategoryRoutes = require('./routes/adminCategoryRoutes');
 const adminSubcategoryRoutes = require('./routes/adminSubcategoryRoutes');
 const adminProductRoutes = require('./routes/adminProductRoutes');
 const adminOrderRoutes = require('./routes/adminOrderRoutes');
+const adminAuthRoutes = require('./routes/adminAuthRoutes');
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerFile = require('./swagger-output.json'); 
@@ -34,6 +35,7 @@ app.use('/api', productRoutes);
 app.use('/api', cartRoutes )
 app.use('/api', couponRoutes)
 app.use('/api', orderRoutes)
+app.use('/api', adminAuthRoutes);
 app.use('/api', adminUserRoutes);
 app.use('/api', adminDashboardRoutes);
 app.use('/api', adminCategoryRoutes);
