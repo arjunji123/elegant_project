@@ -4,21 +4,30 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
+  
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')
     }
   },
+
   server: {
     proxy: {
       '/api': {
         target: 'https://elegant-project.onrender.com',
         changeOrigin: true,
         secure: false,
-        // Rewrite path if needed
         rewrite: (path) => path.replace(/^\/api/, '/api'),
       }
     }
+  },
+
+  // 🟢 IMPORTANT: Render production preview settings
+  preview: {
+    host: "0.0.0.0",
+    port: process.env.PORT || 4173,
+    allowedHosts: [
+      "elegant-admin-panel.onrender.com"
+    ]
   }
-  
 })
