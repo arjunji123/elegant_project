@@ -15,7 +15,7 @@ import { useProduct } from './context/ProductContext'
 import OrderDetailPage from './pages/OrderDetailPage'
 
 export default function App() {
-  const signIn = localStorage.getItem('isSignIn');
+  const { signIn } = useProduct();
 
   if (!signIn) {
     // User not signed in: only allow signin page, all else redirect to signin

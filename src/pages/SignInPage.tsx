@@ -34,7 +34,7 @@ const SignInPage = () => {
 
         setSignIn(true); 
         console.log("Login successful, token:", token,data);
-        navigate('/dashboard');   // redirect to protected page or dashboard
+        navigate('/');   // redirect to protected page or dashboard
       } else {
         throw new Error('Login response missing token');
       }
