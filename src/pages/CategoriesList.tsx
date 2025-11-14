@@ -235,6 +235,7 @@ export const CategoriesList = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+const token = localStorage.getItem('authToken');
 
   useEffect(() => {
     fetch('/api/admin/categories',
@@ -243,7 +244,7 @@ export const CategoriesList = () => {
         headers: {
           'Content-Type': 'application/json',
           Authorization:
-            'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaWF0IjoxNzYyNjc2NjQ5LCJleHAiOjE3NjMyODE0NDl9.FhIlRKewXlptfyIBWrKjGvvJtLFYgwgn0Vb4WkhIPhI',
+           `Bearer ${token}`,
         },
       }
     )

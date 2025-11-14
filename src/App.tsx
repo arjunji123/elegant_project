@@ -12,6 +12,7 @@ import { AddCategories, CategoriesList } from './pages/CategoriesList'
 import { SubcategoriesList, AddSubcategories } from './pages/AddSubcategories'
 import {OrdersList} from './pages/Order'
 import { useProduct } from './context/ProductContext'
+import OrderDetailPage from './pages/OrderDetailPage'
 
 export default function App() {
   const { signIn } = useProduct();
@@ -39,7 +40,8 @@ export default function App() {
         <Route path="categories" element={<CategoriesList />} />
         <Route path="add-sub-categories" element={<AddSubcategories />} />
         <Route path="sub-categories" element={<SubcategoriesList />} />
-          <Route path="orders" element={<OrdersList />} />
+        <Route path="orders" element={<OrdersList />} />
+        <Route path="order-detail" element={<OrderDetailPage />} />
 
         {/* <Route path="edit-product" element={<EditProductForm />} /> */}
         <Route path="signin" element={<Navigate to="/" replace />} /> {/* Redirect if signed in */}

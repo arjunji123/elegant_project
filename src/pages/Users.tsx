@@ -1,7 +1,7 @@
 import MoreMenu from '../components/MoreMenu';
 import { useEffect, useState,useMemo } from 'react';
 import profile from '../assets/profile.png';
-import { AiFillDelete, AiFillEdit } from "react-icons/ai";
+import { AiFillDelete, AiFillEdit, AiFillEye } from "react-icons/ai";
 
 // Modal component for editing a user
 
@@ -19,6 +19,8 @@ const UserTable = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const token = localStorage.getItem('authToken');
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+const [detailUser, setDetailUser] = useState(null);
 const EditUserModal = ({ user, onClose, onSave }) => {
   const [formData, setFormData] = useState(user || {});
 
@@ -160,6 +162,32 @@ const sortedUsers = useMemo(() => {
     }
     setPage(1);
   };
+const UserDetailModal = ({ user, onClose }) => {
+  if (!user) return null;
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+      <div className="bg-white rounded-lg p-6 w-96 shadow-lg max-h-[80vh] overflow-y-auto">
+        <h2 className="text-xl font-semibold mb-4">User Details</h2>
+
+        <p><b>Name:</b> {user.name}</p>
+        <p><b>Email:</b> {user.email}</p>
+        <p><b>Phone:</b> {user.phone || 'N/A'}</p>
+        <p><b>Verified:</b> {user.is_verified ? 'Yes' : 'No'}</p>
+        <p><b>Created At:</b> {user.created_at}</p>
+        {/* Add more user fields here as needed */}
+
+        <div className="flex justify-end mt-4">
+          <button
+            className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
   const renderSortArrow = (fieldName) => {
     if (sortField !== fieldName) return null;
@@ -167,8 +195,11 @@ const sortedUsers = useMemo(() => {
   };
 
   const toggleVerification = (user) => {
-    const updatedUser = { ...user, is_verified: !user.is_verified };
-    fetch(`/api/admin/users/${user.id}`, {
+  const updatedUser = {
+    is_verified: user.is_verified ? 0 : 1
+  };
+  console.log('Toggling verification for user:', JSON.stringify(updatedUser));
+    fetch(`/api/admin/users/${user.id}/status`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -342,6 +373,16 @@ const sortedUsers = useMemo(() => {
                   </td>
                   <td className="p-4">
                     <button
+  onClick={() => {
+    setDetailUser(u);
+    setDetailModalOpen(true);
+  }}
+  className="bg-green-600 text-white px-3 py-1 rounded hover:bg-gray-700 mr-2"
+  aria-label="View user details"
+>
+<AiFillEye size={20} />
+</button>
+                    <button
                       onClick={() => {
                         setEditingUser(u);
                         setEditModalOpen(true);
@@ -394,6 +435,16 @@ const sortedUsers = useMemo(() => {
           onSave={handleEditSave}
         />
       )}
+      {detailModalOpen && (
+  <UserDetailModal
+    user={detailUser}
+    onClose={() => {
+      setDetailModalOpen(false);
+      setDetailUser(null);
+    }}
+  />
+)}
+
     </div>
   );
 };

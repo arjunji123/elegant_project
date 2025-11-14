@@ -1,30 +1,38 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 
 interface ProductContextType {
-  productId: string | null;
-  setProductId: (id: string) => void;
-  signIn: boolean ;
+  ordertId: string | null;
+  setOrdertId: (id: string) => void;
+  signIn: boolean;
   setSignIn: (status: boolean) => void;
-  mobileOpen: boolean ;
+  mobileOpen: boolean;
   setMobileOpen: (status: boolean) => void;
-  token?: string | null;
-  setToken?: (token: string | null) => void;
-  adminName?: string | null;
-  setAdminName?: (name: string | null) => void;
+  token: string | null;
+  setToken: (token: string | null) => void;
+  adminName: string | null;
+  setAdminName: (name: string | null) => void;
 }
 
 // Create context with correct type
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
 export const ProductProvider = ({ children }: { children: ReactNode }) => {
-  const [productId, setProductId] = useState<string | null>(null);
-  const [signIn, setSignIn] = useState<boolean>(true); // <-- boolean initial
-    const [mobileOpen, setMobileOpen] = useState(false)
-    const [token, setToken] = useState<string | null>(null);
-    const [adminName, setAdminName] = useState<string | null>(null);
+const [ordertId, setOrdertId] = useState<string | null>(() => {
+  return localStorage.getItem('ordertId');
+});  const [signIn, setSignIn] = useState<boolean>(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+
+  // Persist token to localStorage
+useEffect(() => {
+  if (ordertId) localStorage.setItem('ordertId', ordertId);
+  else localStorage.removeItem('ordertId');
+}, [ordertId]);
 
   return (
-    <ProductContext.Provider value={{ productId, setProductId, signIn, setSignIn,mobileOpen, setMobileOpen, token, setToken, adminName, setAdminName }}>
+    <ProductContext.Provider
+      value={{ ordertId, setOrdertId, signIn, setSignIn, mobileOpen, setMobileOpen }}
+    >
       {children}
     </ProductContext.Provider>
   );

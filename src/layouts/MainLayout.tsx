@@ -30,7 +30,8 @@ export default function MainLayout() {
           onMobileToggle={() => setMobileOpen((o) => !o)}
         />
 
-        <main className="p-6 bg-gray-50 min-h-[calc(100vh-64px)]">
+        {/* Add top padding for fixed Header */}
+        <main className="pt-16 p-6 bg-gray-50 min-h-[calc(100vh-64px)]">
           <Outlet />
         </main>
       </div>

@@ -17,7 +17,7 @@ const EditSubcategoryModal = ({ subcategory, categories, onClose, onSaved }) => 
     const [formData, setFormData] = useState(subcategory || {});
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-
+const token = localStorage.getItem('authToken');
     useEffect(() => {
         setFormData(subcategory || {});
         setError(null);
@@ -46,7 +46,7 @@ const EditSubcategoryModal = ({ subcategory, categories, onClose, onSaved }) => 
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaWF0IjoxNzYyNjc2NjQ5LCJleHAiOjE3NjMyODE0NDl9.FhIlRKewXlptfyIBWrKjGvvJtLFYgwgn0Vb4WkhIPhI',
+                    Authorization: `Bearer ${token}`,
 
                 },
                 body: JSON.stringify(payload),
@@ -138,6 +138,7 @@ export const SubcategoriesList = () => {
     const [error, setError] = useState('');
     const [page, setPage] = useState(1);
     const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
+const token = localStorage.getItem('authToken');
 
     const navigate = useNavigate();
 
@@ -155,7 +156,7 @@ export const SubcategoriesList = () => {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaWF0IjoxNzYyNjc2NjQ5LCJleHAiOjE3NjMyODE0NDl9.FhIlRKewXlptfyIBWrKjGvvJtLFYgwgn0Vb4WkhIPhI',
+                Authorization: `Bearer ${token}`,
 
             },
         })
@@ -185,7 +186,7 @@ export const SubcategoriesList = () => {
             const res = await fetch(`/api/subcategories/${selectedSubcategory.id}`, {
                 method: 'DELETE',
                 headers: {
-                    Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaWF0IjoxNzYyNjc2NjQ5LCJleHAiOjE3NjMyODE0NDl9.FhIlRKewXlptfyIBWrKjGvvJtLFYgwgn0Vb4WkhIPhI',
+                    Authorization: `Bearer ${token}`,
                 },
             });
             if (!res.ok) throw new Error('Failed to delete subcategory');
@@ -352,6 +353,7 @@ export const AddSubcategories = () => {
     const [description, setDescription] = useState([]);
     const [categories, setCategories] = useState([]);
     const [categoriesID, setCategoriesID] = useState([]);
+const token = localStorage.getItem('authToken');
 
     const navigate = useNavigate();
 
@@ -379,7 +381,7 @@ export const AddSubcategories = () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaWF0IjoxNzYyNjc2NjQ5LCJleHAiOjE3NjMyODE0NDl9.FhIlRKewXlptfyIBWrKjGvvJtLFYgwgn0Vb4WkhIPhI',
+                    Authorization:`Bearer ${token}` ,
                 },
                 body: JSON.stringify({
                     ...values,
