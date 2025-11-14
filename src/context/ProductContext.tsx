@@ -21,7 +21,8 @@ const [ordertId, setOrdertId] = useState<string | null>(() => {
   return localStorage.getItem('ordertId');
 });  const [signIn, setSignIn] = useState<boolean>(true);
   const [mobileOpen, setMobileOpen] = useState(false);
-
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('authToken'));
+  const [adminName, setAdminName] = useState<string | null>(() => localStorage.getItem('adminName'));
 
   // Persist token to localStorage
 useEffect(() => {
@@ -31,7 +32,7 @@ useEffect(() => {
 
   return (
     <ProductContext.Provider
-      value={{ ordertId, setOrdertId, signIn, setSignIn, mobileOpen, setMobileOpen }}
+      value={{ ordertId, setOrdertId, signIn, setSignIn, mobileOpen, setMobileOpen, token, setToken, adminName, setAdminName }}
     >
       {children}
     </ProductContext.Provider>
