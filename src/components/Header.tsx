@@ -44,10 +44,10 @@ const getInitials = (text) => {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="relative">
+        {/* <div className="relative">
           <input placeholder="Search..." className="border rounded-md px-3 py-1 w-60" />
           <FiSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        </div>
+        </div> */}
         <button className="p-2 rounded-full bg-gray-100">
           <FiBell />
         </button>

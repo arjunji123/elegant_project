@@ -21,6 +21,8 @@ const UserTable = () => {
   const token = localStorage.getItem('authToken');
   const [detailModalOpen, setDetailModalOpen] = useState(false);
 const [detailUser, setDetailUser] = useState(null);
+const [totalPages, setTotalPages] = useState(1);
+
 const EditUserModal = ({ user, onClose, onSave }) => {
   const [formData, setFormData] = useState(user || {});
 
@@ -144,7 +146,10 @@ const sortedUsers = useMemo(() => {
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         return res.json();
       })
-      .then(data => setUser(data.data || data))
+      .then(data => {
+  setUser(data.data || data);
+  setTotalPages(data.pagination?.totalPages || 1);
+})
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   };
@@ -264,9 +269,15 @@ const UserDetailModal = ({ user, onClose }) => {
   const handleNextPage = () => setPage(p => p + 1);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="mx-auto max-w-6xl bg-white rounded-2xl shadow pb-2">
-        {/* Search & Filter Header */}
+<div className="px-2 md:px-6 bg-gray-50 min-h-screen">
+    <div className="flex justify-between items-center mb-4  max-w-3xl mx-auto">
+        <h1 className="text-3xl font-bold">Users</h1>
+        {/* <button onClick={() => navigate(`/add-product`)} className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">
+          Add Product
+        </button> */}
+      </div>
+  <div className="mx-auto  bg-white rounded-xl shadow pb-2">
+        
         <div className="flex justify-between items-center px-6 py-4">
           <input
             type="text"
@@ -416,11 +427,12 @@ const UserDetailModal = ({ user, onClose }) => {
             Previous
           </button>
           <button
-            onClick={handleNextPage}
-            className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
-          >
-            Next
-          </button>
+  onClick={handleNextPage}
+  disabled={page >= totalPages}
+  className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+>
+  Next
+</button>
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AiFillDelete, AiFillEdit } from 'react-icons/ai';
+import { FiTrash } from 'react-icons/fi';
 
 const defaultValues = {
   name: '',
@@ -12,122 +13,120 @@ const EditCategoryModal = ({ category, onClose, onSave }) => {
   const [values, setValues] = useState({
     name: '',
     description: '',
-    images: [],
-    icon: '',            // existing icon URL
+    images: [], // These will be URLs or File objects
+    icon: '',
     subcategory_ids: [],
   });
-  const [iconFile, setIconFile] = useState(null);    // new icon file if chosen
-  const [imageFiles, setImageFiles] = useState([]);  // new image files for replacement
+  const [iconFile, setIconFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const token = localStorage.getItem('authToken');
 
-  // Sync incoming category prop to local state
   useEffect(() => {
     if (!category) return;
     setValues({
       name: category.name || '',
       description: category.description || '',
-      images: category.images || [],
+      images: category.images ? [...category.images] : [],
       icon: category.icon || '',
       subcategory_ids: category.subcategory_ids || [],
     });
-    setImageFiles([]);
     setIconFile(null);
     setError(null);
   }, [category]);
 
-  if (!category) return null; // don't render if no category
+  if (!category) return null;
 
-  // Handle text input changes
+  // Handle text input
   const handleChange = e => {
     const { name, value } = e.target;
     setValues(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handle icon file input change
+  // Icon upload
   const handleIconChange = e => {
     const file = e.target.files[0];
     if (file) setIconFile(file);
   };
 
-  // Handle image file replacement at index
+  // Image upload (replace or as append)
   const handleImageFileChange = (idx, e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    setImageFiles(prev => {
-      const updated = [...prev];
-      updated[idx] = file;
-      return updated;
-    });
-
     setValues(prev => {
-      const updatedImages = [...(prev.images || [])];
-      updatedImages[idx] = URL.createObjectURL(file);
+      const updatedImages = [...prev.images];
+      updatedImages[idx] = file;
       return { ...prev, images: updatedImages };
     });
   };
 
-  // Remove image field by index (both URL and file)
+  // Remove any image (existing or just added)
   const removeImage = idx => {
-    setValues(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) }));
-    setImageFiles(prev => prev.filter((_, i) => i !== idx));
+    if (window.confirm('Remove this image?')) {
+      setValues(prev => ({
+        ...prev,
+        images: prev.images.filter((_, i) => i !== idx)
+      }));
+    }
   };
 
-  // Add new empty image field
+  // Add a blank image field (for new images)
   const addImageField = () => {
-    setValues(prev => ({ ...prev, images: [...(prev.images || []), ''] }));
+    setValues(prev => ({
+      ...prev,
+      images: [...prev.images, '']
+    }));
   };
 
-const handleSubmit = e => {
-  e.preventDefault();
-  setLoading(true);
-  setError(null);
+  // Handle form submit (stub: you must handle new files uploading in real API)
+  const handleSubmit = e => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
-  const payload = {
-    name: values.name,
-    icon: values.icon,
-    description: category.description,
-    subcategory_ids: category.subcategories,
+    // You may need to adjust this to handle files and URL separation
+    const payload = {
+      name: values.name,
+      icon: values.icon,
+      description: values.description,
+      subcategory_ids: values.subcategory_ids,
+      // Only image URLs should go here – you will likely need separate logic to upload files
+      images: values.images.filter(img => typeof img === 'string'),
+    };
+
+    fetch(`/api/admin/categories/${category.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    })
+      .then(res => {
+        if (!res.ok) {
+          return res.text().then(text => {
+            throw new Error(text || 'Failed to update category');
+          });
+        }
+        return res.json();
+      })
+      .then(data => {
+        onSave();
+        onClose();
+      })
+      .catch(err => {
+        setError(err.message);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
-
-  console.log(JSON.stringify(payload));
-
-  fetch(`/api/admin/categories/${category.id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(payload),
-  })
-    .then(res => {
-      if (!res.ok) {
-        return res.text().then(text => {
-          throw new Error(text || 'Failed to update category');
-        });
-      }
-      return res.json();
-    })
-    .then(data => {
-      onSave();
-      onClose();
-    })
-    .catch(err => {
-      setError(err.message);
-    })
-    .finally(() => {
-      setLoading(false);
-    });
-};
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-lg max-w-lg w-full shadow-lg overflow-auto max-h-[80vh]">
         <h2 className="text-2xl mb-4 font-semibold">Edit Category</h2>
-
         {error && <p className="text-red-600 mb-3">{error}</p>}
 
         <form onSubmit={handleSubmit}>
@@ -138,6 +137,15 @@ const handleSubmit = e => {
             value={values.name || ''}
             onChange={handleChange}
             required
+            className="mb-4 w-full border border-gray-300 rounded px-3 py-2"
+          />
+
+          <label className="block mb-2 font-medium">Description</label>
+          <input
+            type="text"
+            name="description"
+            value={values.description || ''}
+            onChange={handleChange}
             className="mb-4 w-full border border-gray-300 rounded px-3 py-2"
           />
 
@@ -168,20 +176,18 @@ const handleSubmit = e => {
             />
           </div>
 
-          <label className="block mb-2 font-medium">Images</label>
-          {values.images?.map((img, idx) => (
+          {/* <label className="block mb-2 font-medium">Images</label> */}
+          {/* {values.images?.map((img, idx) => (
             <div key={idx} className="flex items-center mb-4 space-x-4">
-              {img ? (
-                <img
-                  src={typeof img === 'string' ? img : URL.createObjectURL(img)}
-                  alt={`Preview ${idx + 1}`}
-                  className="w-20 h-20 object-cover rounded border"
-                />
-              ) : (
-                <div className="w-20 h-20 bg-gray-100 rounded border flex items-center justify-center text-gray-400">
-                  No Image
-                </div>
-              )}
+              {img
+                ? typeof img === 'string'
+                  ? <img src={img} alt={`Image ${idx + 1}`} className="w-20 h-20 object-cover rounded border" />
+                  : <img src={URL.createObjectURL(img)} alt={`Image ${idx + 1}`} className="w-20 h-20 object-cover rounded border" />
+                : (
+                  <div className="w-20 h-20 bg-gray-100 rounded border flex items-center justify-center text-gray-400">
+                    No Image
+                  </div>
+                )}
               <input
                 type="file"
                 accept="image/*"
@@ -191,20 +197,20 @@ const handleSubmit = e => {
               <button
                 type="button"
                 onClick={() => removeImage(idx)}
-                className="text-red-600 hover:text-red-800 font-bold px-2"
+                className="p-2 text-red-600 hover:text-red-800"
                 aria-label="Remove image"
               >
-                ×
+                <FiTrash size={18} />
               </button>
             </div>
-          ))}
-          <button
+          ))} */}
+          {/* <button
             type="button"
             onClick={addImageField}
             className="mb-4 text-indigo-600 hover:text-indigo-800 underline"
           >
             + Add Image
-          </button>
+          </button> */}
 
           <button
             type="submit"
@@ -226,7 +232,6 @@ const handleSubmit = e => {
     </div>
   );
 };
-
 export const CategoriesList = () => {
   const [categories, setCategories] = useState([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -312,7 +317,7 @@ const token = localStorage.getItem('authToken');
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6 max-w-7xl mx-auto px-6">
-        <h1 className="text-3xl font-bold text-gray-800">Featured Categories</h1>
+        <h1 className="text-3xl font-bold text-gray-800">Categories</h1>
         <button
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-150"
           onClick={AddCategories}

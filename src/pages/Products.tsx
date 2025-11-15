@@ -168,7 +168,7 @@ const ProductDetailModal = ({ product, onClose }) => {
           <p><b>Description:</b> {product.description || 'N/A'}</p>
           <p><b>Price:</b> {product.price}</p>
           <p><b>Unit:</b> {product.unit}</p>
-          <p><b>Stock:</b> {product.stock}</p>
+          {/* <p><b>Stock:</b> {product.stock}</p> */}
           <p><b>Offer:</b> {product.offer || 'None'}</p>
           <p><b>Category:</b> {product.category?.name || 'Uncategorized'}</p>
           <p><b>Subcategory:</b> {product.subcategory?.name || 'N/A'}</p>
@@ -300,13 +300,13 @@ const ProductGrid = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-4 max-w-7xl mx-auto">
+      <div className="flex justify-between items-center mb-4 mx-auto">
         <h1 className="text-3xl font-bold">Products</h1>
-        <button onClick={openAddModal} className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">
+        <button onClick={() => navigate(`/add-product`)} className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">
           Add Product
         </button>
       </div>
-      <div className="overflow-x-auto max-w-7xl mx-auto bg-white rounded shadow-md">
+      <div className="overflow-x-auto  mx-auto bg-white rounded shadow-md">
         <table className="min-w-full">
           <thead>
             <tr className="bg-gray-100 text-gray-700 border-b-2 border-gray-200">
@@ -331,7 +331,7 @@ const ProductGrid = () => {
           </tbody>
         </table>
       </div>
-      <div className="max-w-7xl mx-auto flex justify-center space-x-2 py-4">
+      <div className=" mx-auto flex justify-center space-x-2 py-4">
         <button onClick={handlePrev} disabled={page === 1} className="bg-gray-200 px-4 py-2 rounded disabled:opacity-50">
           Previous
         </button>
@@ -349,14 +349,14 @@ const ProductGrid = () => {
         </button>
       </div>
 
-      {showModal && (
+      {/* {showModal && (
         <ProductFormModal
           product={editProduct}
           categories={categories}
           onClose={closeModal}
           onSave={handleSaveProduct}
         />
-      )}
+      )} */}
 
       {showDeleteModal && deleteProduct && (
         <DeleteConfirmationModal

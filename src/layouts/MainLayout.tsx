@@ -31,7 +31,7 @@ export default function MainLayout() {
         />
 
         {/* Add top padding for fixed Header */}
-        <main className="pt-16 p-6 bg-gray-50 min-h-[calc(100vh-64px)]">
+        <main className="pt-10 p-6 bg-gray-50 min-h-[calc(100vh-64px)]">
           <Outlet />
         </main>
       </div>

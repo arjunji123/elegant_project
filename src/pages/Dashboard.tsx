@@ -33,25 +33,40 @@ export default function Dashboard() {
     { title: 'Total Categories', value: dashboardData.totalCategories || 0, delta: '' },
   ];
 
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {cards.slice(0, 4).map(c => (
-          <DashboardCard key={c.title} title={c.title} value={c.value} delta={c.delta} />
-        ))}
-      </div>
+return (
+  <div className="space-y-6">
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="card">
-          <h3 className="font-semibold mb-4">Current visits</h3>
+    {/* Cards with background and rounded box */}
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {cards.slice(0, 4).map((c) => (
+        <div 
+          key={c.title}
+          className="bg-white rounded-lg shadow p-6 flex flex-col justify-center items-center text-center"
+          style={{ minHeight: '120px' }} // optional, consistent height
+        >
+          <DashboardCard title={c.title} value={c.value} delta={c.delta} />
+        </div>
+      ))}
+    </div>
+
+    {/* Charts section with card styling and alignment */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="card bg-white rounded-lg shadow p-6 flex flex-col">
+        <h3 className="font-semibold mb-4 text-gray-700">Current visits</h3>
+        <div className="flex-1">
           <ChartPie />
         </div>
+      </div>
 
-        <div className="card">
-          <h3 className="font-semibold mb-4">Website visits</h3>
+      <div className="card bg-white rounded-lg shadow p-6 flex flex-col">
+        <h3 className="font-semibold mb-4 text-gray-700">Website visits</h3>
+        <div className="flex-1">
           <ChartBar />
         </div>
       </div>
     </div>
-  );
+
+  </div>
+);
+
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 const defaultValues = {
   subcategory_id: '',
@@ -161,10 +161,10 @@ const AddProductForm = ({ onSuccess }) => {
         setSuccess(true);
         setValues(defaultValues);
         setImageFiles([]);
-        if (onSuccess){
-onSuccess();
-Navigate('/products');
-        } 
+        if (onSuccess) {
+          onSuccess();
+          Navigate('/products');
+        }
       })
       .catch(err => {
         setError(err.message);
@@ -175,7 +175,7 @@ Navigate('/products');
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-xl p-8 mx-auto mt-8 max-w-3xl">
+    <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-xl p-8 mx-auto mt-8">
       <h2 className="text-2xl font-semibold mb-6 text-center">Add Product</h2>
       {error && <div className="mb-4 text-red-600">{error}</div>}
       {success && <div className="mb-4 text-green-600">Product added successfully!</div>}

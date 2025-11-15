@@ -17,7 +17,7 @@ const EditSubcategoryModal = ({ subcategory, categories, onClose, onSaved }) => 
     const [formData, setFormData] = useState(subcategory || {});
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('authToken');
     useEffect(() => {
         setFormData(subcategory || {});
         setError(null);
@@ -138,7 +138,7 @@ export const SubcategoriesList = () => {
     const [error, setError] = useState('');
     const [page, setPage] = useState(1);
     const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
-const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('authToken');
 
     const navigate = useNavigate();
 
@@ -151,7 +151,7 @@ const token = localStorage.getItem('authToken');
     }, []);
 
     const fetchSubcategories = () => {
- setLoading(true);
+        setLoading(true);
         fetch(`/api/admin/subcategories?page=${page}&limit=${pagination.limit}`, {
             method: 'GET',
             headers: {
@@ -169,7 +169,7 @@ const token = localStorage.getItem('authToken');
             .finally(() => setLoading(false));
     }
     useEffect(() => {
-       fetchSubcategories();
+        fetchSubcategories();
     }, [page]);
 
     // Refresh list helper
@@ -223,7 +223,7 @@ const token = localStorage.getItem('authToken');
     return (
         <div className="p-6 max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold">Subcategory Management List</h1>
+                <h1 className="text-3xl font-bold">Subcategory</h1>
                 <button
                     onClick={() => navigate(`/add-sub-categories`)}
                     className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
@@ -353,7 +353,7 @@ export const AddSubcategories = () => {
     const [description, setDescription] = useState([]);
     const [categories, setCategories] = useState([]);
     const [categoriesID, setCategoriesID] = useState([]);
-const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('authToken');
 
     const navigate = useNavigate();
 
@@ -381,7 +381,7 @@ const token = localStorage.getItem('authToken');
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization:`Bearer ${token}` ,
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     ...values,
@@ -404,9 +404,10 @@ const token = localStorage.getItem('authToken');
     };
 
     return (
-        <form
+       <div className="p-6 max-w-3xl mx-auto">
+         <form
             onSubmit={handleSubmit}
-            className="bg-white shadow-lg rounded-xl p-8 mx-auto mt-8">
+            className="bg-white shadow-lg rounded-xl p-12 mx-auto mt-8">
             <h2 className="text-2xl font-semibold mb-6 text-center">Add SubCategories</h2>
             {error && <div className="mb-4 text-red-600">{error}</div>}
             {success && (
@@ -455,6 +456,7 @@ const token = localStorage.getItem('authToken');
                 {loading ? 'Adding...' : 'Add subcategories'}
             </button>
         </form>
+       </div>
     );
 };
 
