@@ -19,7 +19,8 @@ const ProductContext = createContext<ProductContextType | undefined>(undefined);
 export const ProductProvider = ({ children }: { children: ReactNode }) => {
 const [ordertId, setOrdertId] = useState<string | null>(() => {
   return localStorage.getItem('ordertId');
-});  const [signIn, setSignIn] = useState<boolean>(true);
+}); 
+const [signIn, setSignIn] = useState<boolean>(!!localStorage.getItem("authToken"));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('authToken'));
   const [adminName, setAdminName] = useState<string | null>(() => localStorage.getItem('adminName'));
@@ -29,7 +30,15 @@ useEffect(() => {
   if (ordertId) localStorage.setItem('ordertId', ordertId);
   else localStorage.removeItem('ordertId');
 }, [ordertId]);
+useEffect(() => {
+  if (token) localStorage.setItem("authToken", token);
+  else localStorage.removeItem("authToken");
+}, [token]);
 
+useEffect(() => {
+  if (adminName) localStorage.setItem("adminName", adminName);
+  else localStorage.removeItem("adminName");
+}, [adminName]);
   return (
     <ProductContext.Provider
       value={{ ordertId, setOrdertId, signIn, setSignIn, mobileOpen, setMobileOpen, token, setToken, adminName, setAdminName }}
