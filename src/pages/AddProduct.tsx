@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate, useParams  } from 'react-router-dom';
 
 const defaultValues = {
   subcategory_id: '',
@@ -9,60 +9,97 @@ const defaultValues = {
   unit: '',
   price: '',
   offer: '',
-  colors: [{ name: '', code: '#000000' }], // color objects with name and code
+  colors: [{ name: '', code: '#000000' }],
   sizes: [''],
-  images: [], // will hold URLs or file objects
+  images: [],
 };
 
 const AddProductForm = ({ onSuccess }) => {
   const [values, setValues] = useState(defaultValues);
-  const [imageFiles, setImageFiles] = useState([]); // for system file uploads
+  const [imageFiles, setImageFiles] = useState([]); 
+  const [existingImages, setExistingImages] = useState([]);  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [subcategories, setSubcategories] = useState([]);
   const [categories, setCategories] = useState([]);
   const [categoriesID, setCategoriesID] = useState('');
-  const token = localStorage.getItem('authToken'); // or pass via context
+  const token = localStorage.getItem('authToken');
+  const { id: productId } = useParams(); // `id` should match the route param
   const navigate = useNavigate();
 
-  // Fetch categories on mount
+  const isEditMode = Boolean(productId);
+
+  // Fetch categories
   useEffect(() => {
-    fetch('/api/categories') // Replace with your categories endpoint
+    fetch('/api/categories')
       .then(res => res.json())
       .then(data => setCategories(data.data || data))
       .catch(() => setCategories([]));
   }, []);
 
-  // Fetch subcategories when category changes
+  // Fetch product details if editing
   useEffect(() => {
-    if (!categoriesID) {
-      setSubcategories([]);
-      setValues(v => ({ ...v, subcategory_id: '' }));
-      return;
-    }
-    fetch(`api/Categories/${categoriesID}/subcategories`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+    if (!isEditMode) return;
+
+    setLoading(true);
+    fetch(`/api/admin/products/${productId}`, {
+      headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => res.json())
       .then(data => {
-        setSubcategories(data.data || []);
-        setValues(v => ({ ...v, subcategory_id: '' }));
-      })
-      .catch(() => {
-        setSubcategories([]);
-        setValues(v => ({ ...v, subcategory_id: '' }));
-      });
-  }, [categoriesID, token]);
+        const p = data.data;
 
+        setValues({
+          subcategory_id: p.subcategory_id,
+          name: p.name,
+          description: p.description,
+          category_id: p.category_id,
+          unit: p.unit,
+          price: p.price,
+          offer: p.offer,
+          colors: p.colors || [{ name: '', code: '#000000' }],
+          sizes: p.sizes || [''],
+          images: [],
+        });
+
+        setExistingImages(p.images || []);
+        setCategoriesID(p.category_id);
+      })
+      .finally(() => setLoading(false));
+  }, [productId, isEditMode, token]);
+
+  // Fetch subcategories when category changes
+useEffect(() => {
+  const catId = categoriesID || values.category_id;
+  if (!catId) {
+    setSubcategories([]);
+    return;
+  }
+const url = `/api/Categories/${catId}/subcategories`;
+console.log("Fetching subcategories from URL:", url);
+  fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (Array.isArray(data.data)) {
+        setSubcategories(data.data);
+      } else {
+        setSubcategories([]);
+      }
+    })
+    .catch(() => setSubcategories([]));
+}, [categoriesID, values.category_id, token]);
+  
   const handleCategoryChange = e => {
     const selectedCategoryId = e.target.value;
     setCategoriesID(selectedCategoryId);
-    setValues(prev => ({ ...prev, category_id: selectedCategoryId, subcategory_id: '' }));
+    setValues(prev => ({
+      ...prev,
+      category_id: selectedCategoryId,
+      subcategory_id: '',
+    }));
   };
 
   const handleChange = e => {
@@ -70,113 +107,133 @@ const AddProductForm = ({ onSuccess }) => {
     setValues(prev => ({ ...prev, [name]: value }));
   };
 
-  // Colors management (name and code)
   const handleColorChange = (index, field, value) => {
     const updatedColors = [...values.colors];
     updatedColors[index] = { ...updatedColors[index], [field]: value };
     setValues(prev => ({ ...prev, colors: updatedColors }));
   };
 
-  const addColorField = () => {
-    setValues(prev => ({ ...prev, colors: [...prev.colors, { name: '', code: '#000000' }] }));
-  };
+  const addColorField = () =>
+    setValues(prev => ({
+      ...prev,
+      colors: [...prev.colors, { name: '', code: '#000000' }],
+    }));
 
-  const removeColorField = index => {
-    setValues(prev => ({ ...prev, colors: prev.colors.filter((_, i) => i !== index) }));
-  };
+  const removeColorField = index =>
+    setValues(prev => ({
+      ...prev,
+      colors: prev.colors.filter((_, i) => i !== index),
+    }));
 
-  // Sizes management (strings)
   const handleSizeChange = (index, value) => {
     const updatedSizes = [...values.sizes];
     updatedSizes[index] = value;
     setValues(prev => ({ ...prev, sizes: updatedSizes }));
   };
 
-  const addSizeField = () => {
+  const addSizeField = () =>
     setValues(prev => ({ ...prev, sizes: [...prev.sizes, ''] }));
-  };
 
-  const removeSizeField = index => {
-    setValues(prev => ({ ...prev, sizes: prev.sizes.filter((_, i) => i !== index) }));
-  };
+  const removeSizeField = index =>
+    setValues(prev => ({
+      ...prev,
+      sizes: prev.sizes.filter((_, i) => i !== index),
+    }));
 
-  // Image file upload management (max 5)
   const handleImageFileChange = e => {
     const files = Array.from(e.target.files);
-    const totalFiles = imageFiles.length + files.length;
-    if (totalFiles > 5) {
-      alert('You can only upload up to 5 images');
+    if (imageFiles.length + existingImages.length + files.length > 5) {
+      alert('You can upload max 5 images');
       return;
     }
     setImageFiles(prev => [...prev, ...files]);
+  };
+
+  const removeExistingImage = index => {
+    setExistingImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const removeImageFile = index => {
     setImageFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Submit handler using FormData
-  const handleSubmit = e => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-    setSuccess(false);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setError(null);
 
+  try {
     const formData = new FormData();
+
+    // Basic fields
     formData.append('subcategory_id', values.subcategory_id);
     formData.append('name', values.name);
     formData.append('description', values.description);
     formData.append('category_id', values.category_id);
     formData.append('unit', values.unit);
-    formData.append('price', values.price); // send as string or parse if backend wants number
-    formData.append('offer', values.offer || '');
+    formData.append('price', values.price.toString());
+    formData.append('offer', values.offer ? values.offer.toString() : '');
 
-    // Append colors as JSON string filtered for non-empty names and codes
-    formData.append(
-      'colors',
-      JSON.stringify(values.colors.filter(c => c.name.trim() !== '' && c.code.trim() !== ''))
-    );
+    // Arrays -> JSON string
+    formData.append('colors', JSON.stringify(values.colors));
+    formData.append('sizes', JSON.stringify(values.sizes));
+    formData.append('existingImages', JSON.stringify(existingImages));
 
-    // Append sizes as JSON string filtered for non-empty
-    formData.append('sizes', JSON.stringify(values.sizes.filter(s => s.trim() !== '')));
+    // Append new images individually
+    imageFiles.forEach((file) => {
+      formData.append('images', file); // field name must match backend
+    });
+    for (let pair of formData.entries()) {
+  console.log(pair[0], pair[1]);
+}
+const payload = {
+  subcategory_id: values.subcategory_id,
+  name: values.name,
+  description: values.description,
+  category_id: values.category_id,
+  unit: values.unit,
+  price: values.price,
+  offer: values.offer || '',
+  subcategory: values.subcategory_id,
+  colors: values.colors, // array of objects
+  sizes: values.sizes,   // array of strings
+  existingImages: existingImages // array of URLs or IDs
+};
+console.log(payload,"payload")
+const apiURL = isEditMode
+      ? `/api/admin/products/${productId}`
+      : `/api/product`;
+    const method = isEditMode ? 'PUT' : 'POST';
 
-    // Append image files
-    imageFiles.forEach(file => formData.append('images', file));
-
-    fetch('/api/product', {
-      method: 'POST',
+    const response = await fetch(apiURL, {
+      method,
       headers: {
-        Authorization: `Bearer ${token}`,
-        // Don't set Content-Type header; browser handles for FormData
+        Authorization: `Bearer ${token}`, // ✅ do not set Content-Type manually
       },
       body: formData,
-    })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`Server error: ${res.status}`);
-        }
-        return res.json();
-      })
-      .then(() => {
-        setSuccess(true);
-        setValues(defaultValues);
-        setImageFiles([]);
-        if (onSuccess) {
-          onSuccess();
-          Navigate('/products');
-        }
-      })
-      .catch(err => {
-        setError(err.message);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
+    });
+
+    const data = await response.json();
+    console.log(token)
+console.log(isEditMode ? JSON.stringify(payload) :formData,"Formdata")
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Something went wrong');
+    }
+
+    setSuccess(true);
+    if (onSuccess) onSuccess();
+    navigate('/products');
+  } catch (err: any) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-xl p-8 mx-auto mt-8">
-      <h2 className="text-2xl font-semibold mb-6 text-center">Add Product</h2>
+      <h2 className="text-2xl font-semibold mb-6 text-center">{isEditMode ? "Edit Product" :"Add Product"}</h2>
       {error && <div className="mb-4 text-red-600">{error}</div>}
       {success && <div className="mb-4 text-green-600">Product added successfully!</div>}
 
@@ -198,23 +255,27 @@ const AddProductForm = ({ onSuccess }) => {
       </select>
 
       {/* Subcategories */}
-      <label className="block mb-2 text-sm font-medium">Subcategory</label>
-      <select
-        name="subcategory_id"
-        value={values.subcategory_id}
-        onChange={handleChange}
-        required
-        disabled={!values.category_id}
-        className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
-      >
-        <option value="">Select subcategory</option>
-        {subcategories &&
-          subcategories.map(sub => (
-            <option key={sub.id} value={sub.id}>
-              {sub.subcategory_name || sub.name}
-            </option>
-          ))}
-      </select>
+     <label className="block mb-2 text-sm font-medium">Subcategory</label>
+<select
+  name="subcategory_id"
+  value={values.subcategory_id}
+  onChange={handleChange}
+  required
+  disabled={!values.category_id}
+  className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
+>
+  <option value="">Select subcategory</option>
+  {Array.isArray(subcategories) ? (
+    subcategories.map(sub => (
+      <option key={sub.id} value={sub.id}>
+        {sub.name || sub.subcategory_name}
+      </option>
+    ))
+  ) : (
+    <option value="" disabled>{subcategories}</option> // here subcategories holds the message string
+  )}
+</select>
+
 
       {/* Name */}
       <label className="block mb-2 text-sm font-medium">Product Name</label>
@@ -279,7 +340,7 @@ const AddProductForm = ({ onSuccess }) => {
             value={color.name}
             onChange={e => handleColorChange(idx, 'name', e.target.value)}
             className="flex-1 border border-gray-300 rounded px-3 py-2"
-            required
+            
           />
           <input
             type="color"
@@ -374,8 +435,7 @@ const AddProductForm = ({ onSuccess }) => {
         disabled={loading}
         className="w-full bg-indigo-600 text-white font-semibold py-2 rounded-lg hover:bg-indigo-700 transition"
       >
-        {loading ? 'Adding...' : 'Add Product'}
-      </button>
+ {loading ? 'Saving...' : isEditMode ? 'Update Product' : 'Add Product'}      </button>
     </form>
   );
 };

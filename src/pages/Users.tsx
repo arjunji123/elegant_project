@@ -22,7 +22,9 @@ const UserTable = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
 const [detailUser, setDetailUser] = useState(null);
 const [totalPages, setTotalPages] = useState(1);
-
+const [confirmOpen, setConfirmOpen] = useState(false);
+const [userToToggle, setUserToToggle] = useState(null);
+const [toggleAction, setToggleAction] = useState('');
 const EditUserModal = ({ user, onClose, onSave }) => {
   const [formData, setFormData] = useState(user || {});
 
@@ -168,6 +170,16 @@ const sortedUsers = useMemo(() => {
     setPage(1);
   };
 const UserDetailModal = ({ user, onClose }) => {
+  function formatDateForUI(dateString) {
+  const date = new Date(dateString);
+  // Format as DD/MM/YYYY
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+}
+
   if (!user) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
@@ -178,7 +190,7 @@ const UserDetailModal = ({ user, onClose }) => {
         <p><b>Email:</b> {user.email}</p>
         <p><b>Phone:</b> {user.phone || 'N/A'}</p>
         <p><b>Verified:</b> {user.is_verified ? 'Yes' : 'No'}</p>
-        <p><b>Created At:</b> {user.created_at}</p>
+        <p><b>Created At:</b> {formatDateForUI(user.created_at)}</p>
         {/* Add more user fields here as needed */}
 
         <div className="flex justify-end mt-4">
@@ -246,7 +258,7 @@ const UserDetailModal = ({ user, onClose }) => {
   };
 
   const handleDelete = (userToDelete) => {
-    if (window.confirm(`Are you sure you want to delete ${userToDelete.name}?`)) {
+     {
       fetch(`/api/admin/users/${userToDelete.id}`, {
         method: 'DELETE',
         headers: {
@@ -268,9 +280,57 @@ const UserDetailModal = ({ user, onClose }) => {
   const handlePrevPage = () => setPage(p => (p > 1 ? p - 1 : p));
   const handleNextPage = () => setPage(p => p + 1);
 
+function formatDateForUI(dateString) {
+  const date = new Date(dateString);
+  // Format as DD/MM/YYYY
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+}
+const ConfirmModal = ({ isOpen, message, onConfirm, onCancel }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+      <div className="bg-white rounded-lg p-6 w-80 shadow-lg">
+        <p className="mb-4 text-gray-700">{message}</p>
+        <div className="flex justify-end space-x-4">
+          <button
+            onClick={onCancel}
+            className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const handleConfirmToggle = () => {
+  if (userToToggle) {
+    toggleVerification(userToToggle); // call API to toggle
+  }
+  setConfirmOpen(false);
+  setUserToToggle(null);
+  setToggleAction('');
+};
+
+const handleCancelToggle = () => {
+  setConfirmOpen(false);
+  setUserToToggle(null);
+  setToggleAction('');
+};
   return (
 <div className="px-2 md:px-6 bg-gray-50 min-h-screen">
-    <div className="flex justify-between items-center mb-4  max-w-3xl mx-auto">
+    <div className="flex justify-between items-center mb-4  mx-auto">
         <h1 className="text-3xl font-bold">Users</h1>
         {/* <button onClick={() => navigate(`/add-product`)} className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">
           Add Product
@@ -311,7 +371,7 @@ const UserDetailModal = ({ user, onClose }) => {
           <thead>
             <tr className="bg-gray-50 text-gray-600 border-b">
               <th className="p-4 font-semibold text-left cursor-pointer" onClick={() => handleSort('name')}>
-                <input type="checkbox" />
+               
                 <span className="ml-3">Name{renderSortArrow('name')}</span>
               </th>
               <th className="p-4 font-semibold text-left cursor-pointer" onClick={() => handleSort('email')}>
@@ -346,7 +406,6 @@ const UserDetailModal = ({ user, onClose }) => {
               sortedUsers.map(u => (
                 <tr key={u.id} className="hover:bg-gray-100">
                   <td className="p-4 flex items-center">
-                    <input type="checkbox" className="mr-3" />
                     <img
                       src={u.profile_pic || profile}
                       alt={u.name}
@@ -356,30 +415,30 @@ const UserDetailModal = ({ user, onClose }) => {
                   </td>
                   <td className="p-4">{u.email}</td>
                   <td className="p-4">{u.phone}</td>
-                  <td
-                    className="p-4 cursor-pointer"
-                    onClick={() => toggleVerification(u)}
-                    title={u.is_verified ? 'Click to mark as Unverified' : 'Click to mark as Verified'}
-                  >
-                    {u.is_verified ? (
-                      <span className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
-                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                          <path
-                            d="M5 13l4 4L19 7"
-                            stroke="green"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">–</span>
-                    )}
-                  </td>
+            <td className="p-4 relative">
+  <label className="inline-flex relative items-center cursor-pointer">
+    <input
+      type="checkbox"
+      className="sr-only peer"
+      checked={u.is_verified}
+      onChange={(e) => {
+  e.preventDefault();
+  setUserToToggle(u);
+  setToggleAction(u.is_verified ? 'unverify' : 'verify');
+  setConfirmOpen(true);
+}}
+
+    />
+    <div className="w-11 h-6 bg-gray-200 rounded-full peer-focus:ring-4 peer-focus:ring-blue-300
+           peer-checked:bg-blue-600 transition-colors"></div>
+    <div className="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow 
+           peer-checked:translate-x-full peer-checked:border-blue-600 transition-transform border"></div>
+  </label>
+</td>
+
                   <td className="p-4">
                     <span className={`px-3 py-1 rounded-lg text-sm font-semibold`}>
-                      {u.created_at}
+                     {formatDateForUI(`${u.created_at}`)}
                     </span>
                   </td>
                   <td className="p-4">
@@ -456,6 +515,12 @@ const UserDetailModal = ({ user, onClose }) => {
     }}
   />
 )}
+<ConfirmModal
+  isOpen={confirmOpen}
+  message={`Are you sure you want to ${toggleAction} this user?`}
+  onConfirm={handleConfirmToggle}
+  onCancel={handleCancelToggle}
+/>
 
     </div>
   );

@@ -34,7 +34,9 @@ export default function App() {
         <Route path="users" element={<Users />} />
         <Route path="products" element={<Products />} />
         <Route path="blog" element={<Blog />} />
-        <Route path="add-product" element={<AddProductForm />} />
+        <Route path="/products/add" element={<AddProductForm />} />
+        <Route path="/products/edit/:id" element={<AddProductForm />} />
+
         <Route path="add-categories" element={<AddCategories />} />
         <Route path="categories" element={<CategoriesList />} />
         <Route path="add-sub-categories" element={<AddSubcategories />} />

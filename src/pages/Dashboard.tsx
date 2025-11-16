@@ -26,9 +26,9 @@ export default function Dashboard() {
   const cards = [
     { title: 'Total Active Users', value: dashboardData.activeUsers || 0, delta: '' },
     { title: 'Total Orders', value: dashboardData.totalOrders || 0, delta: '' },
-    { title: 'Earnings Today', value: `$${dashboardData.earningToday || '0.00'}`, delta: '' },
-    { title: 'Earnings This Week', value: `$${dashboardData.earningWeek || '0.00'}`, delta: '' },
-    { title: 'Earnings This Month', value: `$${dashboardData.earningMonth || '0.00'}`, delta: '' },
+    { title: 'Earnings Today', value: `₹${dashboardData.earningToday || '0.00'}`, delta: '' },
+    { title: 'Earnings This Week', value: `₹${dashboardData.earningWeek || '0.00'}`, delta: '' },
+    { title: 'Earnings This Month', value: `₹${dashboardData.earningMonth || '0.00'}`, delta: '' },
     { title: 'Total Products', value: dashboardData.totalProducts || 0, delta: '' },
     { title: 'Total Categories', value: dashboardData.totalCategories || 0, delta: '' },
   ];
@@ -50,7 +50,7 @@ return (
     </div>
 
     {/* Charts section with card styling and alignment */}
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="card bg-white rounded-lg shadow p-6 flex flex-col">
         <h3 className="font-semibold mb-4 text-gray-700">Current visits</h3>
         <div className="flex-1">
@@ -64,7 +64,7 @@ return (
           <ChartBar />
         </div>
       </div>
-    </div>
+    </div> */}
 
   </div>
 );
