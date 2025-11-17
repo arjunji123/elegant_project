@@ -13,7 +13,7 @@ const EditCategoryModal = ({ category, onClose, onSave }) => {
   const [values, setValues] = useState({
     name: '',
     description: '',
-    images: [], // These will be URLs or File objects
+    images: [], // URLs
     icon: '',
     subcategory_ids: [],
   });
@@ -38,61 +38,46 @@ const EditCategoryModal = ({ category, onClose, onSave }) => {
 
   if (!category) return null;
 
-  // Handle text input
   const handleChange = e => {
     const { name, value } = e.target;
     setValues(prev => ({ ...prev, [name]: value }));
   };
 
-  // Icon upload
   const handleIconChange = e => {
     const file = e.target.files[0];
     if (file) setIconFile(file);
   };
 
-  // Image upload (replace or as append)
-  const handleImageFileChange = (idx, e) => {
+  // Add new image URL (replace with actual file upload in real scenario)
+  const handleAddImage = e => {
     const file = e.target.files[0];
     if (!file) return;
-    setValues(prev => {
-      const updatedImages = [...prev.images];
-      updatedImages[idx] = file;
-      return { ...prev, images: updatedImages };
-    });
+
+    // For preview only, not uploaded
+    const url = URL.createObjectURL(file);
+    setValues(prev => ({ ...prev, images: [...prev.images, url] }));
   };
 
-  // Remove any image (existing or just added)
   const removeImage = idx => {
     if (window.confirm('Remove this image?')) {
       setValues(prev => ({
         ...prev,
-        images: prev.images.filter((_, i) => i !== idx)
+        images: prev.images.filter((_, i) => i !== idx),
       }));
     }
   };
 
-  // Add a blank image field (for new images)
-  const addImageField = () => {
-    setValues(prev => ({
-      ...prev,
-      images: [...prev.images, '']
-    }));
-  };
-
-  // Handle form submit (stub: you must handle new files uploading in real API)
   const handleSubmit = e => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    // You may need to adjust this to handle files and URL separation
     const payload = {
       name: values.name,
-      icon: values.icon,
       description: values.description,
+      icon: values.icon, // Keep URL only
+      images: values.images, // Only URLs, not File objects
       subcategory_ids: values.subcategory_ids,
-      // Only image URLs should go here – you will likely need separate logic to upload files
-      images: values.images.filter(img => typeof img === 'string'),
     };
 
     fetch(`/api/admin/categories/${category.id}`, {
@@ -104,23 +89,15 @@ const EditCategoryModal = ({ category, onClose, onSave }) => {
       body: JSON.stringify(payload),
     })
       .then(res => {
-        if (!res.ok) {
-          return res.text().then(text => {
-            throw new Error(text || 'Failed to update category');
-          });
-        }
+        if (!res.ok) return res.text().then(text => { throw new Error(text || 'Failed to update category'); });
         return res.json();
       })
-      .then(data => {
+      .then(() => {
         onSave();
         onClose();
       })
-      .catch(err => {
-        setError(err.message);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
   };
 
   return (
@@ -152,79 +129,37 @@ const EditCategoryModal = ({ category, onClose, onSave }) => {
           <label className="block mb-2 font-medium">Category Icon</label>
           <div className="flex items-center mb-4 space-x-4">
             {iconFile ? (
-              <img
-                src={URL.createObjectURL(iconFile)}
-                alt="Icon Preview"
-                className="w-20 h-20 object-cover rounded border"
-              />
+              <img src={URL.createObjectURL(iconFile)} alt="Icon Preview" className="w-20 h-20 object-cover rounded border" />
             ) : values.icon ? (
-              <img
-                src={values.icon}
-                alt="Current Icon"
-                className="w-20 h-20 object-cover rounded border"
-              />
+              <img src={values.icon} alt="Current Icon" className="w-20 h-20 object-cover rounded border" />
             ) : (
-              <div className="w-20 h-20 bg-gray-100 rounded border flex items-center justify-center text-gray-400">
-                No Icon
-              </div>
+              <div className="w-20 h-20 bg-gray-100 rounded border flex items-center justify-center text-gray-400">No Icon</div>
             )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleIconChange}
-              className="border rounded p-1"
-            />
+            <input type="file" accept="image/*" onChange={handleIconChange} className="border rounded p-1" />
           </div>
 
-          {/* <label className="block mb-2 font-medium">Images</label> */}
-          {/* {values.images?.map((img, idx) => (
-            <div key={idx} className="flex items-center mb-4 space-x-4">
-              {img
-                ? typeof img === 'string'
-                  ? <img src={img} alt={`Image ${idx + 1}`} className="w-20 h-20 object-cover rounded border" />
-                  : <img src={URL.createObjectURL(img)} alt={`Image ${idx + 1}`} className="w-20 h-20 object-cover rounded border" />
-                : (
-                  <div className="w-20 h-20 bg-gray-100 rounded border flex items-center justify-center text-gray-400">
-                    No Image
-                  </div>
-                )}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={e => handleImageFileChange(idx, e)}
-                className="border rounded p-1"
-              />
-              <button
-                type="button"
-                onClick={() => removeImage(idx)}
-                className="p-2 text-red-600 hover:text-red-800"
-                aria-label="Remove image"
-              >
-                <FiTrash size={18} />
-              </button>
-            </div>
-          ))} */}
-          {/* <button
-            type="button"
-            onClick={addImageField}
-            className="mb-4 text-indigo-600 hover:text-indigo-800 underline"
-          >
-            + Add Image
-          </button> */}
+          <label className="block mb-2 font-medium">Images</label>
+          <div className="flex flex-wrap gap-4 mb-4">
+            {values.images.map((img, idx) => (
+              <div key={idx} className="relative">
+                <img src={img} alt={`Image ${idx + 1}`} className="w-20 h-20 object-cover rounded border" />
+                <button
+                  type="button"
+                  onClick={() => removeImage(idx)}
+                  className="absolute top-0 right-0 bg-red-600 text-white rounded-full p-1 hover:bg-red-800"
+                  aria-label="Remove image"
+                >
+                  <FiTrash size={12} />
+                </button>
+              </div>
+            ))}
+            <input type="file" accept="image/*" onChange={handleAddImage} className="border rounded p-1" />
+          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition"
-          >
+          <button type="submit" disabled={loading} className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition">
             {loading ? 'Saving...' : 'Save'}
           </button>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={loading}
-            className="mt-2 w-full bg-gray-300 py-2 rounded hover:bg-gray-400 transition"
-          >
+          <button type="button" onClick={onClose} disabled={loading} className="mt-2 w-full bg-gray-300 py-2 rounded hover:bg-gray-400 transition">
             Cancel
           </button>
         </form>
@@ -232,6 +167,7 @@ const EditCategoryModal = ({ category, onClose, onSave }) => {
     </div>
   );
 };
+
 export const CategoriesList = () => {
   const [categories, setCategories] = useState([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);

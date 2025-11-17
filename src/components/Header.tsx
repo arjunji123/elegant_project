@@ -22,7 +22,7 @@ const userName = localStorage.getItem('name');
 
   const handleSignOut = () => {
     // Clear auth token & state
-    localStorage.removeItem('aushToken');
+    localStorage.removeItem('authtoken');
     setToken(null);
     setSignIn(false);
     navigate('/signin');
