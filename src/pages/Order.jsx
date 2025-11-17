@@ -78,7 +78,15 @@ const OrderDetailModal = ({ order, onClose, loading }) => {
   }
 
   if (!order) return null;
-
+function formatDateForUI(dateString) {
+  const date = new Date(dateString);
+  // Format as DD/MM/YYYY
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+}
   return (
     <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-lg max-w-md w-full overflow-auto max-h-[80vh]">
@@ -89,6 +97,13 @@ const OrderDetailModal = ({ order, onClose, loading }) => {
           <p><b>Name:</b> {order.user_name}</p>
           <p><b>Email:</b> {order.user_email}</p>
           <p><b>Phone:</b> {order.user_phone || 'N/A'}</p>
+
+          <p><b>Address:</b> {order.address.full_address || 'N/A'}</p>
+                    <p><b>Created At :</b> {formatDateForUI(order.created_at) || 'N/A'}</p>
+
+          <p><b>Razor pay order I’d :</b> {order.razorpay_order_id || 'N/A'}</p>
+          <p><b>Razor pay payment I’d  :</b> {order.razorpay_payment_id || 'N/A'}</p>
+
         </section>
         <section className="mb-4">
           <h3 className="font-semibold">Products</h3>
@@ -205,15 +220,16 @@ export const OrdersList = () => {
                 <td className="p-4">{order.status}</td>
                 <td className="p-4 text-center space-x-2">
                   <button
+                  
                     onClick={() => openDetailModal(order)}
-                    className="text-blue-600 hover:text-blue-800"
+                    className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition"
                   >
                     <AiOutlineFundView size={20} />
                   </button>
 
                   <button
                     onClick={() => openEditModal(order)}
-                    className="text-blue-600 hover:text-blue-800"
+                    className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition"
                   >
                     <AiFillEdit size={20} />
                   </button>

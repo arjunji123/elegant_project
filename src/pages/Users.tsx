@@ -370,6 +370,7 @@ const handleCancelToggle = () => {
         <table className="min-w-full">
           <thead>
             <tr className="bg-gray-50 text-gray-600 border-b">
+              <th className="p-4 font-semibold text-left cursor-pointer">#</th>
               <th className="p-4 font-semibold text-left cursor-pointer" onClick={() => handleSort('name')}>
                
                 <span className="ml-3">Name{renderSortArrow('name')}</span>
@@ -386,7 +387,7 @@ const handleCancelToggle = () => {
               <th className="p-4 font-semibold text-left cursor-pointer" onClick={() => handleSort('created_at')}>
                 Created At{renderSortArrow('created_at')}
               </th>
-              <td className="p-4 text-right"></td>
+              <td className="p-4 font-semibold text-left cursor-pointer">Action</td>
             </tr>
           </thead>
           <tbody>
@@ -403,8 +404,9 @@ const handleCancelToggle = () => {
                 <td colSpan={6} className="p-4 text-center">No users found.</td>
               </tr>
             ) : (
-              sortedUsers.map(u => (
+              sortedUsers.map((u,index) => (
                 <tr key={u.id} className="hover:bg-gray-100">
+                  <td className="p-4  items-center">{index+1}</td>
                   <td className="p-4 flex items-center">
                     <img
                       src={u.profile_pic || profile}

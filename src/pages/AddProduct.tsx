@@ -173,7 +173,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     formData.append('category_id', values.category_id);
     formData.append('unit', values.unit);
     formData.append('price', values.price.toString());
-    formData.append('offer', values.offer ? values.offer.toString() : '');
+    // formData.append('offer', values.offer ? values.offer.toString() : '');
 
     // Arrays -> JSON string
     formData.append('colors', JSON.stringify(values.colors));
@@ -194,7 +194,7 @@ const payload = {
   category_id: values.category_id,
   unit: values.unit,
   price: values.price,
-  offer: values.offer || '',
+  // offer: values.offer || '',
   subcategory: values.subcategory_id,
   colors: values.colors, // array of objects
   sizes: values.sizes,   // array of strings
@@ -331,14 +331,14 @@ console.log(isEditMode ? JSON.stringify(payload) :formData,"Formdata")
       />
 
       {/* Offer */}
-      <label className="block mb-2 text-sm font-medium">Offer (%)</label>
+      {/* <label className="block mb-2 text-sm font-medium">Offer (%)</label>
       <input
         name="offer"
         type="number"
         value={values.offer}
         onChange={handleChange}
         className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
-      />
+      /> */}
 
       {/* Colors */}
       <label className="block mb-2 font-medium">Colors</label>

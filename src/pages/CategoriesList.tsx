@@ -138,24 +138,6 @@ const EditCategoryModal = ({ category, onClose, onSave }) => {
             <input type="file" accept="image/*" onChange={handleIconChange} className="border rounded p-1" />
           </div>
 
-          {/* <label className="block mb-2 font-medium">Images</label> */}
-          {/* <div className="flex flex-wrap gap-4 mb-4">
-            {values.images.map((img, idx) => (
-              <div key={idx} className="relative">
-                <img src={img} alt={`Image ${idx + 1}`} className="w-20 h-20 object-cover rounded border" />
-                <button
-                  type="button"
-                  onClick={() => removeImage(idx)}
-                  className="absolute top-0 right-0 bg-red-600 text-white rounded-full p-1 hover:bg-red-800"
-                  aria-label="Remove image"
-                >
-                  <FiTrash size={12} />
-                </button>
-              </div>
-            ))}
-            <input type="file" accept="image/*" onChange={handleAddImage} className="border rounded p-1" />
-          </div> */}
-
           <button type="submit" disabled={loading} className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition">
             {loading ? 'Saving...' : 'Save'}
           </button>
@@ -250,6 +232,8 @@ const token = localStorage.getItem('authToken');
 
     navigate(`/add-categories`)
   }
+
+  console.log(categories.map((cat)=>cat.subcategories.map((subcat)=>subcat.name)))
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6  mx-auto px-6">
@@ -265,14 +249,16 @@ const token = localStorage.getItem('authToken');
       <table className="min-w-full bg-white shadow-lg rounded-lg">
         <thead>
           <tr className="bg-gray-100 text-gray-700 border-b-2 border-gray-200">
+            <th className="p-4 font-semibold text-left">#</th>
             <th className="p-4 font-semibold text-left">Categories Name</th>
-            <th className="p-4 font-semibold text-left">Categories ID</th>
+            <th className="p-4 font-semibold text-left">Subcategories</th>
             <th className="p-4 font-semibold text-center">Action</th>
           </tr>
         </thead>
         <tbody>
-          {categories.map(u => (
+          {categories.map((u,index) => (
             <tr key={u.id} className="hover:bg-gray-100">
+              <td className="p-4  items-center">{index+1}</td>
               <td className="p-4 flex items-center">
                 <img
                   src={u.icon}
@@ -281,19 +267,29 @@ const token = localStorage.getItem('authToken');
                 />
                 <span className="ml-2">{u.name}</span>
               </td>
-              <td className="p-4">{u.id}</td>
-              <td className="p-4 text-center space-x-4">
-                <button
+<td className="p-4 whitespace-pre-line">
+  {u.subcategories && u.subcategories.length > 0
+    ? u.subcategories.map((sub) => sub.name).join(",\n")
+    : "—"}
+</td>            <td className="p-4 text-center space-x-4">
+    <button
+                                              onClick={() => openEditModal(u)}
+                                              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition"
+                                              aria-label="Edit subcategory"
+                                          >
+                                              <AiFillEdit size={20} />
+                                          </button>
+                {/* <button
                   onClick={() => openEditModal(u)}
                   className="text-blue-600 hover:text-blue-800"
                   aria-label="Edit category"
                 >
                   <AiFillEdit size={20} />
-                </button>
+                </button> */}
 
                 <button
                   onClick={() => openDeleteModal(u)}
-                  className="text-red-600 hover:text-red-800"
+                 className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
                   aria-label="Delete category"
                 >
                   <AiFillDelete size={20} />

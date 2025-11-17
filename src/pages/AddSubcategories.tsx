@@ -237,29 +237,31 @@ export const SubcategoriesList = () => {
                     <table className="min-w-full bg-white shadow rounded-lg">
                         <thead>
                             <tr className="bg-gray-100 text-gray-700 border-b-2">
-                                <th className="p-4 text-left w-2/5">Subcategory Name</th>
-                                <th className="p-4 text-left w-1/5">Parent Category</th>
-                                <th className="p-4 text-left w-1/10">ID</th>
-                                <th className="p-4 text-center w-1/5">Action</th>
+                              
+
+                                <th className="p-4 font-semibold text-left">#</th>
+                                <th className="p-4 font-semibold text-left">Subcategory Name</th>
+                                <th className="p-4 font-semibold text-left">Parent Category</th>
+                                <th className="p-4 font-semibold text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {subcategories.map(sub => (
+                            {subcategories.map((sub, index) => (
                                 <tr key={sub.id} className="hover:bg-gray-100 border-b">
-                                    <td className="p-4 font-medium text-gray-800">{sub.name}</td>
-                                    <td className="p-4 text-indigo-600 font-semibold">{sub.category?.name}</td>
-                                    <td className="p-4 text-gray-600">{sub.id}</td>
-                                    <td className="p-4 text-center space-x-4">
+                                    <td className="p-4 items-center">{index + 1}</td>
+                                    <td className="p-2 font-medium text-gray-800">{sub.name}</td>
+                                    <td className="p-2 text-indigo-600 font-semibold">{sub.category?.name}</td>
+                                    <td className="p-2 text-center space-x-4">
                                         <button
                                             onClick={() => openEditModal(sub)}
-                                            className="text-blue-600 hover:text-blue-800"
+                                            className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition"
                                             aria-label="Edit subcategory"
                                         >
                                             <AiFillEdit size={20} />
                                         </button>
                                         <button
                                             onClick={() => openDeleteModal(sub)}
-                                            className="text-red-600 hover:text-red-800"
+                                           className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
                                             aria-label="Delete subcategory"
                                         >
                                             <AiFillDelete size={20} />
@@ -402,59 +404,59 @@ export const AddSubcategories = () => {
     };
 
     return (
-       <div className="p-6 max-w-3xl mx-auto">
-         <form
-            onSubmit={handleSubmit}
-            className="bg-white shadow-lg rounded-xl p-12 mx-auto mt-8">
-            <h2 className="text-2xl font-semibold mb-6 text-center">Add SubCategories</h2>
-            {error && <div className="mb-4 text-red-600">{error}</div>}
-            {success && (
-                <div className="mb-4 text-green-600">SubCategories added successfully!</div>
-            )}
-            {/* Subcategory ID */}
-            <label className="block mb-2 text-sm font-medium">SubCategories</label>
-            <select
-                name="category_id"
-                value={values.category_id}
-                onChange={handleCategoryChange}
-                className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
-                required
-            >
-                <option value="">Select category</option>
-                {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>
-                        {cat.category_name || cat.name}
-                    </option>
-                ))}
-            </select>
+        <div className="p-6 max-w-3xl mx-auto">
+            <form
+                onSubmit={handleSubmit}
+                className="bg-white shadow-lg rounded-xl p-12 mx-auto mt-8">
+                <h2 className="text-2xl font-semibold mb-6 text-center">Add SubCategories</h2>
+                {error && <div className="mb-4 text-red-600">{error}</div>}
+                {success && (
+                    <div className="mb-4 text-green-600">SubCategories added successfully!</div>
+                )}
+                {/* Subcategory ID */}
+                <label className="block mb-2 text-sm font-medium">SubCategories</label>
+                <select
+                    name="category_id"
+                    value={values.category_id}
+                    onChange={handleCategoryChange}
+                    className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
+                    required
+                >
+                    <option value="">Select category</option>
+                    {categories.map(cat => (
+                        <option key={cat.id} value={cat.id}>
+                            {cat.category_name || cat.name}
+                        </option>
+                    ))}
+                </select>
 
-            <label className="block mb-2 text-sm font-medium">Sub Categories</label>
-            <input
-                name="category"
-                value={subcategories}
-                onChange={e => setSubcategories(e.target.value)}
-                className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
-                required
-            />
-            <label className="block mb-2 text-sm font-medium">Description</label>
-            <input
-                name="category"
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
-                required
-            />
+                <label className="block mb-2 text-sm font-medium">Sub Categories</label>
+                <input
+                    name="category"
+                    value={subcategories}
+                    onChange={e => setSubcategories(e.target.value)}
+                    className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
+                    required
+                />
+                <label className="block mb-2 text-sm font-medium">Description</label>
+                <input
+                    name="category"
+                    value={description}
+                    onChange={e => setDescription(e.target.value)}
+                    className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
+                    required
+                />
 
 
-            <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-indigo-600 text-white font-semibold py-2 rounded-lg hover:bg-indigo-700 transition"
-            >
-                {loading ? 'Adding...' : 'Add subcategories'}
-            </button>
-        </form>
-       </div>
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-indigo-600 text-white font-semibold py-2 rounded-lg hover:bg-indigo-700 transition"
+                >
+                    {loading ? 'Adding...' : 'Add subcategories'}
+                </button>
+            </form>
+        </div>
     );
 };
 

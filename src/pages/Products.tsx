@@ -4,14 +4,15 @@ import { useProduct } from '@/context/ProductContext';
 import { AiFillDelete, AiFillEdit, AiFillEye } from 'react-icons/ai';
 import { platform } from 'os';
 
-const ProductRow = ({ product, onEdit, onDelete, onView }) => {
+const ProductRow = ({ product, onEdit, onDelete, onView, index }) => {
   const navigate = useNavigate();
-    const imageUrl = product.images?.[0] || 'https://via.placeholder.com/100?text=No+Image';
+  console.log(product.subcategory,"product.subcategory")
     return (
         <tr className="border-b">
+             <td className="p-2  justify-center items-center">{index + 1}</td>
             <td className="p-2 flex justify-center items-center">
                 <img
-                    src={imageUrl}
+                    src={product.images?.[0]}
                     alt={product.name}
                     className="w-16 h-16 object-cover rounded"
                     onError={e => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/100?text=Image+Load+Error'; }}
@@ -549,6 +550,7 @@ const ProductGrid = () => {
                 <table className="min-w-full">
                     <thead>
                         <tr className="bg-gray-100 text-gray-700 border-b-2 border-gray-200">
+                            <th className="p-3">#</th>
                             <th className="p-3">Image</th>
                             <th className="p-3">Name</th>
                             <th className="p-3">Price</th>
@@ -558,13 +560,14 @@ const ProductGrid = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {products.map(product => (
+                        {products.map((product, index) => (
                             <ProductRow
                                 key={product.id || product._id}
                                 product={product}
                                 onEdit={() => openEditModal(product)}
                                 onDelete={() => openDeleteConfirm(product)}
                                 onView={() => openDetailModal(product)}
+                                index={index}
                             />
                         ))}
                     </tbody>
