@@ -211,8 +211,6 @@ export const SubcategoriesList = () => {
     const closeEditModal = () => {
         setSelectedSubcategory(null);
         setEditModalOpen(false);
-        fetchSubcategories();
-
     };
 
     const openDeleteModal = (sub) => {
