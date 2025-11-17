@@ -84,14 +84,15 @@ console.log("Fetching subcategories from URL:", url);
     .then(res => res.json())
     .then(data => {
       if (Array.isArray(data.data)) {
-        setSubcategories(data.data);
+        console.log(data.data)
+        setSubcategories(data.data.length > 0? data.data : data.message);
       } else {
         setSubcategories([]);
       }
     })
     .catch(() => setSubcategories([]));
 }, [categoriesID, values.category_id, token]);
-  
+console.log(subcategories,"subcategories")
   const handleCategoryChange = e => {
     const selectedCategoryId = e.target.value;
     setCategoriesID(selectedCategoryId);
@@ -233,6 +234,15 @@ console.log(isEditMode ? JSON.stringify(payload) :formData,"Formdata")
 
   return (
     <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-xl p-8 mx-auto mt-8">
+      <button
+        type="button"
+        onClick={() => navigate('/products')}
+        className="mb-6 flex items-center text-gray-700 hover:text-indigo-700"
+      >
+        <span className="mr-2">&#8592;</span> {/* Unicode left arrow */}
+        Back to List
+      </button>
+
       <h2 className="text-2xl font-semibold mb-6 text-center">{isEditMode ? "Edit Product" :"Add Product"}</h2>
       {error && <div className="mb-4 text-red-600">{error}</div>}
       {success && <div className="mb-4 text-green-600">Product added successfully!</div>}
