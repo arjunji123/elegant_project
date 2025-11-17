@@ -138,8 +138,8 @@ const EditCategoryModal = ({ category, onClose, onSave }) => {
             <input type="file" accept="image/*" onChange={handleIconChange} className="border rounded p-1" />
           </div>
 
-          <label className="block mb-2 font-medium">Images</label>
-          <div className="flex flex-wrap gap-4 mb-4">
+          {/* <label className="block mb-2 font-medium">Images</label> */}
+          {/* <div className="flex flex-wrap gap-4 mb-4">
             {values.images.map((img, idx) => (
               <div key={idx} className="relative">
                 <img src={img} alt={`Image ${idx + 1}`} className="w-20 h-20 object-cover rounded border" />
@@ -154,7 +154,7 @@ const EditCategoryModal = ({ category, onClose, onSave }) => {
               </div>
             ))}
             <input type="file" accept="image/*" onChange={handleAddImage} className="border rounded p-1" />
-          </div>
+          </div> */}
 
           <button type="submit" disabled={loading} className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition">
             {loading ? 'Saving...' : 'Save'}
