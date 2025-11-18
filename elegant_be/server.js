@@ -1,9 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const swaggerAutogen = require('./swagger');
-dotenv.config();
-require('./swagger-output.json');
+
+// Configure dotenv without verbose output
+dotenv.config({ silent: true });
+
+// Only require swagger in production
+if (process.env.NODE_ENV === 'production') {
+  require('./swagger-output.json');
+}
+
 require('./config/db'); // yaha se DB check ho jayega
 
 const app = require('./app');

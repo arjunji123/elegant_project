@@ -60,23 +60,49 @@ exports.getCategoryDetail = async (req, res) => {
 };
 
 /**
- * Update Category
+ * Update Category (Form Data Support)
  * @api {PUT} /api/admin/categories/:id
- * Example req.body:
- * {
- *   "name": "Electronics",
- *   "icon": "icon_url.png",
- *   "description": "All electronics",
- *   "subcategory_ids": [2, 3, 5]
- * }
+ * Form Data Fields:
+ * - name: string
+ * - description: string
+ * - subcategory_ids: JSON string [2, 3, 5]
+ * - icon: file (optional)
  */
 exports.updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, icon, description, subcategory_ids } = req.body;
-    await db.query('UPDATE categories SET name=?, icon=?, description=? WHERE id=?', [name, icon, description, id]);
+    
+    // Extract form data
+    const name = req.body.name || '';
+    const description = req.body.description || '';
+    
+    // Get uploaded icon URL (if file uploaded)
+    let iconUrl = null;
+    if (req.file) {
+      iconUrl = req.file.path; // Cloudinary URL
+    }
+    
+    // Parse subcategory_ids if provided
+    let subcategory_ids = [];
+    if (req.body.subcategory_ids) {
+      try {
+        subcategory_ids = JSON.parse(req.body.subcategory_ids);
+      } catch (e) {
+        console.log('Subcategory IDs parsing error:', e.message);
+      }
+    }
+    
+    console.log('Update category request:', { id, name, description, iconUrl, subcategory_ids });
+    
+    // Update category (only update icon if new file uploaded)
+    if (iconUrl) {
+      await db.query('UPDATE categories SET name=?, icon=?, description=? WHERE id=?', [name, iconUrl, description, id]);
+    } else {
+      await db.query('UPDATE categories SET name=?, description=? WHERE id=?', [name, description, id]);
+    }
+    
     // Assign subcategories if provided
-    if (Array.isArray(subcategory_ids)) {
+    if (Array.isArray(subcategory_ids) && subcategory_ids.length > 0) {
       // Unassign all subcategories from this category first
       await db.query('UPDATE subcategories SET category_id=NULL WHERE category_id=?', [id]);
       // Assign only the selected subcategories to this category
@@ -84,8 +110,10 @@ exports.updateCategory = async (req, res) => {
         await db.query('UPDATE subcategories SET category_id=? WHERE id=?', [id, subId]);
       }
     }
-    res.json({ success: true, message: 'Category updated' });
+    
+    res.json({ success: true, message: 'Category updated successfully' });
   } catch (err) {
+    console.error('Update category error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 };

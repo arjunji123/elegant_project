@@ -3,6 +3,7 @@ const router = express.Router();
 const adminProductController = require('../controllers/adminProductController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const admin = require('../middlewares/adminMiddleware');
+const uploadProductImages = require('../middlewares/uploadProductImages');
 
 // List all products
 router.get('/admin/products', authMiddleware, admin, adminProductController.listProducts);
@@ -10,8 +11,8 @@ router.get('/admin/products', authMiddleware, admin, adminProductController.list
 router.get('/admin/products/:id', authMiddleware, admin, adminProductController.getProductDetail);
 // Create product
 router.post('/admin/products', authMiddleware, admin, adminProductController.createProduct);
-// Update product
-router.put('/admin/products/:id', authMiddleware, admin, adminProductController.updateProduct);
+// Update product (with form data and image upload)
+router.put('/admin/products/:id', authMiddleware, admin, uploadProductImages.array('images', 5), adminProductController.updateProduct);
 // Delete product
 router.delete('/admin/products/:id', authMiddleware, admin, adminProductController.deleteProduct);
 module.exports = router;

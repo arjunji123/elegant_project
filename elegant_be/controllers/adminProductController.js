@@ -129,83 +129,92 @@ exports.createProduct = async (req, res) => {
 };
 
 /**
- * Update Product
+ * Update Product (Form Data Support)
  * @api {PUT} /api/admin/products/:id
- * Example req.body:
- * {
- *   "name": "Rayban Sunglasses",
- *   "category_id": 1,
- *   "subcategory_id": 2,
- *   "price": 1999,
- *   "description": "Stylish sunglasses",
- *   "image": "image_url.png"
- * }
+ * Form Data Fields:
+ * - name: string
+ * - category_id: number
+ * - subcategory_id: number  
+ * - price: number
+ * - description: string
+ * - colors: JSON string [{"color_name":"Red","color_code":"#FF0000"}]
+ * - sizes: JSON string ["S","M","L"]
+ * - images: multiple files
  */
 exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    // Accept both singular (color, size, image) and plural (colors, sizes, images) forms
-    const { 
-      name, 
-      category_id, 
-      subcategory_id, 
-      price, 
-      description,
-      color,
-      colors,
-      size,
-      sizes,
-      image,
-      images
-    } = req.body;
     
-    // Use plural form if available, otherwise use singular
-    const finalColors = colors || color;
-    const finalSizes = sizes || size;
-    const finalImages = images || image;
+    // Extract form data
+    const name = req.body.name || '';
+    const category_id = req.body.category_id || null;
+    const subcategory_id = req.body.subcategory_id || null;
+    const price = req.body.price || 0;
+    const description = req.body.description || '';
+    
+    // Parse JSON strings for colors and sizes
+    let finalColors = [];
+    let finalSizes = [];
+    
+    if (req.body.colors) {
+      try {
+        finalColors = JSON.parse(req.body.colors);
+      } catch (e) {
+        console.log('Colors parsing error:', e.message);
+      }
+    }
+    
+    if (req.body.sizes) {
+      try {
+        finalSizes = JSON.parse(req.body.sizes);
+      } catch (e) {
+        console.log('Sizes parsing error:', e.message);
+      }
+    }
+    
+    // Get uploaded images URLs
+    let finalImages = [];
+    if (req.files && req.files.length > 0) {
+      finalImages = req.files.map(file => file.path); // Cloudinary URLs
+    }
     
     console.log('Update request for product:', id);
-    console.log('Received data:', { name, category_id, subcategory_id, finalColors, finalSizes, price, description, finalImages });
+    console.log('Form data received:', { name, category_id, subcategory_id, price, description });
+    console.log('Colors:', finalColors);
+    console.log('Sizes:', finalSizes);
+    console.log('Images:', finalImages);
     
+    // Update basic product info
     await db.query(
       'UPDATE products SET name=?, category_id=?, subcategory_id=?, price=?, description=? WHERE id=?',
       [name, category_id, subcategory_id, price, description, id]
     );
     
-    // Update images
-    if (finalImages !== undefined) {
-      console.log('Updating images:', finalImages);
+    // Update images if uploaded
+    if (finalImages.length > 0) {
       await db.query('DELETE FROM product_images WHERE product_id=?', [id]);
-      if (Array.isArray(finalImages) && finalImages.length > 0) {
-        for (const imgUrl of finalImages) {
-          await db.query('INSERT INTO product_images (product_id, image_url) VALUES (?, ?)', [id, imgUrl]);
-        }
+      for (const imgUrl of finalImages) {
+        await db.query('INSERT INTO product_images (product_id, image_url) VALUES (?, ?)', [id, imgUrl]);
       }
     }
     
-    // Update colors
-    if (finalColors !== undefined) {
-      console.log('Updating colors:', finalColors);
+    // Update colors if provided
+    if (finalColors.length > 0) {
       await db.query('DELETE FROM product_colors WHERE product_id=?', [id]);
-      if (Array.isArray(finalColors) && finalColors.length > 0) {
-        for (const c of finalColors) {
-          await db.query('INSERT INTO product_colors (product_id, color_name, color_code) VALUES (?, ?, ?)', [id, c.color_name, c.color_code]);
-        }
+      for (const c of finalColors) {
+        await db.query('INSERT INTO product_colors (product_id, color_name, color_code) VALUES (?, ?, ?)', [id, c.color_name, c.color_code]);
       }
     }
     
-    // Update sizes
-    if (finalSizes !== undefined) {
-      console.log('Updating sizes:', finalSizes);
+    // Update sizes if provided
+    if (finalSizes.length > 0) {
       await db.query('DELETE FROM product_sizes WHERE product_id=?', [id]);
-      if (Array.isArray(finalSizes) && finalSizes.length > 0) {
-        for (const s of finalSizes) {
-          await db.query('INSERT INTO product_sizes (product_id, size) VALUES (?, ?)', [id, s]);
-        }
+      for (const s of finalSizes) {
+        await db.query('INSERT INTO product_sizes (product_id, size) VALUES (?, ?)', [id, s]);
       }
     }
     
-    res.json({ success: true, message: 'Product updated' });
+    res.json({ success: true, message: 'Product updated successfully' });
   } catch (err) {
     console.error('Update error:', err);
     res.status(500).json({ success: false, error: err.message });

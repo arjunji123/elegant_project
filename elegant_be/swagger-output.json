@@ -2496,22 +2496,10 @@
                 "description": {
                   "example": "any"
                 },
-                "color": {
-                  "example": "any"
-                },
                 "colors": {
                   "example": "any"
                 },
-                "size": {
-                  "example": "any"
-                },
                 "sizes": {
-                  "example": "any"
-                },
-                "image": {
-                  "example": "any"
-                },
-                "images": {
                   "example": "any"
                 }
               }

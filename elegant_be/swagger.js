@@ -14,4 +14,11 @@ const doc = {
 const outputFile = './swagger-output.json';
 const endpointsFiles = ['./app.js']; // Your main file with routes
 
-swaggerAutogen(outputFile, endpointsFiles, doc);
+// Only generate when explicitly called
+if (require.main === module) {
+  swaggerAutogen(outputFile, endpointsFiles, doc).then(() => {
+    console.log('Swagger documentation generated successfully!');
+  });
+}
+
+module.exports = { swaggerAutogen, doc, outputFile, endpointsFiles };

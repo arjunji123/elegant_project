@@ -2,13 +2,13 @@ const multer = require("multer");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const cloudinary = require("../config/cloudinary");
 
-// Cloudinary storage config for category icons
+// Cloudinary storage config for product images
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: "category_icons",
-    allowed_formats: ["jpg", "jpeg", "png", "webp", "svg"],
-    public_id: (req, file) => `category_icon_${Date.now()}_${Math.round(Math.random() * 1E9)}`,
+    folder: "products",
+    allowed_formats: ["jpg", "jpeg", "png", "webp", "heic", "heif"],
+    public_id: (req, file) => `product_${Date.now()}_${Math.round(Math.random() * 1E9)}`,
   },
 });
 
