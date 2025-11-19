@@ -11,7 +11,6 @@ export default function OrderDetailPage() {
   const token = localStorage.getItem('authToken');
 const {ordertId} = useProduct();
 
-console.log("Order ID in detail page:",ordertId);
   useEffect(() => {
     setLoading(true);
     fetch(`/api/admin/orders/${ordertId}`, {
@@ -29,8 +28,7 @@ console.log("Order ID in detail page:",ordertId);
   if (loading) return <div>Loading order details...</div>;
   if (error) return <div className="text-red-600">Error: {error}</div>;
   if (!order) return <div>No order found.</div>;
-console.log("Order details:", order.data
-);
+
 return (
   <div className="bg-white border rounded-lg shadow p-6 mx-auto">
     <button

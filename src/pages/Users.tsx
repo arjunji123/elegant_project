@@ -215,7 +215,6 @@ const UserDetailModal = ({ user, onClose }) => {
   const updatedUser = {
     is_verified: user.is_verified ? 0 : 1
   };
-  console.log('Toggling verification for user:', JSON.stringify(updatedUser));
     fetch(`/api/admin/users/${user.id}/status`, {
       method: 'PUT',
       headers: {

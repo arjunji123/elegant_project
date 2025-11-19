@@ -11,95 +11,112 @@ const defaultValues = {
 // Modal for editing category
 const EditCategoryModal = ({ category, onClose, onSave }) => {
   const [values, setValues] = useState({
-    name: '',
-    description: '',
-    images: [], // URLs
-    icon: '',
-    subcategory_ids: [],
+    name: "",
+    description: "",
+    images: [],      // Existing image URLs
+    icon: "",        // Existing icon URL
   });
-  const [iconFile, setIconFile] = useState(null);
+
+  const [iconFile, setIconFile] = useState(null);        // New icon file
+  const [newImages, setNewImages] = useState([]);        // Newly uploaded images (File list)
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem("authToken");
 
+  // Load original values
   useEffect(() => {
     if (!category) return;
+
     setValues({
-      name: category.name || '',
-      description: category.description || '',
+      name: category.name || "",
+      description: category.description || "",
       images: category.images ? [...category.images] : [],
-      icon: category.icon || '',
-      subcategory_ids: category.subcategory_ids || [],
+      icon: category.icon || "",
     });
+
     setIconFile(null);
+    setNewImages([]);
     setError(null);
   }, [category]);
 
   if (!category) return null;
 
-  const handleChange = e => {
+  // Handle basic input change
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setValues(prev => ({ ...prev, [name]: value }));
+    setValues((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleIconChange = e => {
+  // Upload icon file
+  const handleIconChange = (e) => {
     const file = e.target.files[0];
     if (file) setIconFile(file);
   };
 
-  // Add new image URL (replace with actual file upload in real scenario)
-  const handleAddImage = e => {
-    const file = e.target.files[0];
-    if (!file) return;
+  // Upload additional images
+  const handleAddImage = (e) => {
+    const files = Array.from(e.target.files);
 
-    // For preview only, not uploaded
-    const url = URL.createObjectURL(file);
-    setValues(prev => ({ ...prev, images: [...prev.images, url] }));
+    setNewImages((prev) => [...prev, ...files]);
   };
 
-  const removeImage = idx => {
-    if (window.confirm('Remove this image?')) {
-      setValues(prev => ({
+  // Remove existing image
+  const removeExistingImage = (idx) => {
+    if (window.confirm("Remove this existing image?")) {
+      setValues((prev) => ({
         ...prev,
         images: prev.images.filter((_, i) => i !== idx),
       }));
     }
   };
 
-  const handleSubmit = e => {
+  // Submit
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    const payload = {
-      name: values.name,
-      description: values.description,
-      icon: values.icon, // Keep URL only
-      images: values.images, // Only URLs, not File objects
-      subcategory_ids: values.subcategory_ids,
-    };
+    try {
+      const formData = new FormData();
 
-    fetch(`/api/admin/categories/${category.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    })
-      .then(res => {
-        if (!res.ok) return res.text().then(text => { throw new Error(text || 'Failed to update category'); });
-        return res.json();
-      })
-      .then(() => {
-        onSave();
-        onClose();
-      })
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
+      formData.append("name", values.name);
+      formData.append("description", values.description);
+
+      // Existing URLs
+      formData.append("existingImages", JSON.stringify(values.images));
+      formData.append("existingIcon", values.icon);
+
+      // New icon file
+      if (iconFile) {
+        formData.append("icon", iconFile);
+      }
+
+      // Add newly uploaded image files
+      newImages.forEach((img) => {
+        formData.append("images", img);
+      });
+
+      const response = await fetch(`/api/admin/categories/${category.id}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`, // Do NOT set Content-Type
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to update");
+
+      onSave();
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-lg max-w-lg w-full shadow-lg overflow-auto max-h-[80vh]">
@@ -111,7 +128,7 @@ const EditCategoryModal = ({ category, onClose, onSave }) => {
           <input
             type="text"
             name="name"
-            value={values.name || ''}
+            value={values.name}
             onChange={handleChange}
             required
             className="mb-4 w-full border border-gray-300 rounded px-3 py-2"
@@ -121,27 +138,38 @@ const EditCategoryModal = ({ category, onClose, onSave }) => {
           <input
             type="text"
             name="description"
-            value={values.description || ''}
+            value={values.description}
             onChange={handleChange}
             className="mb-4 w-full border border-gray-300 rounded px-3 py-2"
           />
 
+          {/* ICON PREVIEW */}
           <label className="block mb-2 font-medium">Category Icon</label>
           <div className="flex items-center mb-4 space-x-4">
-            {iconFile ? (
-              <img src={URL.createObjectURL(iconFile)} alt="Icon Preview" className="w-20 h-20 object-cover rounded border" />
-            ) : values.icon ? (
-              <img src={values.icon} alt="Current Icon" className="w-20 h-20 object-cover rounded border" />
-            ) : (
-              <div className="w-20 h-20 bg-gray-100 rounded border flex items-center justify-center text-gray-400">No Icon</div>
-            )}
-            <input type="file" accept="image/*" onChange={handleIconChange} className="border rounded p-1" />
+            <img
+              src={iconFile ? URL.createObjectURL(iconFile) : values.icon}
+              alt="Icon"
+              className="w-20 h-20 object-cover rounded border"
+            />
+            <input type="file" accept="image/*" onChange={handleIconChange} />
           </div>
 
-          <button type="submit" disabled={loading} className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition">
-            {loading ? 'Saving...' : 'Save'}
+
+        
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition"
+          >
+            {loading ? "Saving..." : "Save"}
           </button>
-          <button type="button" onClick={onClose} disabled={loading} className="mt-2 w-full bg-gray-300 py-2 rounded hover:bg-gray-400 transition">
+
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="mt-2 w-full bg-gray-300 py-2 rounded hover:bg-gray-400 transition"
+          >
             Cancel
           </button>
         </form>
@@ -149,6 +177,7 @@ const EditCategoryModal = ({ category, onClose, onSave }) => {
     </div>
   );
 };
+
 
 export const CategoriesList = () => {
   const [categories, setCategories] = useState([]);
@@ -158,7 +187,7 @@ export const CategoriesList = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem('authToken');
 
   useEffect(() => {
     fetch('/api/admin/categories',
@@ -167,7 +196,7 @@ const token = localStorage.getItem('authToken');
         headers: {
           'Content-Type': 'application/json',
           Authorization:
-           `Bearer ${token}`,
+            `Bearer ${token}`,
         },
       }
     )
@@ -228,12 +257,9 @@ const token = localStorage.getItem('authToken');
   }
 
   const AddCategories = () => {
-    console.log('Navigate to Add Categories');
-
     navigate(`/add-categories`)
   }
 
-  console.log(categories.map((cat)=>cat.subcategories.map((subcat)=>subcat.name)))
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6  mx-auto px-6">
@@ -256,9 +282,9 @@ const token = localStorage.getItem('authToken');
           </tr>
         </thead>
         <tbody>
-          {categories.map((u,index) => (
+          {categories.map((u, index) => (
             <tr key={u.id} className="hover:bg-gray-100">
-              <td className="p-4  items-center">{index+1}</td>
+              <td className="p-4  items-center">{index + 1}</td>
               <td className="p-4 flex items-center">
                 <img
                   src={u.icon}
@@ -267,18 +293,18 @@ const token = localStorage.getItem('authToken');
                 />
                 <span className="ml-2">{u.name}</span>
               </td>
-<td className="p-4 whitespace-pre-line">
-  {u.subcategories && u.subcategories.length > 0
-    ? u.subcategories.map((sub) => sub.name).join(",\n")
-    : "—"}
-</td>            <td className="p-4 text-center space-x-4">
-    <button
-                                              onClick={() => openEditModal(u)}
-                                              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition"
-                                              aria-label="Edit subcategory"
-                                          >
-                                              <AiFillEdit size={20} />
-                                          </button>
+              <td className="p-4 whitespace-pre-line">
+                {u.subcategories && u.subcategories.length > 0
+                  ? u.subcategories.map((sub) => sub.name).join(",\n")
+                  : "—"}
+              </td>            <td className="p-4 text-center space-x-4">
+                <button
+                  onClick={() => openEditModal(u)}
+                  className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition"
+                  aria-label="Edit subcategory"
+                >
+                  <AiFillEdit size={20} />
+                </button>
                 {/* <button
                   onClick={() => openEditModal(u)}
                   className="text-blue-600 hover:text-blue-800"
@@ -289,7 +315,7 @@ const token = localStorage.getItem('authToken');
 
                 <button
                   onClick={() => openDeleteModal(u)}
-                 className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
+                  className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
                   aria-label="Delete category"
                 >
                   <AiFillDelete size={20} />
@@ -370,9 +396,6 @@ export const AddCategories = () => {
     formDataToSend.append('name', category);
     formDataToSend.append('description', description);
     if (imageFile) formDataToSend.append('icon', imageFile);
-
-    console.log('Form Data:', category, description, imageFile);
-
     try {
       const response = await fetch('api/categories', {
         method: 'POST',
@@ -381,7 +404,6 @@ export const AddCategories = () => {
         },
         body: formDataToSend,
       });
-      console.log('Response:', response);
       if (!response.ok) {
         throw new Error('Failed to add category');
       }

@@ -6,7 +6,6 @@ import { platform } from 'os';
 
 const ProductRow = ({ product, onEdit, onDelete, onView, index }) => {
   const navigate = useNavigate();
-  console.log(product.subcategory,"product.subcategory")
     return (
         <tr className="border-b">
              <td className="p-2  justify-center items-center">{index + 1}</td>

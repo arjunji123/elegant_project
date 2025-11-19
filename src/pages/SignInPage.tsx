@@ -33,7 +33,6 @@ const SignInPage = () => {
         localStorage.setItem('name', data.user.name);
 
         setSignIn(true); 
-        console.log("Login successful, token:", token,data);
         navigate('/');   // redirect to protected page or dashboard
       } else {
         throw new Error('Login response missing token');

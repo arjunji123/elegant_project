@@ -60,15 +60,15 @@ const AddProductForm = ({ onSuccess }) => {
           offer: p.offer,
           colors: p.colors || [{ name: '', code: '#000000' }],
           sizes: p.sizes || [''],
-          images: [],
+          images:p.images,
         });
 
         setExistingImages(p.images || []);
         setCategoriesID(p.category_id);
+
       })
       .finally(() => setLoading(false));
   }, [productId, isEditMode, token]);
-
   // Fetch subcategories when category changes
 useEffect(() => {
   const catId = categoriesID || values.category_id;
@@ -77,14 +77,12 @@ useEffect(() => {
     return;
   }
 const url = `/api/Categories/${catId}/subcategories`;
-console.log("Fetching subcategories from URL:", url);
   fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   })
     .then(res => res.json())
     .then(data => {
       if (Array.isArray(data.data)) {
-        console.log(data.data)
         setSubcategories(data.data.length > 0? data.data : data.message);
       } else {
         setSubcategories([]);
@@ -92,7 +90,6 @@ console.log("Fetching subcategories from URL:", url);
     })
     .catch(() => setSubcategories([]));
 }, [categoriesID, values.category_id, token]);
-console.log(subcategories,"subcategories")
   const handleCategoryChange = e => {
     const selectedCategoryId = e.target.value;
     setCategoriesID(selectedCategoryId);
@@ -184,9 +181,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     imageFiles.forEach((file) => {
       formData.append('images', file); // field name must match backend
     });
-    for (let pair of formData.entries()) {
-  console.log(pair[0], pair[1]);
-}
+   
 const payload = {
   subcategory_id: values.subcategory_id,
   name: values.name,
@@ -200,7 +195,6 @@ const payload = {
   sizes: values.sizes,   // array of strings
   existingImages: existingImages // array of URLs or IDs
 };
-console.log(payload,"payload")
 const apiURL = isEditMode
       ? `/api/admin/products/${productId}`
       : `/api/product`;
@@ -215,8 +209,6 @@ const apiURL = isEditMode
     });
 
     const data = await response.json();
-    console.log(token)
-console.log(isEditMode ? JSON.stringify(payload) :formData,"Formdata")
 
     if (!response.ok) {
       throw new Error(data.message || 'Something went wrong');
@@ -413,6 +405,7 @@ console.log(isEditMode ? JSON.stringify(payload) :formData,"Formdata")
       )}
 
       {/* Image upload */}
+      
       <label className="block mb-2 font-medium">Upload Images (max 5)</label>
       <input
         type="file"
@@ -421,6 +414,35 @@ console.log(isEditMode ? JSON.stringify(payload) :formData,"Formdata")
         onChange={handleImageFileChange}
         className="mb-4"
       />
+      {/* Existing Images Preview */}
+{existingImages.length > 0 && (
+  <div className="mb-4">
+    <label className="block mb-2 font-medium">Existing Images</label>
+    <div className="flex flex-wrap gap-2">
+      {existingImages.map((img, idx) => (
+        <div key={idx} className="relative">
+          <img
+            src={img} // Existing image URL
+            alt={`Existing ${idx + 1}`}
+            className="w-20 h-20 object-cover rounded border"
+          />
+
+          {/* Remove existing image */}
+          <button
+            type="button"
+            onClick={() => removeExistingImage(idx)}
+            className="absolute top-0 right-0 bg-red-600 text-white 
+                       rounded-full w-5 h-5 flex items-center 
+                       justify-center cursor-pointer"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
       <div className="flex flex-wrap gap-2 mb-4">
         {imageFiles.map((file, idx) => (
           <div key={idx} className="relative">
