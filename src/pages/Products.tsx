@@ -2,13 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProduct } from '@/context/ProductContext';
 import { AiFillDelete, AiFillEdit, AiFillEye } from 'react-icons/ai';
-import { platform } from 'os';
+// import { platform } from 'os'; // platform import is unnecessary here
 
-const ProductRow = ({ product, onEdit, onDelete, onView, index }) => {
-  const navigate = useNavigate();
+// ProductRow Component Definition (Updated for correct indexing)
+const ProductRow = ({ product, onEdit, onDelete, onView, index, startIndex }) => {
+//                                                                ^^^^^^^^^^^ <-- New prop added
+    const navigate = useNavigate();
     return (
         <tr className="border-b">
-             <td className="p-2  justify-center items-center">{index + 1}</td>
+            {/* Serial Number Calculation: (Page Start Index) + (Current Row Index) + 1 */}
+            <td className="p-2 justify-center items-center">{startIndex + index + 1}</td> 
             <td className="p-2 flex justify-center items-center">
                 <img
                     src={product.images?.[0]}
@@ -36,352 +39,407 @@ const ProductRow = ({ product, onEdit, onDelete, onView, index }) => {
     );
 };
 
+// ProductFormModal Component (Image logic, color mapping, and form state)
 const ProductFormModal = ({ product, categories, onClose, onSave }) => {
-  const [values, setValues] = useState({
-    subcategory_id: '',
-    name: '',
-    description: '',
-    category_id: '',
-    unit: '',
-    price: '',
-    offer: '',
-    colors: [{ name: '', code: '#000000' }],
-    sizes: [''],
-    images: [], // existing image URLs
-  });
-  // Array of File objects selected for upload
-  const [imageFiles, setImageFiles] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const token = useProduct().token || localStorage.getItem('authToken');
+    const [values, setValues] = useState({
+        subcategory_id: '',
+        name: '',
+        description: '',
+        category_id: '',
+        unit: '',
+        price: '',
+        offer: '',
+        colors: [{ name: '', code: '#000000' }],
+        sizes: [''],
+        images: [], // existing image URLs
+    });
+    // Array of File objects selected for upload
+    const [imageFiles, setImageFiles] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [existingImages, setExistingImages] = useState([]); // Added state to manage existing URLs
+    const token = useProduct().token || localStorage.getItem('authToken');
 
-  useEffect(() => {
-    if (product) {
-      setValues({
-        subcategory_id: product.subcategory_id || '',
-        name: product.name || '',
-        description: product.description || '',
-        category_id: product.category_id || '',
-        unit: product.unit || '',
-        price: product.price || '',
-        offer: product.offer || '',
-        colors: product.colors && product.colors.length > 0 ? product.colors : [{ name: '', code: '#000000' }],
-        sizes: product.sizes && product.sizes.length > 0 ? product.sizes : [''],
-        images: product.images || [],
-      });
-      setImageFiles([]);
-      setError(null);
-    }
-  }, [product]);
+    // Utility function to convert URL to File/Blob (Workaround for no backend access)
+    const convertUrlToFile = async (url, originalFilename) => {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const filename = originalFilename || url.substring(url.lastIndexOf('/') + 1);
+        return new File([blob], filename, { type: blob.type });
+    };
 
-  // Generic input change handler
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setValues((prev) => ({ ...prev, [name]: value }));
-  };
+    useEffect(() => {
+        if (product) {
+            // Apply necessary mapping for color keys if backend uses 'color_name'/'color_code'
+            const formattedColors = (product.colors && product.colors.length > 0)
+                ? product.colors.map(c => ({
+                    name: c.name || c.color_name || '',
+                    code: c.code || c.color_code || '#000000'
+                }))
+                : [{ name: '', code: '#000000' }];
 
-  // Colors handlers
-  const handleColorChange = (index, field, value) => {
-    const updatedColors = [...values.colors];
-    updatedColors[index] = { ...updatedColors[index], [field]: value };
-    setValues((prev) => ({ ...prev, colors: updatedColors }));
-  };
+            setValues({
+                subcategory_id: product.subcategory_id || '',
+                name: product.name || '',
+                description: product.description || '',
+                category_id: product.category_id || '',
+                unit: product.unit || '',
+                price: product.price || '',
+                offer: product.offer || '',
+                colors: formattedColors,
+                sizes: product.sizes && product.sizes.length > 0 ? product.sizes : [''],
+                images: product.images || [], // Initial list of URLs
+            });
+            setExistingImages(product.images || []); // Keep track of existing URLs separately
+            setImageFiles([]);
+            setError(null);
+        }
+    }, [product]);
 
-  const addColorField = () => {
-    setValues((prev) => ({ ...prev, colors: [...prev.colors, { name: '', code: '#000000' }] }));
-  };
+    // Generic input change handler
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setValues((prev) => ({ ...prev, [name]: value }));
+    };
 
-  const removeColorField = (index) => {
-    setValues((prev) => ({ ...prev, colors: prev.colors.filter((_, i) => i !== index) }));
-  };
+    // Colors handlers (omitted for brevity, assume they are correct)
+    const handleColorChange = (index, field, value) => {
+        const updatedColors = [...values.colors];
+        updatedColors[index] = { ...updatedColors[index], [field]: value };
+        setValues((prev) => ({ ...prev, colors: updatedColors }));
+    };
 
-  // Sizes handlers
-  const handleSizeChange = (index, value) => {
-    const updatedSizes = [...values.sizes];
-    updatedSizes[index] = value;
-    setValues((prev) => ({ ...prev, sizes: updatedSizes }));
-  };
+    const addColorField = () => {
+        setValues((prev) => ({ ...prev, colors: [...prev.colors, { name: '', code: '#000000' }] }));
+    };
 
-  const addSizeField = () => {
-    setValues((prev) => ({ ...prev, sizes: [...prev.sizes, ''] }));
-  };
+    const removeColorField = (index) => {
+        setValues((prev) => ({ ...prev, colors: prev.colors.filter((_, i) => i !== index) }));
+    };
 
-  const removeSizeField = (index) => {
-    setValues((prev) => ({ ...prev, sizes: prev.sizes.filter((_, i) => i !== index) }));
-  };
+    // Sizes handlers (omitted for brevity, assume they are correct)
+    const handleSizeChange = (index, value) => {
+        const updatedSizes = [...values.sizes];
+        updatedSizes[index] = value;
+        setValues((prev) => ({ ...prev, sizes: updatedSizes }));
+    };
 
-  // File input handlers
-  const handleImageFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    if (imageFiles.length + files.length > 5) {
-      alert('You can only upload up to 5 images');
-      return;
-    }
-    setImageFiles((prev) => [...prev, ...files]);
-  };
+    const addSizeField = () => {
+        setValues((prev) => ({ ...prev, sizes: [...prev.sizes, ''] }));
+    };
 
-  const removeImageFile = (index) => {
-    setImageFiles((prev) => prev.filter((_, i) => i !== index));
-  };
+    const removeSizeField = (index) => {
+        setValues((prev) => ({ ...prev, sizes: prev.sizes.filter((_, i) => i !== index) }));
+    };
 
-  // Submission handler with FormData
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      const formData = new FormData();
-      formData.append('subcategory_id', values.subcategory_id);
-      formData.append('name', values.name);
-      formData.append('description', values.description);
-      formData.append('category_id', values.category_id);
-      formData.append('unit', values.unit);
-      formData.append('price', values.price);
-      formData.append('offer', values.offer || '');
+    // File input handlers
+    const handleImageFileChange = (e) => {
+        const files = Array.from(e.target.files);
+        if (existingImages.length + imageFiles.length + files.length > 5) {
+            alert('You can only have up to 5 images total.');
+            return;
+        }
+        setImageFiles((prev) => [...prev, ...files]);
+    };
 
-      formData.append(
-        'colors',
-        JSON.stringify(values.colors.filter(c => (c.name ?? '').trim() !== '' && (c.code ?? '').trim() !== ''))
-      );
-      formData.append(
-        'sizes',
-        JSON.stringify(values.sizes.filter(s => (s ?? '').trim() !== ''))
-      );
+    const removeImageFile = (index) => {
+        setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    };
+    
+    // Handler to remove an existing image URL
+    const removeExistingImage = (urlToRemove) => {
+        setExistingImages((prev) => prev.filter(url => url !== urlToRemove));
+    };
 
-      imageFiles.forEach(file => formData.append('images', file));
+    // Submission handler with FormData (Using the workaround from previous turn)
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
 
-      const url = `/api/admin/products/${product.id}`;
-      const res = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // Do NOT set Content-Type header with FormData
-        },
-        body: formData,
-      });
+        try {
+            const formData = new FormData();
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Failed to update product: ${errorText}`);
-      }
+            // 1. Convert ALL existing URLs into File objects
+            const existingFilePromises = existingImages.map(url => convertUrlToFile(url));
+            const existingFileBlobs = await Promise.all(existingFilePromises);
 
-      onSave();
-      onClose();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+            // 2. Combine all images (newly selected files + converted existing files)
+            const allFilesToSend = [...existingFileBlobs, ...imageFiles];
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded-lg max-w-lg w-full shadow-lg overflow-auto max-h-[90vh]">
-        <h2 className="text-xl font-semibold mb-4">Edit Product</h2>
-        {error && <p className="text-red-600 mb-3">{error}</p>}
-        <form onSubmit={handleSubmit}>
-          {/* Category selector */}
-          <label className="block mb-2 font-medium">Category</label>
-          <select
-            name="category_id"
-            value={values.category_id}
-            onChange={handleChange}
-            required
-            className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
-          >
-            <option value="">Select category</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>
-                {cat.category_name || cat.name}
-              </option>
-            ))}
-          </select>
+            // 3. Append ALL images as files to 'images' key
+            allFilesToSend.forEach(file => formData.append('images', file));
 
-          {/* Subcategory input */}
-          <label className="block mb-2 font-medium">Subcategory</label>
-          <input
-            name="subcategory_id"
-            value={values.subcategory_id}
-            onChange={handleChange}
-            className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
-          />
+            // --- Other Fields ---
+            formData.append('subcategory_id', values.subcategory_id);
+            formData.append('name', values.name);
+            formData.append('description', values.description);
+            formData.append('category_id', values.category_id);
+            formData.append('unit', values.unit);
+            formData.append('price', values.price);
+            formData.append('offer', values.offer || '');
 
-          {/* Name input */}
-          <label className="block mb-2 font-medium">Product Name</label>
-          <input
-            name="name"
-            value={values.name}
-            onChange={handleChange}
-            
-            className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
-          />
+            formData.append(
+                'colors',
+                JSON.stringify(values.colors.filter(c => (c.name ?? '').trim() !== '' && (c.code ?? '').trim() !== ''))
+            );
+            formData.append(
+                'sizes',
+                JSON.stringify(values.sizes.filter(s => (s ?? '').trim() !== ''))
+            );
 
-          {/* Description textarea */}
-          <label className="block mb-2 font-medium">Description</label>
-          <textarea
-            name="description"
-            value={values.description}
-            onChange={handleChange}
-            rows={3}
-            
-            className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
-          />
+            const url = `/api/admin/products/${product.id}`;
+            const res = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    // Do NOT set Content-Type header with FormData
+                },
+                body: formData,
+            });
 
-          {/* Unit input */}
-          <label className="block mb-2 font-medium">Unit (e.g. ₹)</label>
-          <input
-            name="unit"
-            value={values.unit}
-            onChange={handleChange}
-            required
-            className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
-          />
+            if (!res.ok) {
+                const errorText = await res.text();
+                throw new Error(`Failed to update product: ${errorText}`);
+            }
 
-          {/* Price input */}
-          <label className="block mb-2 font-medium">Price</label>
-          <input
-            name="price"
-            type="number"
-            step="0.01"
-            value={values.price}
-            onChange={handleChange}
-            required
-            className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
-          />
+            onSave();
+            onClose();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-          {/* Offer input */}
-          <label className="block mb-2 font-medium">Offer (%)</label>
-          <input
-            name="offer"
-            type="number"
-            value={values.offer}
-            onChange={handleChange}
-            className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
-          />
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50">
+            <div className="bg-white p-6 rounded-lg max-w-lg w-full shadow-lg overflow-auto max-h-[90vh]">
+                <h2 className="text-xl font-semibold mb-4">Edit Product</h2>
+                {error && <p className="text-red-600 mb-3">{error}</p>}
+                <form onSubmit={handleSubmit}>
+                    {/* Category selector */}
+                    <label className="block mb-2 font-medium">Category</label>
+                    <select
+                        name="category_id"
+                        value={values.category_id}
+                        onChange={handleChange}
+                        required
+                        className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
+                    >
+                        <option value="">Select category</option>
+                        {categories.map(cat => (
+                            <option key={cat.id} value={cat.id}>
+                                {cat.category_name || cat.name}
+                            </option>
+                        ))}
+                    </select>
 
-          {/* Colors section */}
-          <label className="block mb-2 font-medium">Colors</label>
-          {values.colors.map((color, idx) => (
-            <div key={idx} className="flex items-center mb-2 gap-2">
-              <input
-                type="text"
-                placeholder={`Color Name ${idx + 1}`}
-                value={color.name}
-                onChange={(e) => handleColorChange(idx, 'name', e.target.value)}
-                className="flex-1 border border-gray-300 rounded px-3 py-2"
-                required
-              />
-              <input
-                type="color"
-                value={color.code}
-                onChange={(e) => handleColorChange(idx, 'code', e.target.value)}
-                className="w-12 h-12 p-0 border border-gray-300 rounded"
-                required
-              />
-              {values.colors.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeColorField(idx)}
-                  className="text-red-600 hover:text-red-800 font-bold px-2"
-                >
-                  ×
-                </button>
-              )}
+                    {/* Subcategory input */}
+                    <label className="block mb-2 font-medium">Subcategory</label>
+                    <input
+                        name="subcategory_id"
+                        value={values.subcategory_id}
+                        onChange={handleChange}
+                        className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
+                    />
+
+                    {/* Name input */}
+                    <label className="block mb-2 font-medium">Product Name</label>
+                    <input
+                        name="name"
+                        value={values.name}
+                        onChange={handleChange}
+                        className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
+                    />
+
+                    {/* Description textarea */}
+                    <label className="block mb-2 font-medium">Description</label>
+                    <textarea
+                        name="description"
+                        value={values.description}
+                        onChange={handleChange}
+                        rows={3}
+                        className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
+                    />
+
+                    {/* Unit input */}
+                    <label className="block mb-2 font-medium">Unit (e.g. ₹)</label>
+                    <input
+                        name="unit"
+                        value={values.unit}
+                        onChange={handleChange}
+                        required
+                        className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
+                    />
+
+                    {/* Price input */}
+                    <label className="block mb-2 font-medium">Price</label>
+                    <input
+                        name="price"
+                        type="number"
+                        step="0.01"
+                        value={values.price}
+                        onChange={handleChange}
+                        required
+                        className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
+                    />
+
+                    {/* Offer input */}
+                    <label className="block mb-2 font-medium">Offer (%)</label>
+                    <input
+                        name="offer"
+                        type="number"
+                        value={values.offer}
+                        onChange={handleChange}
+                        className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
+                    />
+
+                    {/* Colors section (Omitted) */}
+                    <label className="block mb-2 font-medium">Colors</label>
+                    {values.colors.map((color, idx) => (
+                        <div key={idx} className="flex items-center mb-2 gap-2">
+                            <input
+                                type="text"
+                                placeholder={`Color Name ${idx + 1}`}
+                                value={color.name}
+                                onChange={(e) => handleColorChange(idx, 'name', e.target.value)}
+                                className="flex-1 border border-gray-300 rounded px-3 py-2"
+                                required
+                            />
+                            <input
+                                type="color"
+                                value={color.code}
+                                onChange={(e) => handleColorChange(idx, 'code', e.target.value)}
+                                className="w-12 h-12 p-0 border border-gray-300 rounded"
+                                required
+                            />
+                            {values.colors.length > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={() => removeColorField(idx)}
+                                    className="text-red-600 hover:text-red-800 font-bold px-2"
+                                >
+                                    ×
+                                </button>
+                            )}
+                        </div>
+                    ))}
+                    {values.colors.length < 10 && (
+                        <button
+                            type="button"
+                            onClick={addColorField}
+                            className="mb-4 text-indigo-600 hover:underline text-sm"
+                        >
+                            + Add another color
+                        </button>
+                    )}
+
+                    {/* Sizes section (Omitted) */}
+                    <label className="block mb-2 font-medium">Sizes</label>
+                    {values.sizes.map((size, idx) => (
+                        <div key={idx} className="flex items-center mb-2 gap-2">
+                            <input
+                                type="text"
+                                placeholder={`Size ${idx + 1}`}
+                                value={size}
+                                onChange={(e) => handleSizeChange(idx, e.target.value)}
+                                className="flex-1 border border-gray-300 rounded px-3 py-2"
+                            />
+                            {values.sizes.length > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={() => removeSizeField(idx)}
+                                    className="text-red-600 hover:text-red-800 font-bold px-2"
+                                >
+                                    ×
+                                </button>
+                            )}
+                        </div>
+                    ))}
+                    {values.sizes.length < 10 && (
+                        <button
+                            type="button"
+                            onClick={addSizeField}
+                            className="mb-4 text-indigo-600 hover:underline text-sm"
+                        >
+                            + Add another size
+                        </button>
+                    )}
+
+                    {/* Images input */}
+                    <label className="block mb-2 font-medium">Upload Images (max 5)</label>
+                    {/* Display Existing Images */}
+                    <div className="flex flex-wrap gap-2 mb-2">
+                        {existingImages.map((url, idx) => (
+                            <div key={`existing-${idx}`} className="relative">
+                                <img
+                                    src={url}
+                                    alt={`Existing ${idx + 1}`}
+                                    className="w-20 h-20 object-cover rounded border"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => removeExistingImage(url)}
+                                    className="absolute top-0 right-0 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center cursor-pointer"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleImageFileChange}
+                        className="mb-4"
+                    />
+                    <div className="flex flex-wrap gap-2 mb-4">
+                        {/* Display New File Previews */}
+                        {imageFiles.map((file, idx) => (
+                            <div key={`new-${idx}`} className="relative">
+                                <img
+                                    src={URL.createObjectURL(file)}
+                                    alt={`Preview ${idx + 1}`}
+                                    className="w-20 h-20 object-cover rounded border"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => removeImageFile(idx)}
+                                    className="absolute top-0 right-0 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center cursor-pointer"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="flex justify-end space-x-4">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={loading}
+                            className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading || existingImages.length + imageFiles.length === 0}
+                            className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+                        >
+                            {loading ? 'Saving...' : 'Save Changes'}
+                        </button>
+                    </div>
+                </form>
             </div>
-          ))}
-          {values.colors.length < 10 && (
-            <button
-              type="button"
-              onClick={addColorField}
-              className="mb-4 text-indigo-600 hover:underline text-sm"
-            >
-              + Add another color
-            </button>
-          )}
-
-          {/* Sizes section */}
-          <label className="block mb-2 font-medium">Sizes</label>
-          {values.sizes.map((size, idx) => (
-            <div key={idx} className="flex items-center mb-2 gap-2">
-              <input
-                type="text"
-                placeholder={`Size ${idx + 1}`}
-                value={size}
-                onChange={(e) => handleSizeChange(idx, e.target.value)}
-                className="flex-1 border border-gray-300 rounded px-3 py-2"
-              />
-              {values.sizes.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeSizeField(idx)}
-                  className="text-red-600 hover:text-red-800 font-bold px-2"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          ))}
-          {values.sizes.length < 10 && (
-            <button
-              type="button"
-              onClick={addSizeField}
-              className="mb-4 text-indigo-600 hover:underline text-sm"
-            >
-              + Add another size
-            </button>
-          )}
-
-          {/* Images input */}
-          <label className="block mb-2 font-medium">Upload Images (max 5)</label>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleImageFileChange}
-            className="mb-4"
-          />
-          <div className="flex flex-wrap gap-2 mb-4">
-            {imageFiles.map((file, idx) => (
-              <div key={idx} className="relative">
-                <img
-                  src={URL.createObjectURL(file)}
-                  alt={`Preview ${idx + 1}`}
-                  className="w-20 h-20 object-cover rounded border"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeImageFile(idx)}
-                  className="absolute top-0 right-0 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center cursor-pointer"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex justify-end space-x-4">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={loading}
-              className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
-            >
-              {loading ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
+        </div>
+    );
 };
 
+// DeleteConfirmationModal Component (Omitted for brevity)
 const DeleteConfirmationModal = ({ product, onCancel, onConfirm, loading }) => (
     <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50">
         <div className="bg-white p-6 rounded-lg max-w-sm w-full shadow-lg">
@@ -395,6 +453,7 @@ const DeleteConfirmationModal = ({ product, onCancel, onConfirm, loading }) => (
     </div>
 );
 
+// ProductDetailModal Component (Omitted for brevity)
 const ProductDetailModal = ({ product, onClose }) => {
     if (!product) return null;
 
@@ -412,7 +471,6 @@ const ProductDetailModal = ({ product, onClose }) => {
                     <p><b>Description:</b> {product.description || 'N/A'}</p>
                     <p><b>Price:</b> {product.price}</p>
                     <p><b>Unit:</b> {product.unit}</p>
-                    {/* <p><b>Stock:</b> {product.stock}</p> */}
                     <p><b>Offer:</b> {product.offer || 'None'}</p>
                     <p><b>Category:</b> {product.category?.name || 'Uncategorized'}</p>
                     <p><b>Subcategory:</b> {product.subcategory?.name || 'N/A'}</p>
@@ -425,6 +483,7 @@ const ProductDetailModal = ({ product, onClose }) => {
     );
 };
 
+// ProductGrid Component (Updated to calculate startIndex)
 const ProductGrid = () => {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -533,6 +592,10 @@ const ProductGrid = () => {
 
     const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
+    // --- CRITICAL CHANGE: Calculate the starting index for the current page ---
+    const startIndex = (page - 1) * limit;
+    // -------------------------------------------------------------------------
+
     if (loading && products.length === 0) return <div>Loading products...</div>;
     if (error) return <div className="text-red-600">{error}</div>;
     if (!products.length) return <div>No products found.</div>;
@@ -545,7 +608,7 @@ const ProductGrid = () => {
                     Add Product
                 </button>
             </div>
-            <div className="overflow-x-auto  mx-auto bg-white rounded shadow-md">
+            <div className="overflow-x-auto mx-auto bg-white rounded shadow-md">
                 <table className="min-w-full">
                     <thead>
                         <tr className="bg-gray-100 text-gray-700 border-b-2 border-gray-200">
@@ -567,6 +630,7 @@ const ProductGrid = () => {
                                 onDelete={() => openDeleteConfirm(product)}
                                 onView={() => openDetailModal(product)}
                                 index={index}
+                                startIndex={startIndex} // Pass the calculated starting index
                             />
                         ))}
                     </tbody>

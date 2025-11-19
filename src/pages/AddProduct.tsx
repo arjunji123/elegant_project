@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams  } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const defaultValues = {
   subcategory_id: '',
@@ -16,18 +16,18 @@ const defaultValues = {
 
 const AddProductForm = ({ onSuccess }) => {
   const [values, setValues] = useState(defaultValues);
-  const [imageFiles, setImageFiles] = useState([]); 
-  const [existingImages, setExistingImages] = useState([]);  
+  const [imageFiles, setImageFiles] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [subcategories, setSubcategories] = useState([]);
   const [categories, setCategories] = useState([]);
   const [categoriesID, setCategoriesID] = useState('');
+  
   const token = localStorage.getItem('authToken');
-  const { id: productId } = useParams(); // `id` should match the route param
+  const { id: productId } = useParams();
   const navigate = useNavigate();
-
   const isEditMode = Boolean(productId);
 
   // Fetch categories
@@ -38,7 +38,7 @@ const AddProductForm = ({ onSuccess }) => {
       .catch(() => setCategories([]));
   }, []);
 
-  // Fetch product details if editing
+  // --- FIX 1: Fetch product details (Handle Nulls) ---
   useEffect(() => {
     if (!isEditMode) return;
 
@@ -50,46 +50,52 @@ const AddProductForm = ({ onSuccess }) => {
       .then(data => {
         const p = data.data;
 
+        // We use || '' (OR empty string) to ensure we never set state to null.
+        // This fixes the "controlled input" warning.
         setValues({
-          subcategory_id: p.subcategory_id,
-          name: p.name,
-          description: p.description,
-          category_id: p.category_id,
-          unit: p.unit,
-          price: p.price,
-          offer: p.offer,
-          colors: p.colors || [{ name: '', code: '#000000' }],
-          sizes: p.sizes || [''],
-          images:p.images,
+          subcategory_id: p.subcategory_id || '',
+          name: p.name || '',
+          description: p.description || '',
+          category_id: p.category_id || '',
+          unit: p.unit || '',
+          price: p.price || '',
+          offer: p.offer || '',
+          // Ensure arrays are valid arrays
+          colors: (p.colors && p.colors.length > 0) ? p.colors : [{ name: '', code: '#000000' }],
+          sizes: (p.sizes && p.sizes.length > 0) ? p.sizes : [''],
+          images: p.images || [],
         });
 
         setExistingImages(p.images || []);
-        setCategoriesID(p.category_id);
-
+        setCategoriesID(p.category_id || '');
       })
       .finally(() => setLoading(false));
   }, [productId, isEditMode, token]);
+
   // Fetch subcategories when category changes
-useEffect(() => {
-  const catId = categoriesID || values.category_id;
-  if (!catId) {
-    setSubcategories([]);
-    return;
-  }
-const url = `/api/Categories/${catId}/subcategories`;
-  fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-    .then(res => res.json())
-    .then(data => {
-      if (Array.isArray(data.data)) {
-        setSubcategories(data.data.length > 0? data.data : data.message);
-      } else {
-        setSubcategories([]);
-      }
+  useEffect(() => {
+    const catId = categoriesID || values.category_id;
+    if (!catId) {
+      setSubcategories([]);
+      return;
+    }
+    const url = `/api/Categories/${catId}/subcategories`;
+    fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
     })
-    .catch(() => setSubcategories([]));
-}, [categoriesID, values.category_id, token]);
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data.data)) {
+          setSubcategories(data.data.length > 0 ? data.data : []);
+        } else {
+          setSubcategories([]);
+        }
+      })
+      .catch(() => setSubcategories([]));
+  }, [categoriesID, values.category_id, token]);
+
+  // --- Handlers ---
+
   const handleCategoryChange = e => {
     const selectedCategoryId = e.target.value;
     setCategoriesID(selectedCategoryId);
@@ -155,7 +161,7 @@ const url = `/api/Categories/${catId}/subcategories`;
     setImageFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e) => {
   e.preventDefault();
   setLoading(true);
   setError(null);
@@ -163,48 +169,49 @@ const handleSubmit = async (e: React.FormEvent) => {
   try {
     const formData = new FormData();
 
-    // Basic fields
+    // --- Basic Fields ---
     formData.append('subcategory_id', values.subcategory_id);
     formData.append('name', values.name);
     formData.append('description', values.description);
     formData.append('category_id', values.category_id);
     formData.append('unit', values.unit);
     formData.append('price', values.price.toString());
-    // formData.append('offer', values.offer ? values.offer.toString() : '');
-
-    // Arrays -> JSON string
+    
+    // Arrays to JSON strings
     formData.append('colors', JSON.stringify(values.colors));
     formData.append('sizes', JSON.stringify(values.sizes));
-    formData.append('existingImages', JSON.stringify(existingImages));
 
-    // Append new images individually
+    // --- CRITICAL CHANGE HERE ---
+    
+    // 1. Append New Files to 'images'
     imageFiles.forEach((file) => {
-      formData.append('images', file); // field name must match backend
+      formData.append('images', file); 
     });
-   
-const payload = {
-  subcategory_id: values.subcategory_id,
-  name: values.name,
-  description: values.description,
-  category_id: values.category_id,
-  unit: values.unit,
-  price: values.price,
-  // offer: values.offer || '',
-  subcategory: values.subcategory_id,
-  colors: values.colors, // array of objects
-  sizes: values.sizes,   // array of strings
-  existingImages: existingImages // array of URLs or IDs
-};
-const apiURL = isEditMode
+
+    // 2. Append Existing URLs to 'images' (SAME KEY)
+    existingImages.forEach((url) => {
+      formData.append('images', url);
+    });
+
+    // Debugging: Let's see what is inside
+    console.log("--- Sending Form Data ---");
+    for (const pair of formData.entries()) {
+        // Check if it's a file or string to log clearly
+        if (pair[1] instanceof File) {
+            console.log(`${pair[0]}: File - ${pair[1].name}`);
+        } else {
+            console.log(`${pair[0]}: ${pair[1]}`);
+        }
+    }
+
+    const apiURL = isEditMode
       ? `/api/admin/products/${productId}`
       : `/api/product`;
     const method = isEditMode ? 'PUT' : 'POST';
 
     const response = await fetch(apiURL, {
       method,
-      headers: {
-        Authorization: `Bearer ${token}`, // ✅ do not set Content-Type manually
-      },
+      headers: { Authorization: `Bearer ${token}` },
       body: formData,
     });
 
@@ -217,7 +224,7 @@ const apiURL = isEditMode
     setSuccess(true);
     if (onSuccess) onSuccess();
     navigate('/products');
-  } catch (err: any) {
+  } catch (err) {
     setError(err.message);
   } finally {
     setLoading(false);
@@ -231,11 +238,11 @@ const apiURL = isEditMode
         onClick={() => navigate('/products')}
         className="mb-6 flex items-center text-gray-700 hover:text-indigo-700"
       >
-        <span className="mr-2">&#8592;</span> {/* Unicode left arrow */}
+        <span className="mr-2">&#8592;</span>
         Back to List
       </button>
 
-      <h2 className="text-2xl font-semibold mb-6 text-center">{isEditMode ? "Edit Product" :"Add Product"}</h2>
+      <h2 className="text-2xl font-semibold mb-6 text-center">{isEditMode ? "Edit Product" : "Add Product"}</h2>
       {error && <div className="mb-4 text-red-600">{error}</div>}
       {success && <div className="mb-4 text-green-600">Product added successfully!</div>}
 
@@ -257,27 +264,26 @@ const apiURL = isEditMode
       </select>
 
       {/* Subcategories */}
-     <label className="block mb-2 text-sm font-medium">Subcategory</label>
-<select
-  name="subcategory_id"
-  value={values.subcategory_id}
-  onChange={handleChange}
-  required
-  disabled={!values.category_id}
-  className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
->
-  <option value="">Select subcategory</option>
-  {Array.isArray(subcategories) ? (
-    subcategories.map(sub => (
-      <option key={sub.id} value={sub.id}>
-        {sub.name || sub.subcategory_name}
-      </option>
-    ))
-  ) : (
-    <option value="" disabled>{subcategories}</option> // here subcategories holds the message string
-  )}
-</select>
-
+      <label className="block mb-2 text-sm font-medium">Subcategory</label>
+      <select
+        name="subcategory_id"
+        value={values.subcategory_id}
+        onChange={handleChange}
+        required
+        disabled={!values.category_id}
+        className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
+      >
+        <option value="">Select subcategory</option>
+        {Array.isArray(subcategories) ? (
+          subcategories.map(sub => (
+            <option key={sub.id} value={sub.id}>
+              {sub.name || sub.subcategory_name}
+            </option>
+          ))
+        ) : (
+          <option value="" disabled>{typeof subcategories === 'string' ? subcategories : ''}</option>
+        )}
+      </select>
 
       {/* Name */}
       <label className="block mb-2 text-sm font-medium">Product Name</label>
@@ -322,16 +328,6 @@ const apiURL = isEditMode
         className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
       />
 
-      {/* Offer */}
-      {/* <label className="block mb-2 text-sm font-medium">Offer (%)</label>
-      <input
-        name="offer"
-        type="number"
-        value={values.offer}
-        onChange={handleChange}
-        className="w-full mb-4 border border-gray-300 rounded-lg px-3 py-2"
-      /> */}
-
       {/* Colors */}
       <label className="block mb-2 font-medium">Colors</label>
       {values.colors.map((color, idx) => (
@@ -342,7 +338,7 @@ const apiURL = isEditMode
             value={color.name}
             onChange={e => handleColorChange(idx, 'name', e.target.value)}
             className="flex-1 border border-gray-300 rounded px-3 py-2"
-            
+
           />
           <input
             type="color"
@@ -405,7 +401,7 @@ const apiURL = isEditMode
       )}
 
       {/* Image upload */}
-      
+
       <label className="block mb-2 font-medium">Upload Images (max 5)</label>
       <input
         type="file"
@@ -415,33 +411,33 @@ const apiURL = isEditMode
         className="mb-4"
       />
       {/* Existing Images Preview */}
-{existingImages.length > 0 && (
-  <div className="mb-4">
-    <label className="block mb-2 font-medium">Existing Images</label>
-    <div className="flex flex-wrap gap-2">
-      {existingImages.map((img, idx) => (
-        <div key={idx} className="relative">
-          <img
-            src={img} // Existing image URL
-            alt={`Existing ${idx + 1}`}
-            className="w-20 h-20 object-cover rounded border"
-          />
+      {existingImages.length > 0 && (
+        <div className="mb-4">
+          <label className="block mb-2 font-medium">Existing Images</label>
+          <div className="flex flex-wrap gap-2">
+            {existingImages.map((img, idx) => (
+              <div key={idx} className="relative">
+                <img
+                  src={img} // Existing image URL
+                  alt={`Existing ${idx + 1}`}
+                  className="w-20 h-20 object-cover rounded border"
+                />
 
-          {/* Remove existing image */}
-          <button
-            type="button"
-            onClick={() => removeExistingImage(idx)}
-            className="absolute top-0 right-0 bg-red-600 text-white 
-                       rounded-full w-5 h-5 flex items-center 
-                       justify-center cursor-pointer"
-          >
-            ×
-          </button>
+                {/* Remove existing image */}
+                <button
+                  type="button"
+                  onClick={() => removeExistingImage(idx)}
+                  className="absolute top-0 right-0 bg-red-600 text-white 
+                          rounded-full w-5 h-5 flex items-center 
+                          justify-center cursor-pointer"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
-      ))}
-    </div>
-  </div>
-)}
+      )}
 
       <div className="flex flex-wrap gap-2 mb-4">
         {imageFiles.map((file, idx) => (
@@ -467,7 +463,7 @@ const apiURL = isEditMode
         disabled={loading}
         className="w-full bg-indigo-600 text-white font-semibold py-2 rounded-lg hover:bg-indigo-700 transition"
       >
- {loading ? 'Saving...' : isEditMode ? 'Update Product' : 'Add Product'}      </button>
+        {loading ? 'Saving...' : isEditMode ? 'Update Product' : 'Add Product'}      </button>
     </form>
   );
 };
