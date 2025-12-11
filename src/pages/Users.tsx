@@ -2,9 +2,7 @@ import MoreMenu from '../components/MoreMenu';
 import { useEffect, useState,useMemo } from 'react';
 import profile from '../assets/profile.png';
 import { AiFillDelete, AiFillEdit, AiFillEye } from "react-icons/ai";
-
-// Modal component for editing a user
-
+import { useNavigate } from 'react-router-dom';
 
 
 const UserTable = () => {
@@ -132,29 +130,38 @@ const sortedUsers = useMemo(() => {
 
   return usersCopy;
 }, [user, sortField, sortOrder]);
-  const fetchUsers = () => {
-    setLoading(true);
-    let url = `/api/admin/users?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`;
-    url += `&sortField=${sortField}&sortOrder=${sortOrder}`;
+const fetchUsers = () => {
+  setLoading(true);
 
-    fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+  let url = `/api/admin/users?page=${page}&limit=${limit}`;
+
+  // Add search only when user typed something
+  if (search.trim() !== "") {
+    url += `&search=${encodeURIComponent(search.trim())}`;
+  }
+
+  // Sorting params
+  url += `&sortField=${sortField}&sortOrder=${sortOrder}`;
+
+  fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  })
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      return res.json();
     })
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        return res.json();
-      })
-      .then(data => {
-  setUser(data.data || data);
-  setTotalPages(data.pagination?.totalPages || 1);
-})
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
-  };
+    .then(data => {
+      setUser(data.data || data);
+      setTotalPages(data.pagination?.totalPages || 1);
+    })
+    .catch(err => setError(err.message))
+    .finally(() => setLoading(false));
+};
+
 
   useEffect(() => {
     fetchUsers();
@@ -272,10 +279,16 @@ const UserDetailModal = ({ user, onClose }) => {
     }
   };
 
-  const handleSearchChange = (e) => {
-    setSearch(e.target.value);
-    setPage(1);
-  };
+ const handleSearchChange = (e) => {
+  const value = e.target.value;
+  setSearch(value);
+  
+  if (value.trim() === "") {
+    setPage(1);    
+    fetchUsers();   // <-- ensure full list refresh
+  }
+};
+
   const handlePrevPage = () => setPage(p => (p > 1 ? p - 1 : p));
   const handleNextPage = () => setPage(p => p + 1);
 
@@ -327,13 +340,16 @@ const handleCancelToggle = () => {
   setUserToToggle(null);
   setToggleAction('');
 };
+
+  const navigate = useNavigate();
+
   return (
 <div className="px-2 md:px-6 bg-gray-50 min-h-screen">
     <div className="flex justify-between items-center mb-4  mx-auto">
         <h1 className="text-3xl font-bold">Users</h1>
-        {/* <button onClick={() => navigate(`/add-product`)} className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">
-          Add Product
-        </button> */}
+        <button onClick={() => navigate(`/add-user`)} className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">
+          Add User
+        </button>
       </div>
   <div className="mx-auto  bg-white rounded-xl shadow pb-2">
         
@@ -345,24 +361,7 @@ const handleCancelToggle = () => {
             placeholder="Search user..."
             className="w-96 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
-          <button className="p-2 hover:bg-gray-100 rounded">
-            {/* Filter icon */}
-            <svg
-              width="24"
-              height="24"
-              fill="none"
-              stroke="currentColor"
-              className="text-gray-400"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.618a2 2 0 01-.553 1.316l-6.64 7.42a2 2 0 00-.36 1.1V19a1 1 0 01-1 1h-2a1 1 0 01-1-1v-3.546a2 2 0 00-.36-1.1l-6.639-7.42A2 2 0 013 6.618V4z"
-              />
-            </svg>
-          </button>
+       
         </div>
 
         {/* Data Table */}

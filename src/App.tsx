@@ -2,7 +2,7 @@ import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import MainLayout from './layouts/MainLayout'
 import Dashboard from './pages/Dashboard'
-import Users from './pages/Users'
+import Users  from './pages/Users'
 import Products from './pages/Products'
 import Blog from './pages/Blog'
 import AddProductForm from './pages/AddProduct'
@@ -12,6 +12,7 @@ import { SubcategoriesList, AddSubcategories } from './pages/AddSubcategories'
 import {OrdersList} from './pages/Order'
 import { useProduct } from './context/ProductContext'
 import OrderDetailPage from './pages/OrderDetailPage'
+import AddUser  from './pages/AddUser'
 
 export default function App() {
   const { signIn } = useProduct();
@@ -43,7 +44,7 @@ export default function App() {
         <Route path="sub-categories" element={<SubcategoriesList />} />
         <Route path="orders" element={<OrdersList />} />
         <Route path="order-detail" element={<OrderDetailPage />} />
-
+<Route path="add-user" element={<AddUser />} />
         {/* <Route path="edit-product" element={<EditProductForm />} /> */}
         <Route path="signin" element={<Navigate to="/" replace />} /> {/* Redirect if signed in */}
       </Route>
